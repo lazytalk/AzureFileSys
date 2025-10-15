@@ -24,10 +24,7 @@ try {
 
     # Test file upload (with real auth headers)
     Write-Host "2. 📤 File Upload Test..." -NoNewline
-    $headers = @{
-        "X-PowerSchool-User" = "staging-test-user"
-        "X-PowerSchool-Role" = "user"
-    }
+    $headers = @{}
 
     # Create a test file
     $testContent = "Staging test file - $(Get-Date)"

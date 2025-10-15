@@ -24,7 +24,7 @@ AzureFileSys/
 
 ### 1. **FileService.Api** (Web API Layer)
 - **Framework**: ASP.NET Core 8.0 Minimal APIs
-- **Authentication**: PowerSchool header-based auth (`X-PowerSchool-User`, `X-PowerSchool-Role`)
+- **Authentication**: stubbed for development; header-based auth examples removed in the code samples.
 - **Endpoints**: 
   - `POST /api/files/upload` - Upload files with multipart form data
   - `GET /api/files?all=false` - List files with user filtering
@@ -145,19 +145,21 @@ src/FileService.Api/bin/Debug/net8.0/custom.db
   - Full ACID compliance and data persistence
   - Automatic migration management
 
-### **PowerSchool Integration**
-- **Development Mode**: 
-  - `?devUser=alice` query parameter bypass for easy testing
-  - No actual PowerSchool server required
-  - Supports both `user` and `admin` role testing
-- **Production Mode**: 
-  - Full header validation (`X-PowerSchool-User`, `X-PowerSchool-Role`)
+### **External Authentication**
+### **External Authentication**
+**Development Mode**: 
+  `?devUser=alice` query parameter bypass for easy testing
+  No actual external auth server required for local development.
+  Supports both `user` and `admin` role testing
+**Production Mode**: 
+  Production can integrate with an external auth provider (headers, tokens, or OAuth) as needed.
+  Optional header validation for external auth.
   - Token generation and validation endpoints
-  - Secure HMAC-based authentication
-- **Access Control**:
-  - `user` role: Can only access own files
+ - **External Authentication**: 
+   - No actual external auth server required for local development.
+   - Optional header- or token-based integration for production scenarios
   - `admin` role: Can access all files across all users
-
+ - **Security**: External authentication with role-based access control (configure per-environment)
 ## 🛡️ Reliability Features
 
 ### **Anti-Hanging Protection**
@@ -185,7 +187,7 @@ src/FileService.Api/bin/Debug/net8.0/custom.db
 6. ✅ **State Verification** - Post-deletion state consistency checks
 
 ### **Authentication & Authorization Testing**
-- 🔐 **PowerSchool Headers** - Comprehensive user and role validation
+ - 🔐 **Auth Headers** - Optional header- or token-based user and role claims for production
 - 👤 **User Isolation** - Files properly scoped to owner with no cross-user access
 - 🛡️ **Admin Override** - Admin users can access all files regardless of ownership
 - 🚪 **Development Bypass** - `?devUser=alice` parameter for streamlined local testing
@@ -209,7 +211,7 @@ src/FileService.Api/bin/Debug/net8.0/custom.db
 ### **Production Readiness**
 - **Azure Integration**: Full Azure Blob Storage and Azure SQL Database support
 - **Scalability**: Stateless design supports multiple instance deployment
-- **Security**: PowerSchool authentication with role-based access control
+ - **Security**: External authentication with role-based access control (configurable)
 - **Monitoring**: Structured logging compatible with Application Insights
 - **Deployment**: Docker containerization ready with environment-based configuration
 

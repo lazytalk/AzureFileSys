@@ -1,3 +1,12 @@
+# This script is intended to be run with PowerShell Core (pwsh)
+# If you are on Windows, you may need to use 'powershell.exe' instead of 'pwsh'
+# Example: powershell -File scripts/dev-run.ps1
+<#
+This script is now compatible with Windows PowerShell (powershell.exe).
+You can run it using:
+    powershell -File scripts/dev-run.ps1
+# ...existing code...
+#>
 Param(
   [string]$Port = "5090",
   [string]$SqlitePath = "dev-files.db",

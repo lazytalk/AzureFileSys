@@ -101,7 +101,7 @@ if (-not (Get-Command $curl -ErrorAction SilentlyContinue)) {
 }
 Write-Host "curl.exe found, uploading file..." -ForegroundColor Yellow
 $uploadUri = "$base/api/files/upload?devUser=alice"
-$uploadArgs = @('-sS', '-X', 'POST', '-F', "file=@$($tmp.FullName);type=text/plain", '-H', "X-PowerSchool-User: alice", '-H', "X-PowerSchool-Role: user", $uploadUri)
+ $uploadArgs = @('-sS', '-X', 'POST', '-F', "file=@$($tmp.FullName);type=text/plain", $uploadUri)
 Write-Host "Upload command: curl $($uploadArgs -join ' ')" -ForegroundColor Gray
 $json = & $curl @uploadArgs | Out-String
 Write-Host "Upload response: $json" -ForegroundColor Gray
@@ -116,7 +116,7 @@ Write-Host "Upload successful, file ID: $id" -ForegroundColor Green
 
 # List files for alice (send both dev bypass and headers)
 Write-Host "Listing files for alice..." -ForegroundColor Yellow
-$hdr = @{ 'X-PowerSchool-User' = 'alice'; 'X-PowerSchool-Role' = 'user' }
+ $hdr = @{}
 try { 
   $list = Invoke-RestMethod -Method Get -Uri "$base/api/files?all=false&devUser=alice" -Headers $hdr -TimeoutSec 5
 }

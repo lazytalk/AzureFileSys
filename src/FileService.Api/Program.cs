@@ -38,9 +38,11 @@ builder.Services.AddSingleton<IFileStorageService>(sp =>
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
+builder.Services.AddRazorPages();
+builder.Services.AddHttpClient();
 
-// Simple PowerSchool auth stub middleware registration
-builder.Services.AddScoped<PowerSchoolUserContext>();
+// No authentication: the service runs without requiring special header-based authentication or tokens.
 
 var app = builder.Build();
 
@@ -59,77 +61,25 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
-app.Use(async (ctx, next) =>
-{
-    var userCtx = ctx.RequestServices.GetRequiredService<PowerSchoolUserContext>();
-    // Dev shortcut: allow ?devUser=xxx
-    if (isDevMode && ctx.Request.Query.TryGetValue("devUser", out var devUser))
-    {
-        userCtx.UserId = devUser!;
-        userCtx.Role = ctx.Request.Query.TryGetValue("role", out var r) ? r.ToString() : "user";
-        await next();
-        return;
-    }
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthorization();
+app.MapRazorPages();
+app.MapControllers();
 
-    if (!ctx.Request.Headers.TryGetValue("X-PowerSchool-User", out var userHeader) || string.IsNullOrWhiteSpace(userHeader))
-    {
-        ctx.Response.StatusCode = 401;
-        await ctx.Response.WriteAsJsonAsync(new { error = "Missing PowerSchool identity header 'X-PowerSchool-User'" });
-        return;
-    }
-    var role = ctx.Request.Headers.TryGetValue("X-PowerSchool-Role", out var roleHeader) ? roleHeader.ToString() : "user";
-    userCtx.UserId = userHeader!;
-    userCtx.Role = role;
-    await next();
+// Debug endpoint to inspect resolved environment settings
+app.MapGet("/debug/config", (IConfiguration configuration, Microsoft.Extensions.Hosting.IHostEnvironment hostEnv) =>
+{
+    var envMode = configuration.GetValue<string>("EnvironmentMode");
+    var resolved = string.IsNullOrEmpty(envMode) ? hostEnv.EnvironmentName : envMode;
+    return Results.Ok(new { EnvironmentMode_Config = envMode, HostEnvironment = hostEnv.EnvironmentName, Resolved = resolved });
 });
 
-if (isDevMode)
-{
-    app.MapPost("/dev/powerschool/token", (
-        string userId,
-        string role,
-        string? secret
-    ) =>
-    {
-        // Very simple token mimic: base64(userId|role|ticks|hmac)
-        var ticks = DateTimeOffset.UtcNow.Ticks;
-        var key = secret ?? "dev-shared-secret";
-        var raw = $"{userId}|{role}|{ticks}";
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
-        var sig = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(raw)));
-        var token = Convert.ToBase64String(Encoding.UTF8.GetBytes(raw + "|" + sig));
-        return Results.Ok(new { token });
-    });
-
-    app.MapPost("/dev/powerschool/validate", (string token, string? secret) =>
-    {
-        try
-        {
-            var key = secret ?? "dev-shared-secret";
-            var data = Encoding.UTF8.GetString(Convert.FromBase64String(token));
-            var parts = data.Split('|');
-            if (parts.Length != 4) return Results.BadRequest("Malformed token");
-            var user = parts[0];
-            var role = parts[1];
-            var ticks = parts[2];
-            var sig = parts[3];
-            var raw = $"{user}|{role}|{ticks}";
-            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key));
-            var expected = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(raw)));
-            if (!expected.Equals(sig, StringComparison.OrdinalIgnoreCase)) return Results.Unauthorized();
-            return Results.Ok(new { user, role });
-        }
-        catch
-        {
-            return Results.BadRequest("Invalid token format");
-        }
-    });
-}
+// No dev token endpoints; the application runs without authentication in all environments if configured.
 
 // Map Endpoints (initial version; can be moved to controllers or Minimal APIs kept)
 app.MapPost("/api/files/upload", async (
     HttpRequest request,
-    PowerSchoolUserContext user,
     IFileStorageService storage,
     IFileMetadataRepository repo,
     CancellationToken ct) =>
@@ -147,7 +97,8 @@ app.MapPost("/api/files/upload", async (
         if (file.Length > 50 * 1024 * 1024)
             return Results.BadRequest("File too large (50 MB limit)");
 
-        var blobPath = $"{user.UserId}/{Guid.NewGuid()}_{file.FileName}";
+        // No user context: store blobs without a user prefix.
+        var blobPath = $"{Guid.NewGuid()}_{file.FileName}";
         await using var stream = file.OpenReadStream();
         await storage.UploadAsync(blobPath, stream, file.ContentType, ct);
 
@@ -156,7 +107,7 @@ app.MapPost("/api/files/upload", async (
             FileName = file.FileName,
             ContentType = file.ContentType,
             SizeBytes = file.Length,
-            OwnerUserId = user.UserId,
+            OwnerUserId = string.Empty,
             BlobPath = blobPath
         };
         await repo.AddAsync(record, ct);
@@ -171,26 +122,15 @@ app.MapPost("/api/files/upload", async (
 }).DisableAntiforgery();
 
 app.MapGet("/api/files", async (
-    [FromQuery] bool all,
-    PowerSchoolUserContext user,
+    HttpRequest request,
     IFileMetadataRepository repo,
     CancellationToken ct) =>
 {
-    Console.WriteLine($"[LIST] User ID: '{user.UserId}', IsAdmin: {user.IsAdmin}, All: {all}");
-    
-    if (string.IsNullOrWhiteSpace(user.UserId))
-    {
-        Console.WriteLine("[LIST ERROR] User ID is null or empty");
-        return Results.BadRequest("User ID is required");
-    }
-    
+    // No authentication: return a (paginated) list of files. For now return up to 100 items.
     try
     {
-        var list = all && user.IsAdmin
-            ? await repo.ListAllAsync(take: 100, ct: ct)
-            : await repo.ListByOwnerAsync(user.UserId, ct);
-        Console.WriteLine($"[LIST] Found {list.Count} files for user");
-        
+        var list = await repo.ListAllAsync(take: 100, ct: ct);
+        Console.WriteLine($"[LIST] Found {list.Count} files");
         var result = list.Select(f => new FileService.Core.Models.FileListItemDto(f.Id, f.FileName, f.SizeBytes, f.ContentType, f.UploadedAt, f.OwnerUserId));
         return Results.Ok(result);
     }
@@ -203,27 +143,19 @@ app.MapGet("/api/files", async (
 
 app.MapGet("/api/files/{id:guid}", async (
     Guid id,
-    PowerSchoolUserContext user,
     IFileMetadataRepository repo,
     IFileStorageService storage,
     CancellationToken ct) =>
 {
-    Console.WriteLine($"[GET] Looking for file ID: {id}, User: '{user.UserId}'");
+    Console.WriteLine($"[GET] Looking for file ID: {id}");
     var rec = await repo.GetAsync(id, ct);
     if (rec == null)
     {
         Console.WriteLine($"[GET] File {id} not found in repository");
         return Results.NotFound();
     }
-    
-    Console.WriteLine($"[GET] Found file {id}, owner: '{rec.OwnerUserId}', user: '{user.UserId}', isAdmin: {user.IsAdmin}");
-    if (!user.IsAdmin && !rec.OwnerUserId.Equals(user.UserId, StringComparison.OrdinalIgnoreCase))
-    {
-        Console.WriteLine($"[GET] Access denied for file {id}");
-        return Results.Forbid();
-    }
 
-    // For now return a pseudo SAS URL (or inline content?). We'll issue stub SAS URL.
+    // No access checks: return file details to any caller.
     var sas = await storage.GetReadSasUrlAsync(rec.BlobPath, TimeSpan.FromMinutes(15), ct);
     Console.WriteLine($"[GET] Returning file details for {id}");
     return Results.Ok(new { rec.Id, rec.FileName, rec.ContentType, rec.SizeBytes, DownloadUrl = sas });
@@ -231,26 +163,19 @@ app.MapGet("/api/files/{id:guid}", async (
 
 app.MapDelete("/api/files/{id:guid}", async (
     Guid id,
-    PowerSchoolUserContext user,
     IFileMetadataRepository repo,
     IFileStorageService storage,
     CancellationToken ct) =>
 {
-    Console.WriteLine($"[DELETE] Looking for file ID: {id}, User: '{user.UserId}'");
+    Console.WriteLine($"[DELETE] Looking for file ID: {id}");
     var rec = await repo.GetAsync(id, ct);
     if (rec == null)
     {
         Console.WriteLine($"[DELETE] File {id} not found in repository");
         return Results.NotFound();
     }
-    
-    Console.WriteLine($"[DELETE] Found file {id}, owner: '{rec.OwnerUserId}', user: '{user.UserId}', isAdmin: {user.IsAdmin}");
-    if (!user.IsAdmin && !rec.OwnerUserId.Equals(user.UserId, StringComparison.OrdinalIgnoreCase))
-    {
-        Console.WriteLine($"[DELETE] Access denied for file {id}");
-        return Results.Forbid();
-    }
-    
+
+    // No access checks: allow deletion by any caller.
     Console.WriteLine($"[DELETE] Deleting file {id} from storage and repository");
     await storage.DeleteAsync(rec.BlobPath, ct);
     await repo.DeleteAsync(id, ct);
@@ -260,9 +185,7 @@ app.MapDelete("/api/files/{id:guid}", async (
 
 app.Run();
 
-public class PowerSchoolUserContext
-{
-    public string UserId { get; set; } = string.Empty;
-    public string Role { get; set; } = "user";
-    public bool IsAdmin => Role.Equals("admin", StringComparison.OrdinalIgnoreCase);
-}
+// Authentication removed: no external header-based user context is used.
+
+// Expose Program for WebApplicationFactory in tests
+public partial class Program { }

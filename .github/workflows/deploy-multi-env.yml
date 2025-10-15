@@ -151,14 +151,13 @@ jobs:
           
           while ($retryCount -lt $maxRetries -and -not $success) {
             try {
-              # Production might not have Swagger, so test API endpoint
-              $headers = @{ "X-PowerSchool-User" = "health-check"; "X-PowerSchool-Role" = "user" }
-              $response = Invoke-RestMethod -Uri "https://filesvc-api-prod.azurewebsites.net/api/files" -Method Get -Headers $headers -TimeoutSec 30
-              Write-Host "✅ Production health check passed"
+              # Production health check - unauthenticated GET to the API root or swagger
+              $response = Invoke-RestMethod -Uri "https://filesvc-api-prod.azurewebsites.net/api/files" -Method Get -TimeoutSec 30
+              Write-Host "705 Production health check passed"
               $success = $true
             } catch {
               $retryCount++
-              Write-Host "⏳ Health check attempt $retryCount failed, retrying..."
+              Write-Host "3f3 Health check attempt $retryCount failed, retrying..."
               Start-Sleep 30
             }
           }

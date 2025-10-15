@@ -18,14 +18,14 @@ The service supports three deployment environments:
 - **Purpose**: Pre-production testing, integration testing, UAT
 - **Database**: Azure SQL Database (smaller tier)
 - **Storage**: Azure Blob Storage (separate container)
-- **Auth**: Real PowerSchool integration (test instance)
+- **Auth**: External auth integration (test instance or optional)
 - **URL**: `https://filesvc-api-staging.azurewebsites.net`
 
 ### **🚀 Production**
 - **Purpose**: Live production workloads
 - **Database**: Azure SQL Database (production tier)
 - **Storage**: Azure Blob Storage (production container)
-- **Auth**: Real PowerSchool integration (production instance)
+- **Auth**: External auth integration (production instance or optional)
 - **URL**: `https://filesvc-api-prod.azurewebsites.net`
 
 ---
@@ -86,8 +86,8 @@ Azure Subscription
 | `Persistence__UseSqlServer` | Use SQL Server instead of SQLite | false | true | true |
 | `Sql__ConnectionString` | SQL Server connection | (unused) | Key Vault Ref | Key Vault Ref |
 | `ApplicationInsights__InstrumentationKey` | AI monitoring | (unused) | Key Vault Ref | Key Vault Ref |
-| `PowerSchool__BaseUrl` | PowerSchool API endpoint | (bypass) | test-ps.school.edu | ps.school.edu |
-| `PowerSchool__ApiKey` | PowerSchool authentication | (bypass) | Key Vault Ref | Key Vault Ref |
+| `ExternalAuth__BaseUrl` | External auth API endpoint (optional) | (none) | test-auth.school.edu | auth.school.edu |
+| `ExternalAuth__ApiKey` | External auth authentication key (optional) | (none) | Key Vault Ref | Key Vault Ref |
 
 > **Note**: Double underscore (`__`) maps to nested JSON keys. Key Vault Ref = `@Microsoft.KeyVault(...)`
 
@@ -156,8 +156,9 @@ az keyvault create -n $keyVaultName -g $resourceGroup -l $location --enable-soft
 az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
 az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
 az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--BaseUrl --value "https://test-powerschool.school.edu"
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--ApiKey --value "staging-api-key-here"
+# (Optional) Set external auth secrets in Key Vault if you integrate with an external auth provider
+# az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--BaseUrl --value "https://test-auth.school.edu"
+# az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--ApiKey --value "staging-api-key-here"
 
 # Create App Service (Basic tier for staging)
 Write-Host "Creating staging App Service..."
@@ -184,8 +185,9 @@ az webapp config appsettings set -n $webAppName -g $resourceGroup --settings `
   Persistence__UseSqlServer=true `
   "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
   "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-  "PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)" `
-  "PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
+  # Optional external auth Key Vault references (uncomment if used)
+  # "ExternalAuth__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--BaseUrl)" `
+  # "ExternalAuth__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--ApiKey)"
 
 # Security Settings
 Write-Host "Applying staging security settings..."
@@ -246,8 +248,9 @@ az keyvault create -n $keyVaultName -g $resourceGroup -l $location --enable-soft
 az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
 az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
 az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--BaseUrl --value "https://powerschool.school.edu"
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--ApiKey --value "production-api-key-here"
+# Optional: set external auth provider secrets in Key Vault if integrating with an external auth provider
+# az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--BaseUrl --value "https://auth.school.edu"
+# az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--ApiKey --value "production-api-key-here"
 
 # Create App Service (Premium tier for production)
 Write-Host "Creating production App Service..."
@@ -274,8 +277,9 @@ az webapp config appsettings set -n $webAppName -g $resourceGroup --settings `
   Persistence__UseSqlServer=true `
   "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
   "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-  "PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)" `
-  "PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
+  # Optional External Auth Key Vault references (uncomment if used)
+  # "ExternalAuth__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--BaseUrl)" `
+  # "ExternalAuth__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--ApiKey)"
 
 # Enhanced security settings for production
 Write-Host "Applying production security settings..."
@@ -769,10 +773,10 @@ az deployment group create -g file-svc-rg --template-file azure-resources.bicep 
 - [ ] Set up alerts for critical metrics
 - [ ] Configure backup policies for SQL Database
 
-### PowerSchool Integration (Production)
-- [ ] Replace dev authentication bypass with real PowerSchool integration
-- [ ] Implement proper HMAC token validation
-- [ ] Configure PowerSchool server endpoints and credentials
+### External Authentication (Production)
+- [ ] Replace dev authentication bypass with real external auth integration if required
+- [ ] Implement proper token or HMAC validation as appropriate for your provider
+- [ ] Configure external auth server endpoints and credentials (store in Key Vault)
 - [ ] Test user authentication and role-based access
 - [ ] Set up audit logging for authentication events
 
@@ -850,7 +854,7 @@ This guide ensures a production-ready deployment with enterprise-grade security,
 
 | Environment | Symptom | Possible Cause | Fix |
 |-------------|---------|----------------|-----|
-| **Staging** | 401 responses | Missing auth headers | Use real PowerSchool headers or check staging credentials |
+| **Staging** | 401 responses | Missing auth headers | Use external auth headers or check staging credentials |
 | **Staging** | Upload works but download 404 | Wrong container name | Verify `userfiles-staging` container exists |
 | **Staging** | Database connection fails | Key Vault access issue | Check managed identity permissions |
 | **Production** | Swagger disabled | Production config | Expected behavior - use staging for API testing |
@@ -993,7 +997,7 @@ Your **multi-environment deployment** is now ready! 🎉
 1. **Run the staging deployment script** to create your first environment
 2. **Test the CI/CD pipeline** by pushing to the `develop` branch
 3. **Configure monitoring alerts** for both environments
-4. **Set up your PowerSchool integration** with real credentials
+4. **Set up your external auth integration** with real credentials (if required)
 5. **Train your team** on the promotion workflow
 
 This architecture provides **enterprise-grade multi-environment deployment** with proper isolation, security, and operational practices! 🌟

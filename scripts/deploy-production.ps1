@@ -11,7 +11,6 @@ param(
 )
 
 # Production Environment Variables
-$environment = "production"
 $resourceGroup = "file-svc-production-rg"
 $storageAccount = "filesvcprd$(Get-Random -Minimum 1000 -Maximum 9999)"
 $webAppName = "filesvc-api-prod"
@@ -65,8 +64,9 @@ if ($CreateResources) {
     az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
     az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
     az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-    az keyvault secret set --vault-name $keyVaultName -n PowerSchool--BaseUrl --value "https://powerschool.school.edu"
-    az keyvault secret set --vault-name $keyVaultName -n PowerSchool--ApiKey --value "production-api-key-placeholder"
+    # Optional: set external auth provider secrets if integrating with external auth
+    # az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--BaseUrl --value "https://auth.school.edu"
+    # az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--ApiKey --value "production-api-key-placeholder"
 
     # Create App Service (Premium tier for production)
     Write-Host "Creating production App Service: $webAppName"
@@ -93,8 +93,9 @@ if ($CreateResources) {
       Persistence__UseSqlServer=true `
       "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
       "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-      "PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)" `
-      "PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
+    # Optional External Auth Key Vault references (uncomment if used)
+    # "ExternalAuth__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--BaseUrl)" `
+    # "ExternalAuth__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--ApiKey)"
 
     # Enhanced security settings for production
     Write-Host "Applying production security settings..."

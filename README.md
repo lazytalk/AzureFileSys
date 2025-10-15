@@ -1,6 +1,6 @@
 # Azure File Management Service (Initial Scaffold)
 
-This repository contains an initial scaffold for a file management backend aligned with the target architecture (ASP.NET Core API + Azure Blob Storage + metadata + PowerSchool auth integration).
+This repository contains an initial scaffold for a file management backend aligned with the target architecture (ASP.NET Core API + Azure Blob Storage + metadata).
 
 ## Current State
 - Manual project files created (no `dotnet new` CLI run here because .NET SDK not detected in environment yet).
@@ -9,7 +9,7 @@ This repository contains an initial scaffold for a file management backend align
   - `FileService.Core` (Entities, interfaces, DTOs)
   - `FileService.Infrastructure` (In-memory metadata + stub blob storage)
   - `FileService.Tests` (Basic unit test)
-- Stub PowerSchool auth via headers: `X-PowerSchool-User`, optional `X-PowerSchool-Role` ("admin" for elevated privileges).
+-- Authentication: simplified for local dev; header-based auth removed from default samples.
 
 ## Prerequisites
 Install .NET 8 SDK (LTS) on your machine:
@@ -36,33 +36,33 @@ Navigate to Swagger UI (once real hosting or local run):
 
 Upload (PowerShell):
 ```powershell
-Invoke-RestMethod -Method Post -Uri https://localhost:5001/api/files/upload -Headers @{ 'X-PowerSchool-User'='teacher1'; 'X-PowerSchool-Role'='admin' } -Form @{ file= Get-Item .\sample.txt }
+Invoke-RestMethod -Method Post -Uri https://localhost:5001/api/files/upload -Form @{ file= Get-Item .\sample.txt }
 ```
 
-List own files:
+List files:
 ```powershell
-Invoke-RestMethod -Method Get -Uri 'https://localhost:5001/api/files' -Headers @{ 'X-PowerSchool-User'='teacher1' }
+Invoke-RestMethod -Method Get -Uri 'https://localhost:5001/api/files'
 ```
 
-List all (admin only):
+List all:
 ```powershell
-Invoke-RestMethod -Method Get -Uri 'https://localhost:5001/api/files?all=true' -Headers @{ 'X-PowerSchool-User'='teacher1'; 'X-PowerSchool-Role'='admin' }
+Invoke-RestMethod -Method Get -Uri 'https://localhost:5001/api/files?all=true'
 ```
 
 Get file (returns stub SAS URL):
 ```powershell
-Invoke-RestMethod -Method Get -Uri 'https://localhost:5001/api/files/{id}' -Headers @{ 'X-PowerSchool-User'='teacher1' }
+Invoke-RestMethod -Method Get -Uri 'https://localhost:5001/api/files/{id}'
 ```
 
 Delete file:
 ```powershell
-Invoke-RestMethod -Method Delete -Uri 'https://localhost:5001/api/files/{id}' -Headers @{ 'X-PowerSchool-User'='teacher1' }
+Invoke-RestMethod -Method Delete -Uri 'https://localhost:5001/api/files/{id}'
 ```
 
 ## Next Steps (Planned)
 1. Replace stub storage with Azure Blob Storage implementation (configure connection string via Key Vault / app settings).
 2. Add real database (Azure SQL or Cosmos DB) with EF Core migrations.
-3. Implement robust PowerSchool token validation (API call / shared secret signature).
+3. Implement robust external auth/token validation (API call / shared secret signature) if your deployment requires authenticated access.
 4. Add file type validation & antivirus scanning hook.
 5. Add structured logging + Application Insights telemetry.
 6. Implement pagination & search endpoints.
@@ -94,17 +94,15 @@ $env:BlobStorage__UseLocalStub='false'
 
 ### Development Conveniences
 Active only when `EnvironmentMode=Development` (or config equals `Development`):
-- Query parameter auth shortcut: `?devUser=<id>&role=admin` sets user context without headers.
-- Token mimic endpoints:
-  - `POST /dev/powerschool/token` (form/body: userId, role, optional secret) → returns mock token.
-  - `POST /dev/powerschool/validate` (token, optional secret) → decodes & validates mock token.
+- Query parameter auth shortcut: `?devUser=<id>&role=admin` sets user context without headers (development convenience).
+- Dev-only token mimic endpoints may be present for local testing when `EnvironmentMode=Development`.
 - Stub blob storage keeps file bytes in-memory (lost on restart) while metadata persists in SQLite.
 
 ### Production Expectations
-- Provide real Azure Blob connection string and set `BlobStorage:UseLocalStub=false`.
-- Remove dev query parameter usage; send real `X-PowerSchool-User` (and future auth token header) only.
-- Use Azure SQL / managed database instead of local SQLite (future provider switch via configuration).
-- Harden: disable `/dev/powerschool/*` by ensuring `EnvironmentMode` is not `Development`.
+ - Provide real Azure Blob connection string and set `BlobStorage:UseLocalStub=false`.
+ - Remove dev query parameter usage in production; examples do not rely on dev-only shortcuts in Production.
+ - Use Azure SQL / managed database instead of local SQLite (future provider switch via configuration).
+ - Harden: ensure any dev-only endpoints are disabled by setting `EnvironmentMode` appropriately.
 
 ### Dev Run Script
 `scripts/dev-run.ps1` launches the API pre-configured for local development.
@@ -140,8 +138,8 @@ Environment variables expected (once implemented):
 ```
 AZURE_STORAGE_CONNECTION_STRING=
 FILES_CONTAINER_NAME=userfiles
-POWERSCHOOL_AUTH_ENDPOINT=
-POWERSCHOOL_SHARED_SECRET=
+EXTERNALAUTH_AUTH_ENDPOINT=
+EXTERNALAUTH_SHARED_SECRET=
 DB_CONNECTION_STRING=
 ```
 

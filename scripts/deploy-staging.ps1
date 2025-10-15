@@ -10,7 +10,6 @@ param(
 )
 
 # Staging Environment Variables
-$env = "staging"
 $resourceGroup = "file-svc-staging-rg"
 $storageAccount = "filesvcstg$(Get-Random -Minimum 1000 -Maximum 9999)"
 $webAppName = "filesvc-api-staging"
@@ -60,8 +59,9 @@ if ($CreateResources) {
     az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
     az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
     az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-    az keyvault secret set --vault-name $keyVaultName -n PowerSchool--BaseUrl --value "https://test-powerschool.school.edu"
-    az keyvault secret set --vault-name $keyVaultName -n PowerSchool--ApiKey --value "staging-api-key-placeholder"
+    # Optional: set external auth provider secrets if integrating with external auth
+    # az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--BaseUrl --value "https://test-auth.school.edu"
+    # az keyvault secret set --vault-name $keyVaultName -n ExternalAuth--ApiKey --value "staging-api-key-placeholder"
 
     # Create App Service (Basic tier for staging)
     Write-Host "Creating App Service: $webAppName"
@@ -88,8 +88,9 @@ if ($CreateResources) {
       Persistence__UseSqlServer=true `
       "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
       "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-      "PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)" `
-      "PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
+    # Optional External Auth Key Vault References (uncomment if used)
+    # "ExternalAuth__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--BaseUrl)" `
+    # "ExternalAuth__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--ApiKey)"
 
     # Security Settings
     Write-Host "Applying security settings..."

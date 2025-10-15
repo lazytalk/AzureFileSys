@@ -1,0 +1,138 @@
+@page 
+@{
+    Layout = null;
+}
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Admin - FileService</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; margin: 20px; }
+        .section { margin-bottom: 16px; padding: 8px; border: 1px solid #ddd; }
+        label { display: inline-block; width: 120px; }
+    </style>
+</head>
+<body>
+    <h1>Admin - FileService</h1>
+
+    <div class="section">
+        <h3>Upload</h3>
+        <input id="uploadFile" type="file" />
+        <button id="btnUpload">Upload</button>
+        <div id="uploadResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>List</h3>
+        <button id="btnList">Refresh List</button>
+        <div id="listResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Download</h3>
+        <label>File ID:</label><input id="downloadId" type="text" style="width:400px;" />
+        <button id="btnDownload">Download</button>
+        <div id="downloadResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Delete</h3>
+        <label>File ID:</label><input id="deleteId" type="text" style="width:400px;" />
+        <button id="btnDelete">Delete</button>
+        <div id="deleteResult"></div>
+    </div>
+
+    <script>
+        const $ = id => document.getElementById(id);
+
+        async function listFiles() {
+            const out = $('listResult');
+            out.textContent = 'Loading...';
+            try {
+                const r = await fetch('/api/files');
+                const txt = await r.text();
+                if (!r.ok) { out.textContent = 'List failed: ' + r.status + '\n' + txt; return; }
+                const data = JSON.parse(txt || '[]');
+                const items = Array.isArray(data) ? data : (data.value || []);
+                if (!items || items.length === 0) { out.innerHTML = '<i>No files</i>'; return; }
+                const html = ['<table border="1" cellpadding="6"><tr><th>ID</th><th>Filename</th><th>Size</th><th>ContentType</th><th>Actions</th></tr>'];
+                for (const f of items) {
+                    const id = f.id || f.Id || '';
+                    const name = f.fileName || f.FileName || '';
+                    html.push(`<tr><td style="max-width:420px;overflow:auto;">${id}</td><td>${name}</td><td>${f.sizeBytes||f.SizeBytes||''}</td><td>${f.contentType||''}</td><td><button data-id="${id}" class="downloadInline">Download</button> <button data-id="${id}" class="deleteInline">Delete</button></td></tr>`);
+                }
+                html.push('</table>');
+                out.innerHTML = html.join('');
+                // attach handlers
+                document.querySelectorAll('.downloadInline').forEach(b=>b.addEventListener('click', evt => {
+                    const id = evt.currentTarget.getAttribute('data-id'); downloadById(id);
+                }));
+                document.querySelectorAll('.deleteInline').forEach(b=>b.addEventListener('click', evt => {
+                    const id = evt.currentTarget.getAttribute('data-id'); deleteById(id);
+                }));
+            } catch (e) {
+                out.textContent = 'Request failed: ' + e;
+            }
+        }
+
+        async function uploadFile() {
+            const out = $('uploadResult');
+            out.textContent = '';
+            const fileEl = $('uploadFile');
+            if (!fileEl.files || fileEl.files.length === 0) { out.textContent = 'No file selected'; return; }
+            const file = fileEl.files[0];
+            const form = new FormData();
+            form.append('file', file, file.name);
+            out.textContent = 'Uploading...';
+            try {
+                const r = await fetch('/api/files/upload', { method: 'POST', body: form });
+                const txt = await r.text();
+                if (!r.ok) { out.textContent = 'Upload failed: ' + r.status + '\n' + txt; return; }
+                out.textContent = 'Upload succeeded: ' + txt;
+                listFiles();
+            } catch (e) { out.textContent = 'Upload failed: ' + e; }
+        }
+
+        async function downloadById(id) {
+            $('downloadResult').textContent = '';
+            try {
+                const r = await fetch(`/api/files/${id}`);
+                if (!r.ok) { $('downloadResult').textContent = `Get failed: ${r.status}`; return; }
+                const json = await r.json();
+                const dl = json.downloadUrl || json.DownloadUrl;
+                if (!dl) { $('downloadResult').textContent = 'No download URL returned'; return; }
+                // if the URL is absolute HTTP(S), open it; otherwise open relative link
+                const a = document.createElement('a');
+                a.href = dl;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                // For server-side streaming endpoints the link will trigger download
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (e) { $('downloadResult').textContent = 'Download failed: ' + e; }
+        }
+
+        async function deleteById(id) {
+            const out = $('deleteResult');
+            out.textContent = '';
+            try {
+                const r = await fetch(`/api/files/${id}`, { method: 'DELETE' });
+                if (r.status === 204) { out.textContent = 'Deleted'; listFiles(); return; }
+                const txt = await r.text();
+                out.textContent = `Delete failed: ${r.status} - ${txt}`;
+            } catch (e) { out.textContent = 'Delete failed: ' + e; }
+        }
+
+        // UI wiring
+        $('btnList').addEventListener('click', listFiles);
+        $('btnUpload').addEventListener('click', uploadFile);
+        $('btnDownload').addEventListener('click', () => downloadById($('downloadId').value));
+        $('btnDelete').addEventListener('click', () => deleteById($('deleteId').value));
+
+        // initial load
+        listFiles();
+    </script>
+</body>
+</html>

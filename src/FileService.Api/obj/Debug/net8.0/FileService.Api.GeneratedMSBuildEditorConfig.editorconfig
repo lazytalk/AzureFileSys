@@ -17,3 +17,11 @@ build_property.SupportLocalizedComponentNames =
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
 build_property.MSBuildProjectDirectory = C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Api
 build_property._RazorSourceGeneratorDebug = 
+
+[C:/Users/wang_/Desktop/AzureFileSys/src/FileService.Api/Pages/Admin.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW4uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/wang_/Desktop/AzureFileSys/src/FileService.Api/Pages/IntegrationTest.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW50ZWdyYXRpb25UZXN0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 

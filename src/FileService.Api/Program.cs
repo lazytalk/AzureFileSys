@@ -18,10 +18,34 @@ if (isDevelopment)
 }
 else if (useEf)
 {
-    var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
-    builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
-        opt.UseSqlite($"Data Source={dbPath}"));
-    builder.Services.AddScoped<IFileMetadataRepository, FileService.Infrastructure.Data.EfFileMetadataRepository>();
+    // Support SQL Server in staging/production when configured, otherwise fall back to SQLite
+    var useSqlServer = builder.Configuration.GetValue("Persistence:UseSqlServer", false);
+    if (useSqlServer)
+    {
+        var sqlConn = builder.Configuration.GetValue<string>("Sql__ConnectionString")
+                      ?? builder.Configuration.GetValue<string>("Persistence:SqlConnectionString");
+        if (!string.IsNullOrWhiteSpace(sqlConn))
+        {
+            builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
+                opt.UseSqlServer(sqlConn));
+            builder.Services.AddScoped<IFileMetadataRepository, FileService.Infrastructure.Data.EfFileMetadataRepository>();
+        }
+        else
+        {
+            // Fallback to SQLite if SQL connection isn't provided
+            var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
+            builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
+                opt.UseSqlite($"Data Source={dbPath}"));
+            builder.Services.AddScoped<IFileMetadataRepository, FileService.Infrastructure.Data.EfFileMetadataRepository>();
+        }
+    }
+    else
+    {
+        var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
+        builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
+            opt.UseSqlite($"Data Source={dbPath}"));
+        builder.Services.AddScoped<IFileMetadataRepository, FileService.Infrastructure.Data.EfFileMetadataRepository>();
+    }
 }
 else
 {
@@ -54,7 +78,7 @@ if (useEf && !isDevelopment && builder.Configuration.GetValue("Persistence:AutoM
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<FileService.Infrastructure.Data.FileServiceDbContext>();
     try { db.Database.Migrate(); }
-    catch (Exception ex) { Console.WriteLine($"[DB MIGRATE] Failed: {ex.Message}"); }
+    catch (Exception ex) { app.Logger.LogError(ex, "[DB MIGRATE] Failed"); }
 }
 
 app.UseSwagger();
@@ -126,17 +150,19 @@ app.MapGet("/api/files", async (
     IFileMetadataRepository repo,
     CancellationToken ct) =>
 {
+    // Log request arrival for easier debugging
+    app.Logger.LogInformation("[API] /api/files called from {RemoteIp}", request.HttpContext.Connection.RemoteIpAddress);
     // No authentication: return a (paginated) list of files. For now return up to 100 items.
     try
     {
         var list = await repo.ListAllAsync(take: 100, ct: ct);
-        Console.WriteLine($"[LIST] Found {list.Count} files");
+    app.Logger.LogInformation("[LIST] Found {Count} files", list.Count);
         var result = list.Select(f => new FileService.Core.Models.FileListItemDto(f.Id, f.FileName, f.SizeBytes, f.ContentType, f.UploadedAt, f.OwnerUserId));
         return Results.Ok(result);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[LIST ERROR] {ex}");
+        app.Logger.LogError(ex, "[LIST ERROR]");
         return Results.Problem($"List failed: {ex.Message}");
     }
 });
@@ -147,18 +173,48 @@ app.MapGet("/api/files/{id:guid}", async (
     IFileStorageService storage,
     CancellationToken ct) =>
 {
-    Console.WriteLine($"[GET] Looking for file ID: {id}");
+    app.Logger.LogInformation("[GET] Looking for file ID: {Id}", id);
     var rec = await repo.GetAsync(id, ct);
     if (rec == null)
     {
-        Console.WriteLine($"[GET] File {id} not found in repository");
+        app.Logger.LogWarning("[GET] File {Id} not found in repository", id);
         return Results.NotFound();
     }
 
     // No access checks: return file details to any caller.
     var sas = await storage.GetReadSasUrlAsync(rec.BlobPath, TimeSpan.FromMinutes(15), ct);
-    Console.WriteLine($"[GET] Returning file details for {id}");
-    return Results.Ok(new { rec.Id, rec.FileName, rec.ContentType, rec.SizeBytes, DownloadUrl = sas });
+    // If the storage returned an HTTP(S) URL (like an Azure SAS), return it directly.
+    // For stub/local storage the returned "URL" may use a custom scheme (eg. stub://)
+    // which browsers don't understand. In that case return a server-side download
+    // endpoint that will stream the blob.
+    string downloadUrl;
+    if (Uri.TryCreate(sas, UriKind.Absolute, out var parsed) && (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
+    {
+        downloadUrl = sas;
+    }
+    else
+    {
+        downloadUrl = $"/api/files/{rec.Id}/download";
+    }
+    app.Logger.LogInformation("[GET] Returning file details for {Id}", id);
+    return Results.Ok(new { rec.Id, rec.FileName, rec.ContentType, rec.SizeBytes, DownloadUrl = downloadUrl });
+});
+
+// Server-side download endpoint that streams the blob content. This is used as a
+// fall-back when storage provides a non-HTTP download URL (for example the
+// StubBlobFileStorageService which returns stub:// URLs).
+app.MapGet("/api/files/{id:guid}/download", async (
+    Guid id,
+    IFileMetadataRepository repo,
+    IFileStorageService storage,
+    CancellationToken ct) =>
+{
+    var rec = await repo.GetAsync(id, ct);
+    if (rec == null) return Results.NotFound();
+    var stream = await storage.DownloadAsync(rec.BlobPath, ct);
+    if (stream == null) return Results.NotFound();
+    // Return as an attachment so the browser will prompt to download
+    return Results.File(stream, rec.ContentType ?? "application/octet-stream", rec.FileName);
 });
 
 app.MapDelete("/api/files/{id:guid}", async (
@@ -167,19 +223,19 @@ app.MapDelete("/api/files/{id:guid}", async (
     IFileStorageService storage,
     CancellationToken ct) =>
 {
-    Console.WriteLine($"[DELETE] Looking for file ID: {id}");
+    app.Logger.LogInformation("[DELETE] Looking for file ID: {Id}", id);
     var rec = await repo.GetAsync(id, ct);
     if (rec == null)
     {
-        Console.WriteLine($"[DELETE] File {id} not found in repository");
+        app.Logger.LogWarning("[DELETE] File {Id} not found in repository", id);
         return Results.NotFound();
     }
 
     // No access checks: allow deletion by any caller.
-    Console.WriteLine($"[DELETE] Deleting file {id} from storage and repository");
+    app.Logger.LogInformation("[DELETE] Deleting file {Id} from storage and repository", id);
     await storage.DeleteAsync(rec.BlobPath, ct);
     await repo.DeleteAsync(id, ct);
-    Console.WriteLine($"[DELETE] Successfully deleted file {id}");
+    app.Logger.LogInformation("[DELETE] Successfully deleted file {Id}", id);
     return Results.NoContent();
 });
 

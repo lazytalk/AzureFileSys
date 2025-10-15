@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Dev Server (Task)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Run Dev Server (PowerShell)",
+      "program": "${workspaceFolder}/src/FileService.Api/bin/Debug/net8.0/FileService.Api.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/FileService.Api",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ]
+}

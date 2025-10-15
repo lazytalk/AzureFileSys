@@ -6,19 +6,39 @@ param(
     [switch]$DeployApp,
     [switch]$RunMigrations,
     [string]$SubscriptionId = "",
-    [string]$Location = "chinaeast2"  # Azure China region
+    [string]$Location = "chinaeast2",  # Azure China region
+    [string]$ResourcePrefix = "filesvc-staging",
+    [object]$SqlAdminPassword = $null
 )
 
 # Staging Environment Variables
-$resourceGroup = "file-svc-staging-rg"
-$storageAccount = "filesvcstg$(Get-Random -Minimum 1000 -Maximum 9999)"
-$webAppName = "filesvc-api-staging"
-$keyVaultName = "filesvc-kv-staging"
-$appInsightsName = "filesvc-ai-staging"
-$sqlServerName = "filesvc-sql-staging"
+$resourceGroup = "${ResourcePrefix}-rg"
+$storageAccount = "${ResourcePrefix}stg$(Get-Random -Minimum 1000 -Maximum 9999)"
+$webAppName = "${ResourcePrefix}-app"
+$keyVaultName = "${ResourcePrefix}-kv"
+$appInsightsName = "${ResourcePrefix}-ai"
+$sqlServerName = "${ResourcePrefix}-sql"
 $sqlDbName = "file-service-db"
 $sqlAdminUser = "fsadmin"
-$sqlAdminPassword = "YourSecurePassword123!" # CHANGE THIS TO A SECURE PASSWORD!
+
+# Accept either a SecureString or a plain string for SqlAdminPassword.
+# Prefer a SecureString (recommended). If a plain string is provided we'll convert it,
+# and if nothing is provided we prompt interactively.
+if ($SqlAdminPassword -is [System.Security.SecureString]) {
+    $secureSqlAdminPassword = $SqlAdminPassword
+} elseif ($SqlAdminPassword -is [string] -and $SqlAdminPassword) {
+    Write-Warning "SqlAdminPassword was provided as plain text on the command line. This is insecure; prefer passing a SecureString or omitting to be prompted interactively."
+    # Convert the plain-text string to a SecureString for internal use
+    $secureSqlAdminPassword = ConvertTo-SecureString -String $SqlAdminPassword -AsPlainText -Force
+} else {
+    Write-Host "No SQL admin password supplied; prompting interactively (secure)."
+    $secureSqlAdminPassword = Read-Host -AsSecureString "Enter SQL admin password (hidden)"
+}
+
+# Convert SecureString to plain text securely for az CLI usage, then zero the pointer
+$bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureSqlAdminPassword)
+$unsecureSqlAdminPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
 
 Write-Host "🧪 File Service - Staging Deployment" -ForegroundColor Cyan
 Write-Host "===================================" -ForegroundColor Cyan
@@ -27,6 +47,58 @@ if ($SubscriptionId) {
     Write-Host "Setting Azure subscription: $SubscriptionId"
     az account set --subscription $SubscriptionId
 }
+
+function Assert-AzureCliReady {
+    param(
+        [string]$LocationHint
+    )
+    # Check az available
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+        Write-Error "Azure CLI (az) is not available in PATH. Install Azure CLI and try again."
+        exit 1
+    }
+
+    # Check cloud for China regions
+    if ($LocationHint -and ($LocationHint -match 'china')) {
+        Write-Host "Location appears to be an Azure China region ($LocationHint). Ensuring Azure CLI Cloud is set to AzureChinaCloud..." -ForegroundColor Yellow
+        az cloud set --name AzureChinaCloud
+        # Note: user still needs to run 'az login' for the selected cloud/subscription if not already authenticated.
+    }
+}
+
+# Ensure Azure CLI is ready for this location
+Assert-AzureCliReady -LocationHint $Location
+
+# Ensure the resource group exists when the script needs to access Key Vault or other resources.
+function New-ResourceGroupIfMissing {
+    param(
+        [string]$RgName,
+        [string]$LocationHint
+    )
+
+    try {
+        $exists = az group exists -n $RgName | ConvertFrom-Json
+    } catch {
+        # az group exists returns plain 'true'/'false' sometimes; handle fallback
+        $exists = & az group exists -n $RgName 2>$null
+    }
+
+    if (-not $exists -or $exists -eq $false -or $exists -eq 'false') {
+        if ($CreateResources) {
+            # If we're already in create flow, creation will happen later; just warn
+            Write-Host "Resource group '$RgName' does not exist yet; it will be created in the CreateResources step." -ForegroundColor Yellow
+        } else {
+            Write-Host "Resource group '$RgName' not found. Creating it now so dependent operations can continue..." -ForegroundColor Yellow
+            az group create -n $RgName -l $LocationHint | Out-Null
+            Write-Host "Resource group '$RgName' created." -ForegroundColor Green
+        }
+    } else {
+        Write-Host "Resource group '$RgName' already exists." -ForegroundColor Gray
+    }
+}
+
+# Ensure the resource group exists or create it now (if not in CreateResources flow)
+New-ResourceGroupIfMissing -RgName $resourceGroup -LocationHint $Location
 
 if ($CreateResources) {
     Write-Host "📦 Creating Azure resources for staging environment..." -ForegroundColor Yellow
@@ -48,14 +120,48 @@ if ($CreateResources) {
 
     # Create SQL Server and Database (Basic tier for staging)
     Write-Host "Creating Azure SQL Database: $sqlServerName"
-    az sql server create -n $sqlServerName -g $resourceGroup -l $Location --admin-user $sqlAdminUser --admin-password $sqlAdminPassword
+    az sql server create -n $sqlServerName -g $resourceGroup -l $Location --admin-user $sqlAdminUser --admin-password $unsecureSqlAdminPassword
     az sql db create -s $sqlServerName -g $resourceGroup -n $sqlDbName --service-objective Basic
     az sql server firewall-rule create -s $sqlServerName -g $resourceGroup -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-    $sqlConnString = az sql db show-connection-string -s $sqlServerName -n $sqlDbName -c ado.net | ForEach-Object { $_ -replace '<username>', $sqlAdminUser -replace '<password>', $sqlAdminPassword }
+    $sqlConnString = az sql db show-connection-string -s $sqlServerName -n $sqlDbName -c ado.net | ForEach-Object { $_ -replace '<username>', $sqlAdminUser -replace '<password>', $unsecureSqlAdminPassword }
 
     # Create Key Vault
     Write-Host "Creating Key Vault: $keyVaultName"
     az keyvault create -n $keyVaultName -g $resourceGroup -l $Location --enable-soft-delete true --enable-purge-protection true
+    # Wait for the Key Vault to be ready and DNS to resolve (Azure can be eventually consistent)
+    $maxAttempts = 12
+    $attempt = 0
+    $kvReady = $false
+    while ($attempt -lt $maxAttempts -and -not $kvReady) {
+        try {
+            $attempt++
+            Write-Host ("Checking Key Vault readiness (attempt {0}/{1})..." -f $attempt, $maxAttempts) -ForegroundColor Gray
+            $kvUri = az keyvault show -n $keyVaultName -g $resourceGroup --query properties.vaultUri -o tsv 2>$null
+            if ($kvUri) {
+                # Try DNS resolution
+                $hostName = ($kvUri -replace '^https?://','')
+                try {
+                    Resolve-DnsName $hostName -ErrorAction Stop | Out-Null
+                    $kvReady = $true
+                    break
+                } catch {
+                    Write-Host "Key Vault DNS not yet resolvable: $hostName" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "Key Vault not returned by az yet." -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "Key Vault show check failed: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+        Start-Sleep -Seconds 5
+    }
+
+    if (-not $kvReady) {
+        Write-Error "Failed to confirm Key Vault '$keyVaultName' readiness after $maxAttempts attempts. Verify Azure CLI cloud, networking, and Key Vault permissions."
+        exit 1
+    }
+
+    # Now set secrets
     az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
     az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
     az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
@@ -66,7 +172,7 @@ if ($CreateResources) {
     # Create App Service (Basic tier for staging)
     Write-Host "Creating App Service: $webAppName"
     az appservice plan create -n file-svc-staging-plan -g $resourceGroup --sku B1 --is-linux false
-    az webapp create -n $webAppName -g $resourceGroup -p file-svc-staging-plan --runtime "DOTNET|8.0"
+    az webapp create -n $webAppName -g $resourceGroup -p file-svc-staging-plan --runtime 'DOTNET|8.0'
 
     # Configure Managed Identity
     Write-Host "Configuring Managed Identity..."
@@ -78,19 +184,28 @@ if ($CreateResources) {
 
     # Configure App Settings
     Write-Host "Configuring App Settings..."
-    az webapp config appsettings set -n $webAppName -g $resourceGroup --settings `
-      ASPNETCORE_ENVIRONMENT=Staging `
-      EnvironmentMode=Staging `
-      BlobStorage__UseLocalStub=false `
-      "BlobStorage__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)" `
-      BlobStorage__ContainerName=userfiles-staging `
-      Persistence__UseEf=true `
-      Persistence__UseSqlServer=true `
-      "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
-      "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-    # Optional External Auth Key Vault References (uncomment if used)
-    # "ExternalAuth__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--BaseUrl)" `
-    # "ExternalAuth__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ExternalAuth--ApiKey)"
+    # Build Key Vault reference strings safely (no embedded Key Vault expressions in quoted comments)
+    $kvBlobRef = '@Microsoft.KeyVault(VaultName=' + $keyVaultName + ';SecretName=BlobStorage--ConnectionString)'
+    $kvSqlRef = '@Microsoft.KeyVault(VaultName=' + $keyVaultName + ';SecretName=Sql--ConnectionString)'
+    $kvAiRef = '@Microsoft.KeyVault(VaultName=' + $keyVaultName + ';SecretName=ApplicationInsights--InstrumentationKey)'
+
+            $appSettings = @(
+                "ASPNETCORE_ENVIRONMENT=Staging"
+                "EnvironmentMode=Staging"
+                "BlobStorage__UseLocalStub=false"
+                "BlobStorage__ConnectionString=$kvBlobRef"
+                "BlobStorage__ContainerName=userfiles-staging"
+                "Persistence__UseEf=true"
+                "Persistence__UseSqlServer=true"
+                "Sql__ConnectionString=$kvSqlRef"
+                "ApplicationInsights__InstrumentationKey=$kvAiRef"
+            )
+
+            az webapp config appsettings set -n $webAppName -g $resourceGroup --settings $appSettings
+    # Optional External Auth Key Vault References (uncomment and edit if used)
+    # Example (replace <vault-name> and secret names):
+    # ExternalAuth__BaseUrl='@Microsoft.KeyVault(VaultName=<vault-name>;SecretName=ExternalAuth--BaseUrl)'
+    # ExternalAuth__ApiKey='@Microsoft.KeyVault(VaultName=<vault-name>;SecretName=ExternalAuth--ApiKey)'
 
     # Security Settings
     Write-Host "Applying security settings..."
@@ -129,13 +244,14 @@ if ($RunMigrations) {
     
     # Get connection string from Key Vault and run migrations
     try {
-        $connectionString = az keyvault secret show --vault-name $keyVaultName --name "Sql--ConnectionString" --query value -o tsv
+        $connectionString = az keyvault secret show --vault-name $keyVaultName --name "Sql--ConnectionString" --query value -o tsv 2>$null
         if ($connectionString) {
             Write-Host "Running EF migrations..."
             ./publish-staging/efbundle.exe --connection $connectionString
             Write-Host "✅ Database migrations completed!" -ForegroundColor Green
         } else {
-            Write-Warning "Could not retrieve connection string from Key Vault"
+            Write-Error "Could not retrieve connection string from Key Vault '$keyVaultName'. DNS/networking or Key Vault permissions may be the issue."
+            exit 1
         }
     } catch {
         Write-Error "Failed to run migrations: $($_.Exception.Message)"
@@ -150,3 +266,6 @@ Write-Host "Monitor logs: az webapp log tail -n filesvc-api-staging -g file-svc-
 # Cleanup temp files
 if (Test-Path "publish-staging") { Remove-Item -Recurse -Force publish-staging }
 if (Test-Path "deploy-staging.zip") { Remove-Item -Force deploy-staging.zip }
+
+# Clear sensitive variables from memory
+if ($unsecureSqlAdminPassword) { $unsecureSqlAdminPassword = $null }

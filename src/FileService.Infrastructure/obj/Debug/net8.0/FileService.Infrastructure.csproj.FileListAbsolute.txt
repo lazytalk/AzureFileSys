@@ -15,3 +15,4 @@ C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Infrastructure\obj\Debug\net
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Infrastructure\obj\Debug\net8.0\ref\FileService.Infrastructure.dll
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Infrastructure\bin\Debug\net8.0\FileService.Infrastructure.runtimeconfig.json
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Infrastructure\obj\Debug\net8.0\FileService.Infrastructure.genruntimeconfig.cache
+C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Infrastructure\obj\Debug\net8.0\FileService.Infrastructure.sourcelink.json

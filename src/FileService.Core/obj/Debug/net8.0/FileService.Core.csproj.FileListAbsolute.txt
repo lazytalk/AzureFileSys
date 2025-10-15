@@ -9,3 +9,4 @@ C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileSe
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\refint\FileService.Core.dll
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.pdb
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\ref\FileService.Core.dll
+C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.sourcelink.json

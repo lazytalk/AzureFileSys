@@ -9,12 +9,32 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 var useEf = builder.Configuration.GetValue("Persistence:UseEf", true);
+var useTableStorage = builder.Configuration.GetValue("Persistence:UseTableStorage", false);
 // Force in-memory for development to avoid database hanging issues
 var isDevelopment = builder.Environment.IsDevelopment();
+
 if (isDevelopment)
 {
     Console.WriteLine("[STARTUP] Using in-memory repository for development mode");
     builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
+}
+else if (useTableStorage)
+{
+    // Azure Table Storage configuration
+    var tableConnString = builder.Configuration.GetValue<string>("TableStorage__ConnectionString")
+                         ?? builder.Configuration.GetValue<string>("BlobStorage__ConnectionString"); // Reuse blob storage connection
+    
+    if (!string.IsNullOrWhiteSpace(tableConnString))
+    {
+        Console.WriteLine("[STARTUP] Using Azure Table Storage for metadata");
+        builder.Services.AddSingleton(sp => new Azure.Data.Tables.TableServiceClient(tableConnString));
+        builder.Services.AddSingleton<IFileMetadataRepository, FileService.Infrastructure.Storage.AzureTableFileMetadataRepository>();
+    }
+    else
+    {
+        Console.WriteLine("[STARTUP] Table Storage connection not found, falling back to in-memory repository");
+        builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
+    }
 }
 else if (useEf)
 {

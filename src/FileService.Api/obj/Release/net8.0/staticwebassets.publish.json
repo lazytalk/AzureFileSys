@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "Fs3UlwTcKYB6qJR2ihyxvC85DMpBXTPbaqOia6e4UZo=",
+  "Source": "FileService.Api",
+  "BasePath": "_content/FileService.Api",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

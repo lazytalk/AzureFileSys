@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "7+OOuFjxXSk=",
+  "dgSpecHash": "oIpk0Rm/7Tk=",
   "success": true,
   "projectFilePath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\wang_\\.nuget\\packages\\azure.core\\1.39.0\\azure.core.1.39.0.nupkg.sha512",
+    "C:\\Users\\wang_\\.nuget\\packages\\azure.data.tables\\12.8.3\\azure.data.tables.12.8.3.nupkg.sha512",
     "C:\\Users\\wang_\\.nuget\\packages\\azure.identity\\1.10.3\\azure.identity.1.10.3.nupkg.sha512",
     "C:\\Users\\wang_\\.nuget\\packages\\azure.storage.blobs\\12.20.0\\azure.storage.blobs.12.20.0.nupkg.sha512",
     "C:\\Users\\wang_\\.nuget\\packages\\azure.storage.common\\12.19.0\\azure.storage.common.12.19.0.nupkg.sha512",

@@ -10,6 +10,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Services
 var useEf = builder.Configuration.GetValue("Persistence:UseEf", true);
 var useTableStorage = builder.Configuration.GetValue("Persistence:UseTableStorage", false);
+
+// Debug logging for configuration values
+Console.WriteLine($"[STARTUP DEBUG] Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"[STARTUP DEBUG] Persistence:UseEf = {useEf}");
+Console.WriteLine($"[STARTUP DEBUG] Persistence:UseTableStorage = {useTableStorage}");
+Console.WriteLine($"[STARTUP DEBUG] TableStorage__ConnectionString = {builder.Configuration.GetValue<string>("TableStorage:ConnectionString") ?? "NULL"}");
+
 // Force in-memory for development to avoid database hanging issues
 var isDevelopment = builder.Environment.IsDevelopment();
 

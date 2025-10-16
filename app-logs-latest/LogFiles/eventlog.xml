@@ -1,0 +1,48 @@
+<Events><Event><System><Provider Name=".NET Runtime"/><EventID>1000</EventID><Level>2</Level><Task>0</Task><Keywords>Keywords</Keywords><TimeCreated SystemTime="2025-10-16T08:46:27Z"/><EventRecordID>2708796</EventRecordID><Channel>Application</Channel><Computer>DW1SDWK0000L2</Computer><Security/></System><EventData><Data>Category: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager
+EventId: 35
+
+No XML encryptor configured. Key {b1f8be23-f4db-48f3-8fbc-60eb119d50bb} may be persisted to storage in unencrypted form.
+</Data></EventData></Event><Event><System><Provider Name=".NET Runtime"/><EventID>1000</EventID><Level>2</Level><Task>0</Task><Keywords>Keywords</Keywords><TimeCreated SystemTime="2025-10-16T08:46:27Z"/><EventRecordID>2709156</EventRecordID><Channel>Application</Channel><Computer>DW1SDWK0000L2</Computer><Security/></System><EventData><Data>Category: Microsoft.AspNetCore.StaticFiles.StaticFileMiddleware
+EventId: 16
+
+The WebRootPath was not found: C:\home\site\wwwroot\wwwroot. Static files may be unavailable.
+</Data></EventData></Event><Event><System><Provider Name="IIS AspNetCore Module V2"/><EventID>1032</EventID><Level>4</Level><Task>0</Task><Keywords>Keywords</Keywords><TimeCreated SystemTime="2025-10-16T08:46:27Z"/><EventRecordID>2709218</EventRecordID><Channel>Application</Channel><Computer>DW1SDWK0000L2</Computer><Security/></System><EventData><Data>Application 'C:\home\site\wwwroot\' started successfully.</Data><Data>Process Id: 6892.</Data><Data>File Version: 18.0.25107.16. Description: IIS ASP.NET Core Module V2 Request Handler. Commit: </Data></EventData></Event><Event><System><Provider Name=".NET Runtime"/><EventID>1000</EventID><Level>1</Level><Task>0</Task><Keywords>Keywords</Keywords><TimeCreated SystemTime="2025-10-16T08:47:43Z"/><EventRecordID>2785218</EventRecordID><Channel>Application</Channel><Computer>DW1SDWK0000L2</Computer><Security/></System><EventData><Data>Category: FileService.Api
+EventId: 0
+SpanId: 11c7647ae596b91f
+TraceId: eb6a86baf86214ce796170dbbbf98e52
+ParentId: 0000000000000000
+RequestId: 40000014-0000-fe00-b63f-84710c7967bb
+RequestPath: /api/files
+
+[LIST ERROR]
+
+Exception: 
+System.NotSupportedException: SQLite does not support expressions of type 'DateTimeOffset' in ORDER BY clauses. Convert the values to a supported type, or use LINQ to Objects to order the results on the client side.
+   at Microsoft.EntityFrameworkCore.Sqlite.Query.Internal.SqliteQueryableMethodTranslatingExpressionVisitor.TranslateOrderBy(ShapedQueryExpression source, LambdaExpression keySelector, Boolean ascending)
+   at Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)
+   at Microsoft.EntityFrameworkCore.Query.RelationalQueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)
+   at System.Linq.Expressions.MethodCallExpression.Accept(ExpressionVisitor visitor)
+   at System.Linq.Expressions.ExpressionVisitor.Visit(Expression node)
+   at Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)
+   at Microsoft.EntityFrameworkCore.Query.RelationalQueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)
+   at System.Linq.Expressions.MethodCallExpression.Accept(ExpressionVisitor visitor)
+   at System.Linq.Expressions.ExpressionVisitor.Visit(Expression node)
+   at Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)
+   at Microsoft.EntityFrameworkCore.Query.RelationalQueryableMethodTranslatingExpressionVisitor.VisitMethodCall(MethodCallExpression methodCallExpression)
+   at System.Linq.Expressions.MethodCallExpression.Accept(ExpressionVisitor visitor)
+   at System.Linq.Expressions.ExpressionVisitor.Visit(Expression node)
+   at Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor.Translate(Expression expression)
+   at Microsoft.EntityFrameworkCore.Query.RelationalQueryableMethodTranslatingExpressionVisitor.Translate(Expression expression)
+   at Microsoft.EntityFrameworkCore.Query.QueryCompilationContext.CreateQueryExecutor[TResult](Expression query)
+   at Microsoft.EntityFrameworkCore.Storage.Database.CompileQuery[TResult](Expression query, Boolean async)
+   at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.CompileQueryCore[TResult](IDatabase database, Expression query, IModel model, Boolean async)
+   at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.&lt;&gt;c__DisplayClass12_0`1.&lt;ExecuteAsync&gt;b__0()
+   at Microsoft.EntityFrameworkCore.Query.Internal.CompiledQueryCache.GetOrAddQuery[TResult](Object cacheKey, Func`1 compiler)
+   at Microsoft.EntityFrameworkCore.Query.Internal.QueryCompiler.ExecuteAsync[TResult](Expression query, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryProvider.ExecuteAsync[TResult](Expression expression, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.Internal.EntityQueryable`1.GetAsyncEnumerator(CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1.GetAsyncEnumerator()
+   at Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync[TSource](IQueryable`1 source, CancellationToken cancellationToken)
+   at FileService.Infrastructure.Data.EfFileMetadataRepository.ListAllAsync(Int32 take, Int32 skip, CancellationToken ct) in C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Infrastructure\Data\EfFileMetadataRepository.cs:line 33
+   at Program.&lt;&gt;c__DisplayClass0_0.&lt;&lt;&lt;Main&gt;$&gt;b__3&gt;d.MoveNext() in C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Api\Program.cs:line 178
+</Data></EventData></Event><Event><System><Provider Name="IIS AspNetCore Module V2"/><EventID>1033</EventID><Level>4</Level><Task>0</Task><Keywords>Keywords</Keywords><TimeCreated SystemTime="2025-10-16T08:54:05Z"/><EventRecordID>3166906</EventRecordID><Channel>Application</Channel><Computer>DW1SDWK0000L2</Computer><Security/></System><EventData><Data>Application 'MACHINE/WEBROOT/APPHOST/FILESVC-STG-APP' has shutdown.</Data><Data>Process Id: 6892.</Data><Data>File Version: 18.0.25107.16. Description: IIS ASP.NET Core Module V2 Request Handler. Commit: </Data></EventData></Event></Events>

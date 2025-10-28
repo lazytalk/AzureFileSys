@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete File Service Client Demo</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+            border-left: 4px solid #667eea;
+            padding-left: 10px;
+        }
+        .config {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .config input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .feature-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 8px;
+            border: 2px dashed #667eea;
+            border-radius: 4px;
+            width: 100%;
+        }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 0 10px;
+            width: 100px;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .warning { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .file-list {
+            list-style: none;
+            padding: 0;
+        }
+        .file-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-info {
+            flex: 1;
+        }
+        .file-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .file-meta {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .badge-size { background: #e3f2fd; color: #1976d2; }
+        .badge-type { background: #f3e5f5; color: #7b1fa2; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Complete File Service API - Client Demo</h1>
+        
+        <div class="config">
+            <label><strong>API Base URL:</strong></label>
+            <input type="text" id="apiUrl" value="http://localhost:5090" placeholder="http://localhost:5090">
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">
+                💡 For local dev: <code>http://localhost:5090</code> | 
+                For staging: <code>https://filesvc-stg-app.kaiweneducation.com</code>
+            </p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalFiles">0</div>
+                <div class="stat-label">Total Files</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalSize">0 MB</div>
+                <div class="stat-label">Total Size</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lastUpload">-</div>
+                <div class="stat-label">Last Upload</div>
+            </div>
+        </div>
+
+        <!-- Feature 1: List Files -->
+        <div class="feature-section">
+            <h2>📋 Feature 1: List Files</h2>
+            <button onclick="listFiles()">List All Files</button>
+            <div id="fileListResult"></div>
+            <ul class="file-list" id="fileList"></ul>
+        </div>
+
+        <!-- Feature 2: Simple Upload -->
+        <div class="feature-section">
+            <h2>📤 Feature 2: Simple Upload (Single Request)</h2>
+            <input type="file" id="simpleFileInput" />
+            <button onclick="simpleUpload()">Upload File</button>
+            <div id="simpleUploadResult"></div>
+        </div>
+
+        <!-- Feature 3: Optimized Upload -->
+        <div class="feature-section">
+            <h2>⚡ Feature 3: Optimized Upload (Chunked with Parallelism)</h2>
+            <p style="font-size: 13px; color: #666;">Uses Azure Blob SDK's built-in chunking and parallel upload (up to 8 concurrent)</p>
+            <input type="file" id="optimizedFileInput" />
+            <button onclick="optimizedUpload()">Optimized Upload</button>
+            <div class="progress-bar" style="display: none;" id="optimizedProgress">
+                <div class="progress-fill" id="optimizedProgressFill">0%</div>
+            </div>
+            <div id="optimizedUploadResult"></div>
+        </div>
+
+        <!-- Feature 4: Resumable Upload -->
+        <div class="feature-section">
+            <h2>🔄 Feature 4: Resumable Upload (Manual Block Management)</h2>
+            <p style="font-size: 13px; color: #666;">Manual start → upload blocks → commit pattern</p>
+            <input type="file" id="resumableFileInput" />
+            <label>
+                Block Size (MB): 
+                <input type="number" id="blockSize" value="4" min="1" max="100" />
+            </label>
+            <button onclick="resumableUpload()">Start Resumable Upload</button>
+            <button onclick="abortResumableUpload()" id="abortBtn" disabled>Abort Upload</button>
+            <div class="progress-bar" style="display: none;" id="resumableProgress">
+                <div class="progress-fill" id="resumableProgressFill">0%</div>
+            </div>
+            <div id="resumableUploadResult"></div>
+        </div>
+
+        <!-- Feature 5: Download File -->
+        <div class="feature-section">
+            <h2>⬇️ Feature 5: Download File</h2>
+            <label>
+                File ID: 
+                <input type="text" id="downloadFileId" placeholder="Enter file GUID" style="width: 300px;">
+            </label>
+            <button onclick="downloadFile()">Download</button>
+            <button onclick="downloadFileSAS()">Download via SAS URL</button>
+            <div id="downloadResult"></div>
+        </div>
+
+        <!-- Feature 6: Delete File -->
+        <div class="feature-section">
+            <h2>🗑️ Feature 6: Delete File</h2>
+            <label>
+                File ID: 
+                <input type="text" id="deleteFileId" placeholder="Enter file GUID" style="width: 300px;">
+            </label>
+            <button onclick="deleteFile()">Delete File</button>
+            <div id="deleteResult"></div>
+        </div>
+
+        <!-- Feature 7: Batch Upload -->
+        <div class="feature-section">
+            <h2>📦 Feature 7: Batch Upload (Multiple Files)</h2>
+            <input type="file" id="batchFileInput" multiple />
+            <button onclick="batchUpload()">Upload Multiple Files</button>
+            <div class="progress-bar" style="display: none;" id="batchProgress">
+                <div class="progress-fill" id="batchProgressFill">0 / 0</div>
+            </div>
+            <div id="batchUploadResult"></div>
+        </div>
+
+        <!-- Feature 8: Concurrent Uploads -->
+        <div class="feature-section">
+            <h2>🔥 Feature 8: Concurrent Upload Sessions</h2>
+            <p style="font-size: 13px; color: #666;">Test server's MaxConcurrentUploads limit (default: 8 concurrent sessions)</p>
+            <input type="file" id="concurrentFileInput" multiple />
+            <label>
+                Concurrent Sessions: 
+                <input type="number" id="concurrentCount" value="10" min="1" max="20" />
+            </label>
+            <button onclick="testConcurrentUploads()">Test Concurrent Uploads</button>
+            <div id="concurrentResult"></div>
+        </div>
+    </div>
+
+    <!-- SignalR for real-time progress -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@7.0.11/dist/browser/signalr.min.js"></script>
+    
+    <script>
+        let currentSession = null;
+        let signalRConnection = null;
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value.trim();
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Feature 1: List Files
+        async function listFiles() {
+            showResult('fileListResult', 'Loading files...', 'info');
+            try {
+                const response = await fetch(`${getApiUrl()}/api/files`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const files = await response.json();
+                const fileListEl = document.getElementById('fileList');
+                fileListEl.innerHTML = '';
+                
+                if (files.length === 0) {
+                    showResult('fileListResult', '✅ No files found', 'info');
+                    return;
+                }
+                
+                let totalSize = 0;
+                files.forEach(file => {
+                    totalSize += file.sizeBytes;
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    li.innerHTML = `
+                        <div class="file-info">
+                            <div class="file-name">📄 ${file.fileName}</div>
+                            <div class="file-meta">
+                                <span class="badge badge-size">${formatBytes(file.sizeBytes)}</span>
+                                <span class="badge badge-type">${file.contentType}</span>
+                                <span style="color: #999;">ID: ${file.id}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <button onclick="downloadFileById('${file.id}')">⬇️ Download</button>
+                            <button onclick="deleteFileById('${file.id}')">🗑️ Delete</button>
+                        </div>
+                    `;
+                    fileListEl.appendChild(li);
+                });
+                
+                document.getElementById('totalFiles').textContent = files.length;
+                document.getElementById('totalSize').textContent = formatBytes(totalSize);
+                showResult('fileListResult', `✅ Found ${files.length} files`, 'success');
+            } catch (error) {
+                showResult('fileListResult', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Feature 2: Simple Upload
+        async function simpleUpload() {
+            const fileInput = document.getElementById('simpleFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                showResult('simpleUploadResult', '⚠️ Please select a file', 'warning');
+                return;
+            }
+            
+            showResult('simpleUploadResult', `Uploading ${file.name}...`, 'info');
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`${getApiUrl()}/api/files/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                
+                document.getElementById('lastUpload').textContent = file.name;
+                showResult('simpleUploadResult', 
+                    `✅ Upload successful!\n\nFile ID: ${data.id}\nFile Name: ${data.fileName}`,
+                    'success'
+                );
+                listFiles();
+            } catch (error) {
+                showResult('simpleUploadResult', `❌ Upload failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Feature 3: Optimized Upload (same as simple, but demonstrates the server's optimized handling)
+        async function optimizedUpload() {
+            const fileInput = document.getElementById('optimizedFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                showResult('optimizedUploadResult', '⚠️ Please select a file', 'warning');
+                return;
+            }
+            
+            const progressBar = document.getElementById('optimizedProgress');
+            const progressFill = document.getElementById('optimizedProgressFill');
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressFill.textContent = '0%';
+            
+            showResult('optimizedUploadResult', `Uploading ${file.name} with optimized chunking...`, 'info');
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Simulate progress (actual progress tracking requires server-side support)
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        progressFill.style.width = progress + '%';
+                        progressFill.textContent = progress + '%';
+                    }
+                }, 200);
+                
+                const response = await fetch(`${getApiUrl()}/api/files/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                progressFill.textContent = '100%';
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                
+                document.getElementById('lastUpload').textContent = file.name;
+                showResult('optimizedUploadResult', 
+                    `✅ Optimized upload successful!\n\n` +
+                    `File ID: ${data.id}\n` +
+                    `File Name: ${data.fileName}\n` +
+                    `Size: ${formatBytes(file.size)}\n\n` +
+                    `Server used: 8 concurrent chunks, 4MB blocks`,
+                    'success'
+                );
+                listFiles();
+            } catch (error) {
+                showResult('optimizedUploadResult', `❌ Upload failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Feature 4: Resumable Upload
+        async function resumableUpload() {
+            const fileInput = document.getElementById('resumableFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                showResult('resumableUploadResult', '⚠️ Please select a file', 'warning');
+                return;
+            }
+            
+            const blockSizeMB = parseInt(document.getElementById('blockSize').value);
+            const BLOCK_SIZE = blockSizeMB * 1024 * 1024;
+            
+            const progressBar = document.getElementById('resumableProgress');
+            const progressFill = document.getElementById('resumableProgressFill');
+            const abortBtn = document.getElementById('abortBtn');
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            abortBtn.disabled = false;
+            
+            showResult('resumableUploadResult', 'Starting resumable upload session...', 'info');
+            
+            try {
+                // Step 1: Start session
+                const startResponse = await fetch(`${getApiUrl()}/api/files/upload/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        contentType: file.type || 'application/octet-stream',
+                        totalBytes: file.size
+                    })
+                });
+                
+                if (!startResponse.ok) throw new Error(`Start failed: HTTP ${startResponse.status}`);
+                const startData = await startResponse.json();
+                const blobPath = startData.blobPath;
+                currentSession = blobPath;
+                
+                showResult('resumableUploadResult', 
+                    `✅ Session started: ${blobPath}\n\nUploading blocks...`,
+                    'info'
+                );
+                
+                // Connect to SignalR for progress
+                await connectSignalR(blobPath);
+                
+                // Step 2: Upload blocks
+                const totalBlocks = Math.ceil(file.size / BLOCK_SIZE);
+                const blockIds = [];
+                let uploadedBlocks = 0;
+                
+                for (let i = 0; i < totalBlocks; i++) {
+                    const start = i * BLOCK_SIZE;
+                    const end = Math.min(start + BLOCK_SIZE, file.size);
+                    const chunk = file.slice(start, end);
+                    const blockId = btoa(String(i).padStart(6, '0'));
+                    blockIds.push(blockId);
+                    
+                    const blockResponse = await fetch(
+                        `${getApiUrl()}/api/files/upload/${encodeURIComponent(blobPath)}/block/${encodeURIComponent(blockId)}`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Range': `bytes ${start}-${end - 1}/${file.size}`
+                            },
+                            body: chunk
+                        }
+                    );
+                    
+                    if (!blockResponse.ok) throw new Error(`Block ${i} failed: HTTP ${blockResponse.status}`);
+                    
+                    uploadedBlocks++;
+                    const percent = Math.round((uploadedBlocks / totalBlocks) * 100);
+                    progressFill.style.width = percent + '%';
+                    progressFill.textContent = `${percent}% (${uploadedBlocks}/${totalBlocks} blocks)`;
+                }
+                
+                // Step 3: Commit blocks
+                showResult('resumableUploadResult', 
+                    `✅ All blocks uploaded\n\nCommitting...`,
+                    'info'
+                );
+                
+                const commitResponse = await fetch(
+                    `${getApiUrl()}/api/files/upload/${encodeURIComponent(blobPath)}/commit`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            blockIds: blockIds,
+                            fileName: file.name,
+                            contentType: file.type || 'application/octet-stream'
+                        })
+                    }
+                );
+                
+                if (!commitResponse.ok) throw new Error(`Commit failed: HTTP ${commitResponse.status}`);
+                const commitData = await commitResponse.json();
+                
+                document.getElementById('lastUpload').textContent = file.name;
+                showResult('resumableUploadResult', 
+                    `✅ Resumable upload complete!\n\n` +
+                    `File ID: ${commitData.id}\n` +
+                    `File Name: ${commitData.fileName}\n` +
+                    `Total Blocks: ${totalBlocks}\n` +
+                    `Block Size: ${blockSizeMB} MB`,
+                    'success'
+                );
+                
+                await disconnectSignalR(blobPath);
+                currentSession = null;
+                abortBtn.disabled = true;
+                listFiles();
+            } catch (error) {
+                showResult('resumableUploadResult', `❌ Error: ${error.message}`, 'error');
+                abortBtn.disabled = true;
+            }
+        }
+
+        async function abortResumableUpload() {
+            if (!currentSession) return;
+            
+            try {
+                const response = await fetch(
+                    `${getApiUrl()}/api/files/upload/${encodeURIComponent(currentSession)}/abort`,
+                    { method: 'POST' }
+                );
+                
+                if (response.ok) {
+                    showResult('resumableUploadResult', '⚠️ Upload aborted', 'warning');
+                    await disconnectSignalR(currentSession);
+                    currentSession = null;
+                    document.getElementById('abortBtn').disabled = true;
+                }
+            } catch (error) {
+                showResult('resumableUploadResult', `❌ Abort failed: ${error.message}`, 'error');
+            }
+        }
+
+        // SignalR Connection
+        async function connectSignalR(blobPath) {
+            if (signalRConnection) return;
+            
+            signalRConnection = new signalR.HubConnectionBuilder()
+                .withUrl(`${getApiUrl()}/hubs/upload-progress`)
+                .withAutomaticReconnect()
+                .build();
+            
+            signalRConnection.on('UploadProgress', (data) => {
+                console.log('Progress update:', data);
+                const progressFill = document.getElementById('resumableProgressFill');
+                if (data.totalBytes > 0) {
+                    const percent = Math.round((data.uploadedBytes / data.totalBytes) * 100);
+                    progressFill.textContent = `${percent}% - ${formatBytes(data.uploadedBytes)} / ${formatBytes(data.totalBytes)}`;
+                }
+            });
+            
+            await signalRConnection.start();
+            await signalRConnection.invoke('JoinSession', blobPath);
+        }
+
+        async function disconnectSignalR(blobPath) {
+            if (!signalRConnection) return;
+            try {
+                await signalRConnection.invoke('LeaveSession', blobPath);
+                await signalRConnection.stop();
+            } catch {}
+            signalRConnection = null;
+        }
+
+        // Feature 5: Download File
+        async function downloadFile() {
+            const fileId = document.getElementById('downloadFileId').value.trim();
+            if (!fileId) {
+                showResult('downloadResult', '⚠️ Please enter a file ID', 'warning');
+                return;
+            }
+            
+            showResult('downloadResult', 'Downloading...', 'info');
+            try {
+                const response = await fetch(`${getApiUrl()}/api/files/${fileId}/download`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'download';
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                showResult('downloadResult', `✅ Download started!\n\nSize: ${formatBytes(blob.size)}`, 'success');
+            } catch (error) {
+                showResult('downloadResult', `❌ Download failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function downloadFileSAS() {
+            const fileId = document.getElementById('downloadFileId').value.trim();
+            if (!fileId) {
+                showResult('downloadResult', '⚠️ Please enter a file ID', 'warning');
+                return;
+            }
+            
+            showResult('downloadResult', 'Getting SAS URL...', 'info');
+            try {
+                const response = await fetch(`${getApiUrl()}/api/files/${fileId}/sas?ttl=3600`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                window.open(data.url, '_blank');
+                
+                showResult('downloadResult', 
+                    `✅ SAS URL generated!\n\n` +
+                    `URL: ${data.url}\n\n` +
+                    `Valid for: 1 hour\n` +
+                    `Opening in new tab...`,
+                    'success'
+                );
+            } catch (error) {
+                showResult('downloadResult', `❌ Failed: ${error.message}`, 'error');
+            }
+        }
+
+        function downloadFileById(fileId) {
+            document.getElementById('downloadFileId').value = fileId;
+            downloadFile();
+        }
+
+        // Feature 6: Delete File
+        async function deleteFile() {
+            const fileId = document.getElementById('deleteFileId').value.trim();
+            if (!fileId) {
+                showResult('deleteResult', '⚠️ Please enter a file ID', 'warning');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to delete this file?')) return;
+            
+            showResult('deleteResult', 'Deleting...', 'info');
+            try {
+                const response = await fetch(`${getApiUrl()}/api/files/${fileId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                showResult('deleteResult', `✅ File deleted successfully!`, 'success');
+                listFiles();
+            } catch (error) {
+                showResult('deleteResult', `❌ Delete failed: ${error.message}`, 'error');
+            }
+        }
+
+        function deleteFileById(fileId) {
+            document.getElementById('deleteFileId').value = fileId;
+            deleteFile();
+        }
+
+        // Feature 7: Batch Upload
+        async function batchUpload() {
+            const fileInput = document.getElementById('batchFileInput');
+            const files = Array.from(fileInput.files);
+            if (files.length === 0) {
+                showResult('batchUploadResult', '⚠️ Please select files', 'warning');
+                return;
+            }
+            
+            const progressBar = document.getElementById('batchProgress');
+            const progressFill = document.getElementById('batchProgressFill');
+            progressBar.style.display = 'block';
+            
+            showResult('batchUploadResult', `Uploading ${files.length} files...`, 'info');
+            
+            const results = [];
+            let completed = 0;
+            
+            for (const file of files) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const response = await fetch(`${getApiUrl()}/api/files/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    results.push({ file: file.name, success: true, id: data.id });
+                } catch (error) {
+                    results.push({ file: file.name, success: false, error: error.message });
+                }
+                
+                completed++;
+                progressFill.style.width = ((completed / files.length) * 100) + '%';
+                progressFill.textContent = `${completed} / ${files.length}`;
+            }
+            
+            const successful = results.filter(r => r.success).length;
+            const failed = results.filter(r => !r.success).length;
+            
+            showResult('batchUploadResult', 
+                `✅ Batch upload complete!\n\n` +
+                `Total: ${files.length}\n` +
+                `Successful: ${successful}\n` +
+                `Failed: ${failed}\n\n` +
+                results.map(r => `${r.success ? '✅' : '❌'} ${r.file}`).join('\n'),
+                failed === 0 ? 'success' : 'warning'
+            );
+            
+            listFiles();
+        }
+
+        // Feature 8: Concurrent Uploads
+        async function testConcurrentUploads() {
+            const fileInput = document.getElementById('concurrentFileInput');
+            const files = Array.from(fileInput.files);
+            const concurrentCount = parseInt(document.getElementById('concurrentCount').value);
+            
+            if (files.length === 0) {
+                showResult('concurrentResult', '⚠️ Please select files', 'warning');
+                return;
+            }
+            
+            showResult('concurrentResult', 
+                `Testing ${concurrentCount} concurrent sessions with ${files.length} file(s)...\n\n` +
+                `Server max concurrent limit: 8`,
+                'info'
+            );
+            
+            const startTime = Date.now();
+            const promises = [];
+            
+            for (let i = 0; i < concurrentCount; i++) {
+                const file = files[i % files.length]; // Reuse files if needed
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const promise = fetch(`${getApiUrl()}/api/files/upload`, {
+                    method: 'POST',
+                    body: formData
+                }).then(r => ({ success: r.ok, status: r.status }))
+                  .catch(e => ({ success: false, error: e.message }));
+                
+                promises.push(promise);
+            }
+            
+            const results = await Promise.all(promises);
+            const duration = Date.now() - startTime;
+            
+            const successful = results.filter(r => r.success).length;
+            const throttled = results.filter(r => r.status === 503).length;
+            const errors = results.filter(r => !r.success && r.status !== 503).length;
+            
+            showResult('concurrentResult', 
+                `✅ Concurrent upload test complete!\n\n` +
+                `Total Sessions: ${concurrentCount}\n` +
+                `Successful: ${successful}\n` +
+                `Throttled (503): ${throttled}\n` +
+                `Errors: ${errors}\n` +
+                `Duration: ${duration}ms\n\n` +
+                `${throttled > 0 ? '⚠️ Some uploads were throttled due to concurrency limit' : '✅ All uploads handled successfully'}`,
+                throttled > 0 ? 'warning' : 'success'
+            );
+            
+            listFiles();
+        }
+
+        // Auto-load files on page load
+        window.addEventListener('load', () => {
+            listFiles();
+        });
+    </script>
+</body>
+</html>

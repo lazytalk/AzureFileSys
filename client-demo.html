@@ -210,6 +210,13 @@
             <div style="margin-top: 10px; padding: 10px; background: #e8f4f8; border-radius: 4px; border-left: 4px solid #17a2b8;">
                 <strong>Current API:</strong> <code id="currentApiUrl">http://localhost:5090</code>
             </div>
+            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+                <div id="envInfo" style="font-size: 13px; color: #856404;">
+                    <strong>Metadata:</strong> In-Memory Repository<br>
+                    <strong>Storage:</strong> Stub Blob Storage (no actual storage)<br>
+                    <strong>Database:</strong> SQLite (dev.db)
+                </div>
+            </div>
         </div>
 
         <div class="stats">
@@ -327,10 +334,30 @@
     <script>
         // Environment configuration
         const ENVIRONMENTS = {
-            dev: 'http://localhost:5090',
-            staging: 'https://filesvc-stg-app.kaiweneducation.com',
-            production: 'https://filesvc-app.kaiweneducation.com', // Update with your production URL
-            custom: ''
+            dev: {
+                url: 'http://localhost:5090',
+                metadata: 'In-Memory Repository',
+                storage: 'Stub Blob Storage (no actual storage)',
+                database: 'SQLite (dev.db)'
+            },
+            staging: {
+                url: 'https://filesvc-stg-app.kaiweneducation.com',
+                metadata: 'Azure Table Storage',
+                storage: 'Azure Blob Storage',
+                database: 'Azure Table (FileRecords)'
+            },
+            production: {
+                url: 'https://filesvc-app.kaiweneducation.com', // Update with your production URL
+                metadata: 'Entity Framework Core',
+                storage: 'Azure Blob Storage',
+                database: 'SQL Server (Azure SQL)'
+            },
+            custom: {
+                url: '',
+                metadata: 'Unknown',
+                storage: 'Unknown',
+                database: 'Unknown'
+            }
         };
         
         let currentEnvironment = 'dev';
@@ -366,7 +393,7 @@
                     '⚠️ STAGING ENVIRONMENT\n\n' +
                     'Note: The staging site uses a self-signed certificate.\n' +
                     'Before testing, accept the certificate by visiting:\n' +
-                    ENVIRONMENTS.staging + '\n\n' +
+                    ENVIRONMENTS.staging.url + '\n\n' +
                     'Click "Advanced" → "Proceed to site" in your browser.',
                     'warning'
                 );
@@ -377,21 +404,33 @@
         }
         
         function updateCustomUrl() {
-            ENVIRONMENTS.custom = document.getElementById('customApiUrl').value.trim();
+            ENVIRONMENTS.custom.url = document.getElementById('customApiUrl').value.trim();
             updateCurrentApiDisplay();
         }
         
         function updateCurrentApiDisplay() {
+            const envConfig = ENVIRONMENTS[currentEnvironment];
             const url = currentEnvironment === 'custom' 
-                ? ENVIRONMENTS.custom || 'Not set' 
-                : ENVIRONMENTS[currentEnvironment];
+                ? (envConfig.url || 'Not set') 
+                : envConfig.url;
             document.getElementById('currentApiUrl').textContent = url;
+            
+            // Update environment info
+            const envInfo = document.getElementById('envInfo');
+            if (envInfo) {
+                envInfo.innerHTML = `
+                    <strong>Metadata:</strong> ${envConfig.metadata}<br>
+                    <strong>Storage:</strong> ${envConfig.storage}<br>
+                    <strong>Database:</strong> ${envConfig.database}
+                `;
+            }
         }
 
         function getApiUrl() {
+            const envConfig = ENVIRONMENTS[currentEnvironment];
             return currentEnvironment === 'custom' 
-                ? (ENVIRONMENTS.custom || 'http://localhost:5090')
-                : ENVIRONMENTS[currentEnvironment];
+                ? (envConfig.url || 'http://localhost:5090')
+                : envConfig.url;
         }
 
         function showResult(elementId, message, type = 'info') {

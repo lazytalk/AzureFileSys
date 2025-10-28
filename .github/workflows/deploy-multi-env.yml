@@ -109,6 +109,9 @@ jobs:
           if (-not $success) {
             throw "❌ Staging health check failed after $maxRetries attempts"
           }
+      - name: 🧪 Run optimized upload integration tests against staging
+        run: |
+          pwsh -NoProfile -NoLogo -Command "& './scripts/test-optimized-upload.ps1' -StagingUrl 'https://filesvc-api-staging.azurewebsites.net'"
 
   deploy-production:
     name: Deploy to Production

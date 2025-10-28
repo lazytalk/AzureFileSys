@@ -490,6 +490,12 @@ app.MapGet("/api/files/{id:guid}", async (
         return Results.NotFound();
     }
 
+    if (rec.IsDeleted)
+    {
+        app.Logger.LogInformation("[GET] File {Id} is soft-deleted", id);
+        return Results.StatusCode(StatusCodes.Status410Gone);
+    }
+
     // No access checks: return file details to any caller.
     var sas = await storage.GetReadSasUrlAsync(rec.BlobPath, TimeSpan.FromMinutes(15), ct);
     // If the storage returned an HTTP(S) URL (like an Azure SAS), return it directly.
@@ -520,6 +526,7 @@ app.MapGet("/api/files/{id:guid}/download", async (
 {
     var rec = await repo.GetAsync(id, ct);
     if (rec == null) return Results.NotFound();
+    if (rec.IsDeleted) return Results.StatusCode(StatusCodes.Status410Gone);
     var stream = await storage.DownloadAsync(rec.BlobPath, ct);
     if (stream == null) return Results.NotFound();
     // Return as an attachment so the browser will prompt to download
@@ -541,12 +548,36 @@ app.MapDelete("/api/files/{id:guid}", async (
     }
 
     // No access checks: allow deletion by any caller.
-    app.Logger.LogInformation("[DELETE] Deleting file {Id} from storage and repository", id);
+    app.Logger.LogInformation("[DELETE] Deleting file {Id} from storage and soft-deleting metadata", id);
     await storage.DeleteAsync(rec.BlobPath, ct);
-    await repo.DeleteAsync(id, ct);
+    await repo.SoftDeleteAsync(id, ct);
     app.Logger.LogInformation("[DELETE] Successfully deleted file {Id}", id);
     return Results.NoContent();
 });
+
+// Admin: Clear all files (delete blobs, soft-delete metadata)
+app.MapPost("/api/files/clear", async (
+    IFileMetadataRepository repo,
+    IFileStorageService storage,
+    CancellationToken ct) =>
+{
+    var list = await repo.ListAllAsync(take: 10_000, skip: 0, ct: ct);
+    int deleted = 0;
+    foreach (var rec in list)
+    {
+        try
+        {
+            await storage.DeleteAsync(rec.BlobPath, ct);
+            await repo.SoftDeleteAsync(rec.Id, ct);
+            deleted++;
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogError(ex, "[CLEAR] Failed to delete {Id}", rec.Id);
+        }
+    }
+    return Results.Ok(new { deleted });
+}).WithTags("Admin");
 
 // SignalR hub for upload progress
 app.MapHub<UploadProgressHub>("/hubs/upload-progress");

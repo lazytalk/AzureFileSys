@@ -487,3 +487,4 @@ C:\Users\wang_\Desktop\AzureFileSys\tests\FileService.Tests\obj\Release\net8.0\r
 C:\Users\wang_\Desktop\AzureFileSys\tests\FileService.Tests\obj\Release\net8.0\FileService.Tests.pdb
 C:\Users\wang_\Desktop\AzureFileSys\tests\FileService.Tests\obj\Release\net8.0\FileService.Tests.genruntimeconfig.cache
 C:\Users\wang_\Desktop\AzureFileSys\tests\FileService.Tests\obj\Release\net8.0\ref\FileService.Tests.dll
+c:\Users\wang_\Desktop\AzureFileSys\tests\FileService.Tests\bin\Release\net8.0\Azure.Data.Tables.dll

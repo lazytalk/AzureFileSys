@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FileService.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f6473fe90f6b177869baba58920592eeadca0157")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b253afb90b1dda83a0e351159ab181e04d2f4b1a")]
 [assembly: System.Reflection.AssemblyProductAttribute("FileService.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FileService.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

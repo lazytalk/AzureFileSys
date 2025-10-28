@@ -183,6 +183,12 @@
             color: #666;
             margin-top: 5px;
         }
+        /* Compact progress rows for multi-file/concurrent views */
+        .progress-list { margin-top: 8px; }
+        .progress-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+        .progress-name { flex: 0 1 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #666; font-size: 12px; }
+        .progress-bar.small { height: 16px; }
+        .progress-fill.small { font-size: 11px; }
     </style>
 </head>
 <body>
@@ -225,6 +231,7 @@
         <div class="feature-section">
             <h2>📋 Feature 1: List Files</h2>
             <button onclick="listFiles()">List All Files</button>
+            <button onclick="clearAllFiles()" style="background:#dc3545;">🧹 Clear All Files</button>
             <div id="fileListResult"></div>
             <ul class="file-list" id="fileList"></ul>
         </div>
@@ -393,6 +400,21 @@
             element.textContent = message;
         }
 
+        // Admin: Clear all files (soft-delete metadata, remove blobs)
+        async function clearAllFiles() {
+            if (!confirm('This will remove all blobs and mark all metadata as deleted. Continue?')) return;
+            showResult('fileListResult', 'Clearing all files...', 'warning');
+            try {
+                const response = await fetch(`${getApiUrl()}/api/files/clear`, { method: 'POST' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                showResult('fileListResult', `✅ Cleared ${data.deleted} file(s).`, 'success');
+                await listFiles();
+            } catch (err) {
+                showResult('fileListResult', `❌ Failed to clear files: ${err.message}`, 'error');
+            }
+        }
+
         function formatBytes(bytes) {
             if (bytes === 0) return '0 B';
             const k = 1024;
@@ -456,7 +478,28 @@
                 return;
             }
             
-            showResult('simpleUploadResult', `Uploading ${file.name}...`, 'info');
+            // Add progress bar
+            const resultDiv = document.getElementById('simpleUploadResult');
+            resultDiv.innerHTML = `
+                <div class="progress-bar">
+                    <div class="progress-fill" id="simpleProgressFill">0%</div>
+                </div>
+                <div style="margin-top: 10px; color: #666;">Uploading ${file.name}...</div>
+            `;
+            
+            const startTime = Date.now();
+            const progressFill = document.getElementById('simpleProgressFill');
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10;
+                if (progress <= 90) {
+                    progressFill.style.width = progress + '%';
+                    progressFill.textContent = progress + '%';
+                }
+            }, 100);
+            
             try {
                 const formData = new FormData();
                 formData.append('file', file);
@@ -466,16 +509,29 @@
                     body: formData
                 });
                 
+                clearInterval(progressInterval);
+                const duration = Date.now() - startTime;
+                const speedMBps = (file.size / (1024 * 1024)) / (duration / 1000);
+                
+                progressFill.style.width = '100%';
+                progressFill.textContent = '100%';
+                
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 
                 document.getElementById('lastUpload').textContent = file.name;
                 showResult('simpleUploadResult', 
-                    `✅ Upload successful!\n\nFile ID: ${data.id}\nFile Name: ${data.fileName}`,
+                    `✅ Upload successful!\n\n` +
+                    `File ID: ${data.id}\n` +
+                    `File Name: ${data.fileName}\n` +
+                    `Size: ${formatBytes(file.size)}\n` +
+                    `Duration: ${(duration / 1000).toFixed(2)}s\n` +
+                    `Speed: ${speedMBps.toFixed(2)} MB/s`,
                     'success'
                 );
                 listFiles();
             } catch (error) {
+                clearInterval(progressInterval);
                 showResult('simpleUploadResult', `❌ Upload failed: ${error.message}`, 'error');
             }
         }
@@ -497,6 +553,8 @@
             
             showResult('optimizedUploadResult', `Uploading ${file.name} with optimized chunking...`, 'info');
             
+            const startTime = Date.now();
+            
             try {
                 const formData = new FormData();
                 formData.append('file', file);
@@ -517,6 +575,9 @@
                 });
                 
                 clearInterval(progressInterval);
+                const duration = Date.now() - startTime;
+                const speedMBps = (file.size / (1024 * 1024)) / (duration / 1000);
+                
                 progressFill.style.width = '100%';
                 progressFill.textContent = '100%';
                 
@@ -528,7 +589,9 @@
                     `✅ Optimized upload successful!\n\n` +
                     `File ID: ${data.id}\n` +
                     `File Name: ${data.fileName}\n` +
-                    `Size: ${formatBytes(file.size)}\n\n` +
+                    `Size: ${formatBytes(file.size)}\n` +
+                    `Duration: ${(duration / 1000).toFixed(2)}s\n` +
+                    `Speed: ${speedMBps.toFixed(2)} MB/s\n\n` +
                     `Server used: 8 concurrent chunks, 4MB blocks`,
                     'success'
                 );
@@ -560,6 +623,8 @@
             
             showResult('resumableUploadResult', 'Starting resumable upload session...', 'info');
             
+            const startTime = Date.now();
+            
             try {
                 // Step 1: Start session
                 const startResponse = await fetch(`${getApiUrl()}/api/files/upload/start`, {
@@ -589,6 +654,7 @@
                 const totalBlocks = Math.ceil(file.size / BLOCK_SIZE);
                 const blockIds = [];
                 let uploadedBlocks = 0;
+                let uploadedBytes = 0;
                 
                 for (let i = 0; i < totalBlocks; i++) {
                     const start = i * BLOCK_SIZE;
@@ -611,9 +677,13 @@
                     if (!blockResponse.ok) throw new Error(`Block ${i} failed: HTTP ${blockResponse.status}`);
                     
                     uploadedBlocks++;
-                    const percent = Math.round((uploadedBlocks / totalBlocks) * 100);
+                    uploadedBytes += (end - start);
+                    const percent = Math.round((uploadedBytes / file.size) * 100);
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const speedMBps = (uploadedBytes / (1024 * 1024)) / elapsed;
+                    
                     progressFill.style.width = percent + '%';
-                    progressFill.textContent = `${percent}% (${uploadedBlocks}/${totalBlocks} blocks)`;
+                    progressFill.textContent = `${percent}% (${uploadedBlocks}/${totalBlocks} blocks) - ${speedMBps.toFixed(2)} MB/s`;
                 }
                 
                 // Step 3: Commit blocks
@@ -638,13 +708,19 @@
                 if (!commitResponse.ok) throw new Error(`Commit failed: HTTP ${commitResponse.status}`);
                 const commitData = await commitResponse.json();
                 
+                const duration = Date.now() - startTime;
+                const speedMBps = (file.size / (1024 * 1024)) / (duration / 1000);
+                
                 document.getElementById('lastUpload').textContent = file.name;
                 showResult('resumableUploadResult', 
                     `✅ Resumable upload complete!\n\n` +
                     `File ID: ${commitData.id}\n` +
                     `File Name: ${commitData.fileName}\n` +
+                    `Size: ${formatBytes(file.size)}\n` +
                     `Total Blocks: ${totalBlocks}\n` +
-                    `Block Size: ${blockSizeMB} MB`,
+                    `Block Size: ${blockSizeMB} MB\n` +
+                    `Duration: ${(duration / 1000).toFixed(2)}s\n` +
+                    `Speed: ${speedMBps.toFixed(2)} MB/s`,
                     'success'
                 );
                 
@@ -811,44 +887,100 @@
             const progressFill = document.getElementById('batchProgressFill');
             progressBar.style.display = 'block';
             
-            showResult('batchUploadResult', `Uploading ${files.length} files...`, 'info');
+            // Create individual progress bars for each file
+            const resultDiv = document.getElementById('batchUploadResult');
+            // Use a clean container (avoid .result pre-wrap styles here)
+            resultDiv.className = '';
+            resultDiv.innerHTML = '';
+
+            const header = document.createElement('div');
+            header.style.marginBottom = '8px';
+            header.style.fontWeight = 'bold';
+            header.textContent = `Uploading ${files.length} files...`;
+            resultDiv.appendChild(header);
+
+            const list = document.createElement('div');
+            list.className = 'progress-list';
+            list.id = 'batchList';
+            resultDiv.appendChild(list);
+
+            files.forEach((file, idx) => {
+                const row = document.createElement('div');
+                row.className = 'progress-row';
+                const name = document.createElement('div');
+                name.className = 'progress-name';
+                name.title = file.name;
+                name.textContent = `${file.name} (${formatBytes(file.size)})`;
+                const bar = document.createElement('div');
+                bar.className = 'progress-bar small';
+                bar.style.flex = '1';
+                bar.style.minWidth = '0';
+                const fill = document.createElement('div');
+                fill.className = 'progress-fill small';
+                fill.id = `batchFileFill${idx}`;
+                fill.textContent = 'Waiting...';
+                bar.appendChild(fill);
+                row.appendChild(name);
+                row.appendChild(bar);
+                list.appendChild(row);
+            });
             
+            const startTime = Date.now();
             const results = [];
             let completed = 0;
+            let totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+            let uploadedBytes = 0;
             
-            for (const file of files) {
+            for (let idx = 0; idx < files.length; idx++) {
+                const file = files[idx];
+                const fileFill = document.getElementById(`batchFileFill${idx}`);
+                
                 try {
+                    fileFill.textContent = '0%';
+                    fileFill.style.background = '';
+                    let progress = 0;
+                    // Simulate progress for each file while request is in-flight
+                    const progressInterval = setInterval(() => {
+                        progress = Math.min(progress + 5, 90);
+                        fileFill.style.width = progress + '%';
+                        fileFill.textContent = progress + '%';
+                    }, 150);
                     const formData = new FormData();
                     formData.append('file', file);
-                    
                     const response = await fetch(`${getApiUrl()}/api/files/upload`, {
                         method: 'POST',
                         body: formData
                     });
-                    
+                    clearInterval(progressInterval);
+                    fileFill.style.width = '100%';
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const data = await response.json();
-                    results.push({ file: file.name, success: true, id: data.id });
+                    fileFill.textContent = '✅ Done';
+                    results.push({ file: file.name, success: true, id: data.id, size: file.size });
+                    uploadedBytes += file.size;
                 } catch (error) {
-                    results.push({ file: file.name, success: false, error: error.message });
+                    fileFill.style.width = '100%';
+                    fileFill.style.background = '#dc3545';
+                    fileFill.textContent = '❌ Failed';
+                    results.push({ file: file.name, success: false, error: error.message, size: file.size });
                 }
                 
                 completed++;
-                progressFill.style.width = ((completed / files.length) * 100) + '%';
-                progressFill.textContent = `${completed} / ${files.length}`;
+                const overallPercent = Math.round((completed / files.length) * 100);
+                progressFill.style.width = overallPercent + '%';
+                progressFill.textContent = `${completed} / ${files.length} (${overallPercent}%)`;
             }
             
+            const duration = Date.now() - startTime;
+            const speedMBps = (uploadedBytes / (1024 * 1024)) / (duration / 1000);
             const successful = results.filter(r => r.success).length;
             const failed = results.filter(r => !r.success).length;
             
-            showResult('batchUploadResult', 
-                `✅ Batch upload complete!\n\n` +
-                `Total: ${files.length}\n` +
-                `Successful: ${successful}\n` +
-                `Failed: ${failed}\n\n` +
-                results.map(r => `${r.success ? '✅' : '❌'} ${r.file}`).join('\n'),
-                failed === 0 ? 'success' : 'warning'
-            );
+            // Prepend summary without removing progress rows
+            const summary = document.createElement('div');
+            summary.className = `result ${failed === 0 ? 'success' : 'warning'}`;
+            summary.textContent = `Batch upload complete! Total: ${files.length}, Successful: ${successful}, Failed: ${failed}, Total Size: ${formatBytes(totalBytes)}, Duration: ${(duration / 1000).toFixed(2)}s, Speed: ${speedMBps.toFixed(2)} MB/s`;
+            resultDiv.prepend(summary);
             
             listFiles();
         }
@@ -864,25 +996,67 @@
                 return;
             }
             
-            showResult('concurrentResult', 
-                `Testing ${concurrentCount} concurrent sessions with ${files.length} file(s)...\n\n` +
-                `Server max concurrent limit: 8`,
-                'info'
-            );
+            // Create individual progress bars
+            const resultDiv = document.getElementById('concurrentResult');
+            resultDiv.innerHTML = `
+                <div style="margin-bottom: 15px; color: #666;">
+                    Testing ${concurrentCount} concurrent sessions with ${files.length} file(s)...<br>
+                    Server max concurrent limit: 8
+                </div>
+            `;
+            
+            const progressBarsHtml = Array.from({length: concurrentCount}, (_, idx) => {
+                const file = files[idx % files.length];
+                return `
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 3px;">Session ${idx + 1}: ${file.name} (${formatBytes(file.size)})</div>
+                        <div class="progress-bar" style="height: 20px;">
+                            <div class="progress-fill" id="concurrentFill${idx}" style="font-size: 11px;">Waiting...</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            resultDiv.innerHTML += progressBarsHtml;
             
             const startTime = Date.now();
             const promises = [];
             
             for (let i = 0; i < concurrentCount; i++) {
-                const file = files[i % files.length]; // Reuse files if needed
+                const file = files[i % files.length];
+                const fillId = `concurrentFill${i}`;
                 const formData = new FormData();
                 formData.append('file', file);
                 
-                const promise = fetch(`${getApiUrl()}/api/files/upload`, {
-                    method: 'POST',
-                    body: formData
-                }).then(r => ({ success: r.ok, status: r.status }))
-                  .catch(e => ({ success: false, error: e.message }));
+                const promise = (async () => {
+                    const fill = document.getElementById(fillId);
+                    fill.textContent = 'Uploading...';
+                    fill.style.width = '50%';
+                    
+                    try {
+                        const response = await fetch(`${getApiUrl()}/api/files/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            fill.style.width = '100%';
+                            fill.textContent = '✅ Success';
+                            return { success: true, status: response.status };
+                        } else if (response.status === 503) {
+                            fill.style.width = '100%';
+                            fill.style.background = '#ffc107';
+                            fill.textContent = '⚠️ Throttled (503)';
+                            return { success: false, status: 503 };
+                        } else {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                    } catch (error) {
+                        fill.style.width = '100%';
+                        fill.style.background = '#dc3545';
+                        fill.textContent = `❌ Error`;
+                        return { success: false, error: error.message };
+                    }
+                })();
                 
                 promises.push(promise);
             }
@@ -894,13 +1068,18 @@
             const throttled = results.filter(r => r.status === 503).length;
             const errors = results.filter(r => !r.success && r.status !== 503).length;
             
+            const totalBytes = concurrentCount * files[0].size;
+            const successfulBytes = successful * files[0].size;
+            const speedMBps = (successfulBytes / (1024 * 1024)) / (duration / 1000);
+            
             showResult('concurrentResult', 
                 `✅ Concurrent upload test complete!\n\n` +
                 `Total Sessions: ${concurrentCount}\n` +
                 `Successful: ${successful}\n` +
                 `Throttled (503): ${throttled}\n` +
                 `Errors: ${errors}\n` +
-                `Duration: ${duration}ms\n\n` +
+                `Duration: ${(duration / 1000).toFixed(2)}s\n` +
+                `Avg Speed: ${speedMBps.toFixed(2)} MB/s\n\n` +
                 `${throttled > 0 ? '⚠️ Some uploads were throttled due to concurrency limit' : '✅ All uploads handled successfully'}`,
                 throttled > 0 ? 'warning' : 'success'
             );

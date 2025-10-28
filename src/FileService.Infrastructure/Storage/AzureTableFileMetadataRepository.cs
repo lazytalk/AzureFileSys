@@ -31,6 +31,17 @@ public class AzureTableFileMetadataRepository : IFileMetadataRepository
         }
     }
 
+    public async Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var entity = await GetTableEntityAsync(id, ct);
+        if (entity != null)
+        {
+            entity.IsDeleted = true;
+            entity.DeletedAt = DateTimeOffset.UtcNow;
+            await _tableClient.UpdateEntityAsync(entity, entity.ETag, TableUpdateMode.Replace, ct);
+        }
+    }
+
     public async Task<FileRecord?> GetAsync(Guid id, CancellationToken ct = default)
     {
         var entity = await GetTableEntityAsync(id, ct);
@@ -40,7 +51,8 @@ public class AzureTableFileMetadataRepository : IFileMetadataRepository
     public async Task<IReadOnlyList<FileRecord>> ListAllAsync(int take = 200, int skip = 0, CancellationToken ct = default)
     {
         var query = _tableClient.QueryAsync<FileRecordTableEntity>(
-            select: null, 
+            filter: "IsDeleted ne true",
+            select: null,
             maxPerPage: take,
             cancellationToken: ct);
 
@@ -66,9 +78,9 @@ public class AzureTableFileMetadataRepository : IFileMetadataRepository
 
     public async Task<IReadOnlyList<FileRecord>> ListByOwnerAsync(string ownerUserId, CancellationToken ct = default)
     {
-        // Query by PartitionKey (which is the OwnerUserId)
+        // Query by PartitionKey (which is the OwnerUserId) and not deleted
         var query = _tableClient.QueryAsync<FileRecordTableEntity>(
-            filter: $"PartitionKey eq '{ownerUserId}'",
+            filter: $"PartitionKey eq '{ownerUserId}' and IsDeleted ne true",
             cancellationToken: ct);
 
         var results = new List<FileRecord>();
@@ -115,6 +127,8 @@ public class FileRecordTableEntity : ITableEntity
         OwnerUserId = record.OwnerUserId;
         UploadedAt = record.UploadedAt;
         BlobPath = record.BlobPath;
+    IsDeleted = record.IsDeleted;
+    DeletedAt = record.DeletedAt;
         
         Timestamp = DateTimeOffset.UtcNow;
     }
@@ -133,6 +147,8 @@ public class FileRecordTableEntity : ITableEntity
     public string OwnerUserId { get; set; } = string.Empty;
     public DateTimeOffset UploadedAt { get; set; }
     public string BlobPath { get; set; } = string.Empty;
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
 
     public FileRecord ToFileRecord()
     {
@@ -144,7 +160,9 @@ public class FileRecordTableEntity : ITableEntity
             SizeBytes = SizeBytes,
             OwnerUserId = OwnerUserId,
             UploadedAt = UploadedAt,
-            BlobPath = BlobPath
+            BlobPath = BlobPath,
+            IsDeleted = IsDeleted,
+            DeletedAt = DeletedAt
         };
     }
 }

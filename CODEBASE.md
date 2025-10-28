@@ -17,6 +17,8 @@ All source code projects live under `src/`.
 
 - `src/FileService.Api/` — ASP.NET Core web application (Minimal APIs + Razor Pages).
   - `Program.cs` — Application bootstrap: dependency injection, endpoint mappings (upload/list/get/download/delete), environment wiring, and middleware. Key place to change DI or configuration.
+  - Resumable upload endpoints are implemented in `Program.cs` (see `/api/files/upload/start`, `/api/files/upload/{blobPath}/block/{blockId}`, `/api/files/upload/{blobPath}/commit`, `/api/files/upload/{blobPath}/abort`, and `/api/files/upload/{blobPath}/progress`). These endpoints rely on `UploadSessionRepository` and `IFileStorageService` implementations.
+  - Note: the codebase currently treats `POST /api/files/upload` as single-file uploads (the server uses the first file in the form). There is no server-side batch-upload endpoint yet; the admin UI also uploads only the first file selected.
   - `appsettings.json` / `appsettings.Development.json` / `appsettings.Staging.json` / `appsettings.Production.json` — Environment-specific configuration; contains `BlobStorage`, `Persistence`, `Features`, etc.
   - `Pages/Admin.cshtml` — Client-side (HTML + JS) admin UI for quick manual testing of upload/list/download/delete.
   - `Pages/IntegrationTest.cshtml` (+ `.cshtml.cs`) — Razor Page used for quick integration flows and server-side test harness.

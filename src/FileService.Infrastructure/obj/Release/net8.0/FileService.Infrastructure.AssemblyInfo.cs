@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FileService.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+20fbf2051f80243cbe55f190296f8455af14ac3c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+078b7957b3b7afc4e304365b7989fc0f19e4ff74")]
 [assembly: System.Reflection.AssemblyProductAttribute("FileService.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FileService.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -20,6 +20,16 @@ public class InMemoryFileMetadataRepository : IFileMetadataRepository
         return Task.CompletedTask;
     }
 
+    public Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        if (_store.TryGetValue(id, out var rec))
+        {
+            rec.IsDeleted = true;
+            rec.DeletedAt = DateTimeOffset.UtcNow;
+        }
+        return Task.CompletedTask;
+    }
+
     public Task<FileRecord?> GetAsync(Guid id, CancellationToken ct = default)
     {
         _store.TryGetValue(id, out var rec);
@@ -29,6 +39,7 @@ public class InMemoryFileMetadataRepository : IFileMetadataRepository
     public Task<IReadOnlyList<FileRecord>> ListAllAsync(int take = 200, int skip = 0, CancellationToken ct = default)
     {
         var list = _store.Values
+            .Where(f => !f.IsDeleted)
             .OrderByDescending(f => f.UploadedAt)
             .Skip(skip)
             .Take(take)
@@ -39,6 +50,7 @@ public class InMemoryFileMetadataRepository : IFileMetadataRepository
     public Task<IReadOnlyList<FileRecord>> ListByOwnerAsync(string ownerUserId, CancellationToken ct = default)
     {
         var list = _store.Values
+            .Where(f => !f.IsDeleted)
             .Where(f => f.OwnerUserId.Equals(ownerUserId, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(f => f.UploadedAt)
             .ToList();

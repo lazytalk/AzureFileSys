@@ -6,6 +6,9 @@ namespace FileService.Infrastructure.Storage;
 public class StubBlobFileStorageService : IFileStorageService
 {
     private readonly Dictionary<string, (byte[] Content, string ContentType)> _blobs = new();
+    // Staged blocks storage for resumable uploads: (blobPath -> (blockId -> bytes))
+    private readonly Dictionary<string, Dictionary<string, byte[]>> _stagedBlocks = new();
+    private readonly object _blocksLock = new();
 
     public Task DeleteAsync(string blobPath, CancellationToken ct = default)
     {
@@ -34,5 +37,57 @@ public class StubBlobFileStorageService : IFileStorageService
         await content.CopyToAsync(ms, ct);
         _blobs[blobPath] = (ms.ToArray(), contentType);
         return blobPath;
+    }
+
+    public Task UploadBlockAsync(string blobPath, string base64BlockId, Stream content, CancellationToken ct = default)
+    {
+        using var ms = new MemoryStream();
+        content.CopyTo(ms);
+        var data = ms.ToArray();
+        lock (_blocksLock)
+        {
+            if (!_stagedBlocks.TryGetValue(blobPath, out var map))
+            {
+                map = new Dictionary<string, byte[]>();
+                _stagedBlocks[blobPath] = map;
+            }
+            map[base64BlockId] = data;
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task CommitBlocksAsync(string blobPath, IEnumerable<string> base64BlockIds, string contentType, CancellationToken ct = default)
+    {
+        List<byte> combined = new();
+        lock (_blocksLock)
+        {
+            if (_stagedBlocks.TryGetValue(blobPath, out var map))
+            {
+                foreach (var id in base64BlockIds)
+                {
+                    if (map.TryGetValue(id, out var part))
+                    {
+                        combined.AddRange(part);
+                    }
+                    else
+                    {
+                        // Missing block - treat as error by skipping
+                    }
+                }
+                // Remove staged blocks after commit
+                _stagedBlocks.Remove(blobPath);
+            }
+        }
+        _blobs[blobPath] = (combined.ToArray(), contentType);
+        return Task.CompletedTask;
+    }
+
+    public Task AbortUploadAsync(string blobPath, CancellationToken ct = default)
+    {
+        lock (_blocksLock)
+        {
+            _stagedBlocks.Remove(blobPath);
+        }
+        return Task.CompletedTask;
     }
 }

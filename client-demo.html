@@ -190,12 +190,20 @@
         <h1>🚀 Complete File Service API - Client Demo</h1>
         
         <div class="config">
-            <label><strong>API Base URL:</strong></label>
-            <input type="text" id="apiUrl" value="http://localhost:5090" placeholder="http://localhost:5090">
-            <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">
-                💡 For local dev: <code>http://localhost:5090</code> | 
-                For staging: <code>https://filesvc-stg-app.kaiweneducation.com</code>
-            </p>
+            <label><strong>Environment:</strong></label>
+            <div style="margin: 10px 0;">
+                <button onclick="setEnvironment('dev')" id="btnDev" style="background: #28a745;">🖥️ Development</button>
+                <button onclick="setEnvironment('staging')" id="btnStaging" style="background: #ffc107; color: #333;">🌐 Staging</button>
+                <button onclick="setEnvironment('production')" id="btnProduction" style="background: #dc3545;">🚀 Production</button>
+                <button onclick="setEnvironment('custom')" id="btnCustom" style="background: #6c757d;">⚙️ Custom</button>
+            </div>
+            <div id="customUrlDiv" style="display: none; margin-top: 10px;">
+                <label><strong>Custom API URL:</strong></label>
+                <input type="text" id="customApiUrl" placeholder="http://localhost:5090" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-top: 5px;">
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: #e8f4f8; border-radius: 4px; border-left: 4px solid #17a2b8;">
+                <strong>Current API:</strong> <code id="currentApiUrl">http://localhost:5090</code>
+            </div>
         </div>
 
         <div class="stats">
@@ -310,11 +318,73 @@
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@7.0.11/dist/browser/signalr.min.js"></script>
     
     <script>
+        // Environment configuration
+        const ENVIRONMENTS = {
+            dev: 'http://localhost:5090',
+            staging: 'https://filesvc-stg-app.kaiweneducation.com',
+            production: 'https://filesvc-app.kaiweneducation.com', // Update with your production URL
+            custom: ''
+        };
+        
+        let currentEnvironment = 'dev';
         let currentSession = null;
         let signalRConnection = null;
 
+        function setEnvironment(env) {
+            currentEnvironment = env;
+            
+            // Update button styles
+            document.querySelectorAll('.config button').forEach(btn => {
+                btn.style.opacity = '0.5';
+                btn.style.fontWeight = 'normal';
+            });
+            document.getElementById(`btn${env.charAt(0).toUpperCase() + env.slice(1)}`).style.opacity = '1';
+            document.getElementById(`btn${env.charAt(0).toUpperCase() + env.slice(1)}`).style.fontWeight = 'bold';
+            
+            // Show/hide custom URL input
+            const customUrlDiv = document.getElementById('customUrlDiv');
+            if (env === 'custom') {
+                customUrlDiv.style.display = 'block';
+                document.getElementById('customApiUrl').addEventListener('input', updateCustomUrl);
+            } else {
+                customUrlDiv.style.display = 'none';
+            }
+            
+            // Update current API display
+            updateCurrentApiDisplay();
+            
+            // Show environment-specific warning for staging
+            if (env === 'staging') {
+                showResult('fileListResult', 
+                    '⚠️ STAGING ENVIRONMENT\n\n' +
+                    'Note: The staging site uses a self-signed certificate.\n' +
+                    'Before testing, accept the certificate by visiting:\n' +
+                    ENVIRONMENTS.staging + '\n\n' +
+                    'Click "Advanced" → "Proceed to site" in your browser.',
+                    'warning'
+                );
+            }
+            
+            // Refresh file list with new environment
+            listFiles();
+        }
+        
+        function updateCustomUrl() {
+            ENVIRONMENTS.custom = document.getElementById('customApiUrl').value.trim();
+            updateCurrentApiDisplay();
+        }
+        
+        function updateCurrentApiDisplay() {
+            const url = currentEnvironment === 'custom' 
+                ? ENVIRONMENTS.custom || 'Not set' 
+                : ENVIRONMENTS[currentEnvironment];
+            document.getElementById('currentApiUrl').textContent = url;
+        }
+
         function getApiUrl() {
-            return document.getElementById('apiUrl').value.trim();
+            return currentEnvironment === 'custom' 
+                ? (ENVIRONMENTS.custom || 'http://localhost:5090')
+                : ENVIRONMENTS[currentEnvironment];
         }
 
         function showResult(elementId, message, type = 'info') {
@@ -840,7 +910,8 @@
 
         // Auto-load files on page load
         window.addEventListener('load', () => {
-            listFiles();
+            // Set default environment to dev
+            setEnvironment('dev');
         });
     </script>
 </body>

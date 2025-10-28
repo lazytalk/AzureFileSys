@@ -1,7 +1,10 @@
 using FileService.Core.Interfaces;
+using FileService.Api.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using FileService.Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -93,9 +96,87 @@ builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient();
 
+// SignalR for upload progress notifications
+builder.Services.AddSignalR();
+// Register cleanup hosted service
+builder.Services.AddHostedService<FileService.Api.Services.UploadSessionCleanupService>();
+
+// Register UploadSessionRepository for persistence of resumable sessions (via interface)
+builder.Services.AddSingleton<FileService.Infrastructure.Storage.IUploadSessionRepository>(sp =>
+{
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FileService.Infrastructure.Storage.BlobStorageOptions>>().Value;
+    return new FileService.Infrastructure.Storage.UploadSessionRepository(opts);
+});
+
+// Configure CORS
+var enableCors = builder.Configuration.GetValue("Features:EnableCors", false);
+if (enableCors)
+{
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "*" };
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            if (allowedOrigins.Contains("*"))
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials();
+            }
+        });
+    });
+    Console.WriteLine($"[STARTUP] CORS enabled with origins: {string.Join(", ", allowedOrigins)}");
+}
+else
+{
+    Console.WriteLine("[STARTUP] CORS is disabled");
+}
+
 // No authentication: the service runs without requiring special header-based authentication or tokens.
 
 var app = builder.Build();
+
+static string _formatBytes(long bytes)
+{
+    if (bytes >= 1024 * 1024) return $"{Math.Round(bytes / (1024.0 * 1024.0), 2)} MB";
+    if (bytes >= 1024) return $"{Math.Round(bytes / 1024.0, 2)} KB";
+    return $"{bytes} B";
+}
+
+// Upload concurrency limiter and in-memory progress tracking for resumable uploads
+var maxConcurrentUploads = builder.Configuration.GetValue<int>("BlobStorage:MaxConcurrentUploads", 8);
+var uploadSemaphore = new System.Threading.SemaphoreSlim(maxConcurrentUploads);
+var uploadProgress = new System.Collections.Concurrent.ConcurrentDictionary<string, long>(); // bytes uploaded
+var uploadCommitted = new System.Collections.Concurrent.ConcurrentDictionary<string, bool>();
+
+// API key for upload hardening (optional). If set, requests must include X-Api-Key header.
+var uploadApiKey = builder.Configuration.GetValue<string>("Upload:ApiKey");
+
+// Simple middleware to enforce API key for upload endpoints
+app.Use(async (context, next) =>
+{
+    try
+    {
+        if (!string.IsNullOrEmpty(uploadApiKey) && context.Request.Path.StartsWithSegments("/api/files/upload"))
+        {
+            if (!context.Request.Headers.TryGetValue("X-Api-Key", out var provided) || provided != uploadApiKey)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsync("Unauthorized");
+                return;
+            }
+        }
+    }
+    catch { }
+    await next();
+});
 
 var envMode = builder.Configuration.GetValue<string>("EnvironmentMode") ?? builder.Environment.EnvironmentName;
 var isDevMode = envMode.Equals("Development", StringComparison.OrdinalIgnoreCase);
@@ -111,6 +192,12 @@ if (useEf && !isDevelopment && builder.Configuration.GetValue("Persistence:AutoM
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
+
+// Use CORS middleware if enabled
+if (enableCors)
+{
+    app.UseCors();
+}
 
 app.UseStaticFiles();
 app.UseRouting();
@@ -133,6 +220,7 @@ app.MapPost("/api/files/upload", async (
     HttpRequest request,
     IFileStorageService storage,
     IFileMetadataRepository repo,
+    IOptions<FileService.Infrastructure.Storage.BlobStorageOptions> blobOptions,
     CancellationToken ct) =>
 {
     try
@@ -145,13 +233,28 @@ app.MapPost("/api/files/upload", async (
         if (file == null || file.Length == 0)
             return Results.BadRequest("No file provided");
 
-        if (file.Length > 50 * 1024 * 1024)
-            return Results.BadRequest("File too large (50 MB limit)");
+        // Use configurable max file size from BlobStorageOptions
+        var maxFileSize = blobOptions.Value.MaxFileSizeBytes;
+        if (file.Length > maxFileSize)
+            return Results.BadRequest($"File too large. Maximum size: {maxFileSize / (1024 * 1024)} MB");
+
+        app.Logger.LogInformation(
+            "[UPLOAD] Starting upload: {FileName}, Size: {Size} bytes, ContentType: {ContentType}", 
+            file.FileName, file.Length, file.ContentType);
 
         // No user context: store blobs without a user prefix.
         var blobPath = $"{Guid.NewGuid()}_{file.FileName}";
+        
+        // Stream upload with optimized chunking and parallelism
         await using var stream = file.OpenReadStream();
+        var startTime = DateTime.UtcNow;
         await storage.UploadAsync(blobPath, stream, file.ContentType, ct);
+        var duration = DateTime.UtcNow - startTime;
+        
+        app.Logger.LogInformation(
+            "[UPLOAD] Completed upload: {FileName} in {Duration}ms, Speed: {Speed} MB/s",
+            file.FileName, duration.TotalMilliseconds, 
+            Math.Round((file.Length / (1024.0 * 1024.0)) / duration.TotalSeconds, 2));
 
         var record = new FileService.Core.Entities.FileRecord
         {
@@ -167,11 +270,190 @@ app.MapPost("/api/files/upload", async (
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[UPLOAD ERROR] {ex}");
+        app.Logger.LogError(ex, "[UPLOAD ERROR] Failed to upload file");
         return Results.Problem($"Upload failed: {ex.Message}");
     }
 }).DisableAntiforgery();
 
+// Resumable upload endpoints
+app.MapPost("/api/files/upload/start", async (HttpRequest request, IUploadSessionRepository sessionRepo) =>
+{
+    using var doc = await System.Text.Json.JsonDocument.ParseAsync(request.Body);
+    var root = doc.RootElement;
+    var fileName = root.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "upload.bin" : "upload.bin";
+    var contentType = root.TryGetProperty("contentType", out var ct) ? ct.GetString() ?? "application/octet-stream" : "application/octet-stream";
+    var totalBytes = root.TryGetProperty("totalBytes", out var tb) ? tb.GetInt64() : 0L;
+    var blobPath = $"{Guid.NewGuid()}_{fileName}";
+    
+    // Persist session to repository for cleanup service
+    await sessionRepo.CreateAsync(blobPath, fileName, contentType, totalBytes);
+    
+    // initialize progress
+    uploadProgress[blobPath] = 0;
+    uploadCommitted[blobPath] = false;
+    return Results.Ok(new { blobPath, fileName, contentType });
+});
+
+app.MapPut("/api/files/upload/{blobPath}/block/{blockId}", async (
+    string blobPath,
+    string blockId,
+    HttpRequest request,
+    IFileStorageService storage,
+    IUploadSessionRepository sessionRepo, 
+    IOptions<FileService.Infrastructure.Storage.BlobStorageOptions> blobOpts,
+    CancellationToken ct) =>
+{
+    // Enforce concurrency limit per upload with 5-minute timeout
+    if (!await uploadSemaphore.WaitAsync(TimeSpan.FromMinutes(5), ct))
+    {
+        return Results.StatusCode(503); // Service Unavailable - too many concurrent uploads
+    }
+    try
+    {
+        long bytesRead = 0;
+        using var ms = new MemoryStream();
+        await request.Body.CopyToAsync(ms);
+        ms.Position = 0;
+        bytesRead = ms.Length;
+
+        // Validate Content-Range header if present
+        if (request.Headers.TryGetValue("Content-Range", out var contentRange))
+        {
+            // Expected format: bytes start-end/total
+            var cr = contentRange.ToString();
+            try
+            {
+                var parts = cr.Split(' '); // ["bytes", "start-end/total"]
+                if (parts.Length == 2 && parts[0].Equals("bytes", StringComparison.OrdinalIgnoreCase))
+                {
+                    var rangeParts = parts[1].Split('/');
+                    var startEnd = rangeParts[0].Split('-');
+                    var start = long.Parse(startEnd[0]);
+                    var end = long.Parse(startEnd[1]);
+                    var expectedLen = end - start + 1;
+                    if (expectedLen != bytesRead)
+                        return Results.BadRequest($"Content-Range length mismatch: expected {expectedLen}, got {bytesRead}");
+                }
+            }
+            catch
+            {
+                return Results.BadRequest("Invalid Content-Range header");
+            }
+        }
+
+        // Validate block size against configured MaximumTransferSizeBytes
+        var maxBlock = blobOpts.Value.MaximumTransferSizeBytes ?? 4 * 1024 * 1024;
+        if (bytesRead > maxBlock)
+            return Results.BadRequest($"Block size too large. Maximum {_formatBytes(maxBlock)} allowed");
+
+        ms.Position = 0;
+        await storage.UploadBlockAsync(blobPath, blockId, ms);
+        uploadProgress.AddOrUpdate(blobPath, bytesRead, (k, v) => v + bytesRead);
+        // persist uploaded bytes in table storage
+        await sessionRepo.AddUploadedBytesAsync(blobPath, bytesRead);
+
+        // notify SignalR clients about progress (grouped by blobPath)
+        try
+        {
+            var hub = app.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<UploadProgressHub>>();
+            var uploaded = uploadProgress.TryGetValue(blobPath, out var up) ? up : 0L;
+            await hub.Clients.Group(blobPath).SendAsync("progress", new { uploaded, total = (long?)null, committed = false });
+        }
+        catch { /* non-fatal: continue if SignalR not available */ }
+
+        return Results.Ok();
+    }
+    finally
+    {
+        uploadSemaphore.Release();
+    }
+});
+
+app.MapPost("/api/files/upload/{blobPath}/commit", async (
+    string blobPath,
+    HttpRequest request,
+    IFileStorageService storage,
+    IFileMetadataRepository repo,
+    IUploadSessionRepository sessionRepo,
+    CancellationToken ct) =>
+{
+    using var doc = await System.Text.Json.JsonDocument.ParseAsync(request.Body, cancellationToken: ct);
+    var root = doc.RootElement;
+    
+    if (!root.TryGetProperty("blockIds", out var blockIdsElement) || blockIdsElement.ValueKind != System.Text.Json.JsonValueKind.Array)
+        return Results.BadRequest("blockIds array required");
+    
+    var ids = new List<string>();
+    foreach (var item in blockIdsElement.EnumerateArray()) 
+        ids.Add(item.GetString() ?? string.Empty);
+    
+    var contentType = root.TryGetProperty("contentType", out var ct_elem) ? ct_elem.GetString() ?? "application/octet-stream" : "application/octet-stream";
+    var fileName = root.TryGetProperty("fileName", out var fn_elem) ? fn_elem.GetString() ?? blobPath : blobPath;
+
+    await storage.CommitBlocksAsync(blobPath, ids, contentType, ct);
+    uploadCommitted[blobPath] = true;
+    
+    // Mark session as committed in repository
+    await sessionRepo.MarkCommittedAsync(blobPath, ct);
+
+    // create metadata record
+    var record = new FileService.Core.Entities.FileRecord
+    {
+        FileName = fileName,
+        ContentType = contentType,
+        SizeBytes = uploadProgress.TryGetValue(blobPath, out var bytes) ? bytes : 0,
+        OwnerUserId = string.Empty,
+        BlobPath = blobPath
+    };
+    await repo.AddAsync(record, ct);
+    // notify SignalR clients about commit
+    try
+    {
+        var hub = app.Services.GetRequiredService<Microsoft.AspNetCore.SignalR.IHubContext<UploadProgressHub>>();
+        var uploaded = uploadProgress.TryGetValue(blobPath, out var up) ? up : 0L;
+        await hub.Clients.Group(blobPath).SendAsync("progress", new { uploaded, total = record.SizeBytes, committed = true });
+    }
+    catch { }
+    // cleanup progress tracking
+    uploadProgress.TryRemove(blobPath, out _);
+
+    return Results.Created($"/api/files/{record.Id}", new { record.Id, record.FileName });
+});
+
+app.MapPost("/api/files/upload/{blobPath}/abort", async (
+    string blobPath,
+    IFileStorageService storage,
+    IUploadSessionRepository sessionRepo) =>
+{
+    await storage.AbortUploadAsync(blobPath);
+    // Delete session from repository
+    await sessionRepo.DeleteAsync(blobPath);
+    uploadProgress.TryRemove(blobPath, out _);
+    uploadCommitted.TryRemove(blobPath, out _);
+    return Results.Ok();
+});
+
+// SSE progress endpoint
+app.MapGet("/api/files/upload/{blobPath}/progress", async (string blobPath, HttpResponse response) =>
+{
+    response.ContentType = "text/event-stream";
+    var ct = response.HttpContext.RequestAborted;
+    try
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            var bytes = uploadProgress.TryGetValue(blobPath, out var b) ? b : 0;
+            var committed = uploadCommitted.TryGetValue(blobPath, out var c) ? c : false;
+            var payload = System.Text.Json.JsonSerializer.Serialize(new { bytes, committed });
+            await response.WriteAsync($"data: {payload}\n\n");
+            await response.Body.FlushAsync(ct);
+            if (committed) break;
+            await Task.Delay(500, ct);
+        }
+    }
+    catch (OperationCanceledException) { }
+    return Results.Ok();
+});
 app.MapGet("/api/files", async (
     HttpRequest request,
     IFileMetadataRepository repo,
@@ -265,6 +547,9 @@ app.MapDelete("/api/files/{id:guid}", async (
     app.Logger.LogInformation("[DELETE] Successfully deleted file {Id}", id);
     return Results.NoContent();
 });
+
+// SignalR hub for upload progress
+app.MapHub<UploadProgressHub>("/hubs/upload-progress");
 
 app.Run();
 

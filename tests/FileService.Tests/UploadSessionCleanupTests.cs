@@ -94,8 +94,7 @@ public class UploadSessionCleanupTests
         var session = new UploadSession("blob1") { ExpiresAt = DateTimeOffset.UtcNow.AddHours(-2) };
         var repo = new FakeRepo(new[] { session });
         var storage = new FakeStorage(failAttempts: 2); // two transient fails then success
-        var inMemory = new Dictionary<string,string>();
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string>
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string?>
         {
             { "Upload:Cleanup:IntervalMinutes", "1" },
             { "Upload:Cleanup:MaxSessionsPerRun", "10" },

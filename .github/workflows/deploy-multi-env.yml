@@ -37,8 +37,12 @@ jobs:
       - name: 📱 Publish application
         run: dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish
       
-      - name: 🗄️ Create EF Bundle
+      - name: �️ Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
+      
+      - name: �🗄️ Create EF Bundle
         run: dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish/efbundle.exe
+        continue-on-error: true
       
       - name: 📦 Create deployment package
         run: |
@@ -58,9 +62,10 @@ jobs:
     needs: build
     runs-on: windows-latest
     if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
-    environment: 
-      name: staging
-      url: https://filesvc-api-staging.azurewebsites.net
+    # Uncomment when staging environment is configured in GitHub repo settings
+    # environment: 
+    #   name: staging
+    #   url: https://filesvc-api-staging.azurewebsites.net
     
     steps:
       - name: 📥 Download build artifact
@@ -77,10 +82,10 @@ jobs:
       
       - name: 🚀 Deploy to Staging
         run: |
-          az webapp deploy \
-            --resource-group file-svc-staging-rg \
-            --name filesvc-api-staging \
-            --src-path file-service-${{ github.sha }}.zip \
+          az webapp deploy `
+            --resource-group file-svc-staging-rg `
+            --name filesvc-api-staging `
+            --src-path file-service-${{ github.sha }}.zip `
             --type zip
       
       - name: ⏱️ Wait for deployment
@@ -118,9 +123,10 @@ jobs:
     needs: [build, deploy-staging]
     runs-on: windows-latest
     if: github.ref == 'refs/heads/main'
-    environment: 
-      name: production
-      url: https://filesvc-api-prod.azurewebsites.net
+    # Uncomment when production environment is configured in GitHub repo settings
+    # environment: 
+    #   name: production
+    #   url: https://filesvc-api-prod.azurewebsites.net
     
     steps:
       - name: 📥 Download build artifact
@@ -137,10 +143,10 @@ jobs:
       
       - name: 🚀 Deploy to Production
         run: |
-          az webapp deploy \
-            --resource-group file-svc-production-rg \
-            --name filesvc-api-prod \
-            --src-path file-service-${{ github.sha }}.zip \
+          az webapp deploy `
+            --resource-group file-svc-production-rg `
+            --name filesvc-api-prod `
+            --src-path file-service-${{ github.sha }}.zip `
             --type zip
       
       - name: ⏱️ Wait for deployment

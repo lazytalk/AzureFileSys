@@ -191,17 +191,15 @@ $kvBlobRef = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage
 $kvTableRef = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=TableStorage-ConnectionString)"
 
 # Use REST API for China Cloud compatibility
+# Only set essential runtime settings and secrets - all other config comes from appsettings.Staging.json
 $appSettingsBody = @{
     properties = @{
         "ASPNETCORE_ENVIRONMENT" = "Staging"
-                "Persistence__UseEf" = "false"
-                "Persistence__UseTableStorage" = "true"
-                    "BlobStorage__ConnectionString" = $kvBlobRef
-                    "BlobStorage__ContainerName" = $containerName
-                    "TableStorage__ConnectionString" = $kvTableRef
-                    # Make the app listen on port 5543 (Kestrel) and expose that port to the App Service front-end
-                    "WEBSITES_PORT" = "5543"
-                    "ASPNETCORE_URLS" = "http://+:5543"
+        "BlobStorage__ConnectionString" = $kvBlobRef
+        "TableStorage__ConnectionString" = $kvTableRef
+        # Make the app listen on port 5543 (Kestrel) and expose that port to the App Service front-end
+        "WEBSITES_PORT" = "5543"
+        "ASPNETCORE_URLS" = "http://+:5543"
     }
 }
 

@@ -37,10 +37,10 @@ jobs:
       - name: 📱 Publish application
         run: dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish
       
-      - name: �️ Install EF Core tools
+      - name: 🛠️ Install EF Core tools
         run: dotnet tool install --global dotnet-ef
       
-      - name: �🗄️ Create EF Bundle
+      - name: �️ Create EF Bundle
         run: dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish/efbundle.exe
         continue-on-error: true
       

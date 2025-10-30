@@ -10,29 +10,30 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Services
-var useEf = builder.Configuration.GetValue("Persistence:UseEf", true);
+// Services - Read all configuration from appsettings files
+var useInMemory = builder.Configuration.GetValue("Persistence:UseInMemory", false);
 var useTableStorage = builder.Configuration.GetValue("Persistence:UseTableStorage", false);
+var useEf = builder.Configuration.GetValue("Persistence:UseEf", false);
+var useSqlServer = builder.Configuration.GetValue("Persistence:UseSqlServer", false);
 
 // Debug logging for configuration values
 Console.WriteLine($"[STARTUP DEBUG] Environment: {builder.Environment.EnvironmentName}");
-Console.WriteLine($"[STARTUP DEBUG] Persistence:UseEf = {useEf}");
+Console.WriteLine($"[STARTUP DEBUG] Persistence:UseInMemory = {useInMemory}");
 Console.WriteLine($"[STARTUP DEBUG] Persistence:UseTableStorage = {useTableStorage}");
-Console.WriteLine($"[STARTUP DEBUG] TableStorage__ConnectionString = {builder.Configuration.GetValue<string>("TableStorage:ConnectionString") ?? "NULL"}");
+Console.WriteLine($"[STARTUP DEBUG] Persistence:UseEf = {useEf}");
+Console.WriteLine($"[STARTUP DEBUG] Persistence:UseSqlServer = {useSqlServer}");
 
-// Force in-memory for development to avoid database hanging issues
-var isDevelopment = builder.Environment.IsDevelopment();
-
-if (isDevelopment)
+// Configure metadata repository based on configuration (not environment)
+if (useInMemory)
 {
-    Console.WriteLine("[STARTUP] Using in-memory repository for development mode");
+    Console.WriteLine("[STARTUP] Using in-memory repository");
     builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
 }
 else if (useTableStorage)
 {
     // Azure Table Storage configuration
-    var tableConnString = builder.Configuration.GetValue<string>("TableStorage__ConnectionString")
-                         ?? builder.Configuration.GetValue<string>("BlobStorage__ConnectionString"); // Reuse blob storage connection
+    var tableConnString = builder.Configuration.GetValue<string>("TableStorage:ConnectionString")
+                         ?? builder.Configuration.GetValue<string>("BlobStorage:ConnectionString"); // Reuse blob storage connection
     
     if (!string.IsNullOrWhiteSpace(tableConnString))
     {
@@ -48,14 +49,14 @@ else if (useTableStorage)
 }
 else if (useEf)
 {
-    // Support SQL Server in staging/production when configured, otherwise fall back to SQLite
-    var useSqlServer = builder.Configuration.GetValue("Persistence:UseSqlServer", false);
+    // Entity Framework with SQL Server or SQLite
     if (useSqlServer)
     {
-        var sqlConn = builder.Configuration.GetValue<string>("Sql__ConnectionString")
+        var sqlConn = builder.Configuration.GetValue<string>("Sql:ConnectionString")
                       ?? builder.Configuration.GetValue<string>("Persistence:SqlConnectionString");
         if (!string.IsNullOrWhiteSpace(sqlConn))
         {
+            Console.WriteLine("[STARTUP] Using Entity Framework with SQL Server");
             builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
                 opt.UseSqlServer(sqlConn));
             builder.Services.AddScoped<IFileMetadataRepository, FileService.Infrastructure.Data.EfFileMetadataRepository>();
@@ -63,6 +64,7 @@ else if (useEf)
         else
         {
             // Fallback to SQLite if SQL connection isn't provided
+            Console.WriteLine("[STARTUP] SQL Server connection not found, falling back to SQLite");
             var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
             builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
                 opt.UseSqlite($"Data Source={dbPath}"));
@@ -71,6 +73,7 @@ else if (useEf)
     }
     else
     {
+        Console.WriteLine("[STARTUP] Using Entity Framework with SQLite");
         var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
         builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
             opt.UseSqlite($"Data Source={dbPath}"));
@@ -79,6 +82,7 @@ else if (useEf)
 }
 else
 {
+    Console.WriteLine("[STARTUP] No persistence configuration found, defaulting to in-memory repository");
     builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
 }
 builder.Services.Configure<FileService.Infrastructure.Storage.BlobStorageOptions>(builder.Configuration.GetSection("BlobStorage"));
@@ -180,8 +184,8 @@ app.Use(async (context, next) =>
 
 var envMode = builder.Configuration.GetValue<string>("EnvironmentMode") ?? builder.Environment.EnvironmentName;
 var isDevMode = envMode.Equals("Development", StringComparison.OrdinalIgnoreCase);
-// Apply pending migrations only if configured (dev convenience). For production you may set AutoMigrate=false and run migrations explicitly.
-if (useEf && !isDevelopment && builder.Configuration.GetValue("Persistence:AutoMigrate", true))
+// Apply pending migrations only if configured and AutoMigrate is enabled
+if (useEf && builder.Configuration.GetValue("Persistence:AutoMigrate", false))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<FileService.Infrastructure.Data.FileServiceDbContext>();

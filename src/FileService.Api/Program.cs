@@ -193,8 +193,13 @@ if (useEf && builder.Configuration.GetValue("Persistence:AutoMigrate", false))
     catch (Exception ex) { app.Logger.LogError(ex, "[DB MIGRATE] Failed"); }
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+// Allow disabling Swagger/UI via configuration (useful for tests to avoid middleware races)
+var enableSwagger = builder.Configuration.GetValue("Features:EnableSwagger", true);
+if (enableSwagger)
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseHttpsRedirection();
 
 // Use CORS middleware if enabled

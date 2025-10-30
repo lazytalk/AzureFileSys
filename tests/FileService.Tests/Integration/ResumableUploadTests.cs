@@ -10,12 +10,12 @@ using Xunit;
 
 namespace FileService.Tests.Integration;
 
-public class ResumableUploadTests : IClassFixture<WebApplicationFactory<Program>>
+public class ResumableUploadTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public ResumableUploadTests(WebApplicationFactory<Program> factory)
+    public ResumableUploadTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
         _client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("http://localhost") });

@@ -4697,11 +4697,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj",
+      "projectUniqueName": "c:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj",
       "projectName": "FileService.Infrastructure",
-      "projectPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj",
+      "projectPath": "c:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj",
       "packagesPath": "C:\\Users\\wang_\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\obj\\",
+      "outputPath": "c:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\wang_\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -4716,8 +4716,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {
-              "projectPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj"
+            "c:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {
+              "projectPath": "c:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj"
             }
           }
         }

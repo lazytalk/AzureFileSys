@@ -9,11 +9,11 @@ using Xunit;
 
 namespace FileService.Tests.Integration;
 
-public class FileFlowTests : IClassFixture<WebApplicationFactory<Program>>
+public class FileFlowTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory _factory;
 
-    public FileFlowTests(WebApplicationFactory<Program> factory)
+    public FileFlowTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
     }

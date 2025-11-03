@@ -563,6 +563,40 @@ app.MapGet("/api/files/{id:guid}/preview", async (
     return Results.File(stream, contentType, fileDownloadName: null, enableRangeProcessing: true);
 });
 
+// Thumbnail endpoint for images (returns small JPEG). If resizing libraries are not available,
+// fall back to returning the original image stream.
+app.MapGet("/api/files/{id:guid}/thumbnail", async (
+    Guid id,
+    IFileMetadataRepository repo,
+    IFileStorageService storage,
+    CancellationToken ct) =>
+{
+    var rec = await repo.GetAsync(id, ct);
+    if (rec == null) return Results.NotFound();
+    if (rec.IsDeleted) return Results.StatusCode(StatusCodes.Status410Gone);
+    var contentType = rec.ContentType?.ToLowerInvariant() ?? "";
+    if (!contentType.StartsWith("image/")) return Results.BadRequest("Thumbnail only supported for images");
+    var stream = await storage.DownloadAsync(rec.BlobPath, ct);
+    if (stream == null) return Results.NotFound();
+
+    try
+    {
+        // Try to create a small thumbnail using System.Drawing (available on Windows runners)
+        using var img = System.Drawing.Image.FromStream(stream);
+        var thumb = img.GetThumbnailImage(200, 200, () => false, IntPtr.Zero);
+        var ms = new MemoryStream();
+        thumb.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+        ms.Position = 0;
+        return Results.File(ms, "image/jpeg");
+    }
+    catch
+    {
+        // If thumbnailing fails, reset the original stream and return it
+        try { stream.Position = 0; } catch { }
+        return Results.File(stream, contentType);
+    }
+});
+
 app.MapDelete("/api/files/{id:guid}", async (
     Guid id,
     IFileMetadataRepository repo,

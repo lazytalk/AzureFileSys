@@ -470,6 +470,8 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 const files = await response.json();
+                // keep global list for preview navigation
+                window.__fileListForPreview = files;
                 const fileListEl = document.getElementById('fileList');
                 fileListEl.innerHTML = '';
                 
@@ -485,33 +487,92 @@
                     li.className = 'file-item';
                     const isImage = file.contentType && file.contentType.startsWith('image/');
                     const isPdf = file.contentType === 'application/pdf';
+                    const thumbUrl = isImage ? `${getApiUrl()}/api/files/${file.id}/thumbnail` : '';
                     li.innerHTML = `
-                        <div class="file-info">
-                            <div class="file-name">📄 ${file.fileName}</div>
-                            <div class="file-meta">
-                                <span class="badge badge-size">${formatBytes(file.sizeBytes)}</span>
-                                <span class="badge badge-type">${file.contentType}</span>
-                                <span style="color: #999;">ID: ${file.id}</span>
+                        <div style="display:flex;gap:12px;align-items:center;">
+                            <div style="width:64px;height:64px;flex:0 0 64px;">
+                                ${isImage ? `<img src="${thumbUrl}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;" onerror="this.style.display='none'"/>` : `<div style="width:64px;height:64px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#999">${isPdf? 'PDF':'-'}</div>`}
+                            </div>
+                            <div class="file-info" style="flex:1;">
+                                <div class="file-name">📄 ${file.fileName}</div>
+                                <div class="file-meta">
+                                    <span class="badge badge-size">${formatBytes(file.sizeBytes)}</span>
+                                    <span class="badge badge-type">${file.contentType}</span>
+                                    <span style="color: #999;">ID: ${file.id}</span>
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                                <div>
+                                    <button onclick="downloadFileById('${file.id}')">⬇️ Download</button>
+                                    <button onclick="deleteFileById('${file.id}')">🗑️ Delete</button>
+                                </div>
+                                <div>
+                                    ${(isImage || isPdf) ? `<button onclick="previewFileById('${file.id}')">👁️ Preview</button>` : ''}
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <button onclick="downloadFileById('${file.id}')">⬇️ Download</button>
-                            <button onclick="deleteFileById('${file.id}')">🗑️ Delete</button>
-                            ${(isImage || isPdf) ? `<button onclick="previewFile('${file.id}', '${file.contentType}')">👁️ Preview</button>` : ''}
-                        </div>
                     `;
-        // Preview modal
+        // Preview helpers with navigation
+        window.__currentPreviewIndex = -1;
+        function previewFileById(id) {
+            const list = window.__fileListForPreview || [];
+            const idx = list.findIndex(f => f.id === id);
+            if (idx === -1) {
+                // fallback: fetch file metadata then open
+                fetch(`${getApiUrl()}/api/files/${id}`).then(r => r.json()).then(json => {
+                    const ct = json.contentType || json.ContentType || '';
+                    previewFile(id, ct);
+                }).catch(()=> alert('Unable to preview'));
+                return;
+            }
+            window.__currentPreviewIndex = idx;
+            previewFile(list[idx].id, list[idx].contentType);
+        }
+
         function previewFile(id, contentType) {
             const previewUrl = `${getApiUrl()}/api/files/${id}/preview`;
-            let html = '';
-            if (contentType.startsWith('image/')) {
-                html = `<img src="${previewUrl}" style="max-width:90vw;max-height:80vh;border-radius:8px;box-shadow:0 2px 12px #333;" />`;
+            let inner = '';
+            if (contentType && contentType.startsWith('image/')) {
+                inner = `<img src="${previewUrl}" id="previewMedia" style="max-width:90vw;max-height:80vh;border-radius:8px;box-shadow:0 2px 12px #333;" />`;
             } else if (contentType === 'application/pdf') {
-                html = `<iframe src="${previewUrl}" style="width:90vw;height:80vh;border:0;border-radius:8px;box-shadow:0 2px 12px #333;"></iframe>`;
+                inner = `<iframe src="${previewUrl}" id="previewMedia" style="width:90vw;height:80vh;border:0;border-radius:8px;box-shadow:0 2px 12px #333;"></iframe>`;
             } else {
-                html = `<div style="padding:20px;">Preview not supported for this file type.</div>`;
+                inner = `<div style="padding:20px;">Preview not supported for this file type.</div>`;
             }
-            showModal(html);
+            const nav = `
+                <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);">
+                    <button onclick="previewPrev()" style="font-size:18px;padding:8px 12px;">◀</button>
+                </div>
+                <div style="position:absolute;right:12px;top:50%;transform:translateY(-50%);">
+                    <button onclick="previewNext()" style="font-size:18px;padding:8px 12px;">▶</button>
+                </div>
+            `;
+            showModal(inner + nav);
+            // keyboard navigation
+            document.onkeydown = (e) => {
+                if (!document.getElementById('previewModal') || document.getElementById('previewModal').style.display === 'none') return;
+                if (e.key === 'ArrowLeft') previewPrev();
+                if (e.key === 'ArrowRight') previewNext();
+                if (e.key === 'Escape') closeModal();
+            };
+        }
+
+        function previewPrev() {
+            const list = window.__fileListForPreview || [];
+            if (window.__currentPreviewIndex > 0) {
+                window.__currentPreviewIndex--;
+                const f = list[window.__currentPreviewIndex];
+                previewFile(f.id, f.contentType);
+            }
+        }
+
+        function previewNext() {
+            const list = window.__fileListForPreview || [];
+            if (window.__currentPreviewIndex < list.length - 1) {
+                window.__currentPreviewIndex++;
+                const f = list[window.__currentPreviewIndex];
+                previewFile(f.id, f.contentType);
+            }
         }
 
         // Simple modal implementation

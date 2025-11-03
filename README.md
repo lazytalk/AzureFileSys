@@ -188,3 +188,18 @@ DB_CONNECTION_STRING=
 
 ## License
 TBD
+
+## Thumbnail generation & dependency advisory
+
+- The service now generates image thumbnails on-demand via `/api/files/{id}/thumbnail`.
+- Implementation uses the cross-platform library `SixLabors.ImageSharp` to avoid Windows-only APIs.
+- During local verification an advisory was raised by the package metadata (NU1902/NU1903). The build succeeds, but the advisories indicate published security issues in the specific ImageSharp version used.
+
+Recommended actions for reviewers:
+
+- Review the advisories raised by the package manager and upgrade `SixLabors.ImageSharp` to a patched version if one is available.
+- If your organization has an approved image-processing library, replace ImageSharp with that implementation and re-run the tests.
+- Consider generating thumbnails once and caching them (in blob storage or a cache) to avoid repeated compute and to simplify runtime behavior.
+- The thumbnail endpoint has a safe fallback: if resizing fails for any reason the API returns the original image stream rather than erroring.
+
+This note is intentionally short — if you'd like I can open a follow-up PR that switches to a specific patched version or an alternative library and include dependency-scanning output.

@@ -527,6 +527,8 @@ app.MapGet("/api/files/{id:guid}", async (
 // Server-side download endpoint that streams the blob content. This is used as a
 // fall-back when storage provides a non-HTTP download URL (for example the
 // StubBlobFileStorageService which returns stub:// URLs).
+
+// Download endpoint (attachment)
 app.MapGet("/api/files/{id:guid}/download", async (
     Guid id,
     IFileMetadataRepository repo,
@@ -540,6 +542,25 @@ app.MapGet("/api/files/{id:guid}/download", async (
     if (stream == null) return Results.NotFound();
     // Return as an attachment so the browser will prompt to download
     return Results.File(stream, rec.ContentType ?? "application/octet-stream", rec.FileName);
+});
+
+// Preview endpoint for images and PDFs
+app.MapGet("/api/files/{id:guid}/preview", async (
+    Guid id,
+    IFileMetadataRepository repo,
+    IFileStorageService storage,
+    CancellationToken ct) =>
+{
+    var rec = await repo.GetAsync(id, ct);
+    if (rec == null) return Results.NotFound();
+    if (rec.IsDeleted) return Results.StatusCode(StatusCodes.Status410Gone);
+    var contentType = rec.ContentType?.ToLowerInvariant() ?? "";
+    if (!(contentType.StartsWith("image/") || contentType == "application/pdf"))
+        return Results.BadRequest("Preview only supported for images and PDF files.");
+    var stream = await storage.DownloadAsync(rec.BlobPath, ct);
+    if (stream == null) return Results.NotFound();
+    // Return inline for browser preview
+    return Results.File(stream, contentType, fileDownloadName: null, enableRangeProcessing: true);
 });
 
 app.MapDelete("/api/files/{id:guid}", async (

@@ -1,4 +1,7 @@
 using FileService.Core.Interfaces;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using FileService.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using FileService.Infrastructure.Storage;
@@ -563,8 +566,7 @@ app.MapGet("/api/files/{id:guid}/preview", async (
     return Results.File(stream, contentType, fileDownloadName: null, enableRangeProcessing: true);
 });
 
-// Thumbnail endpoint for images (returns small JPEG). If resizing libraries are not available,
-// fall back to returning the original image stream.
+// Thumbnail endpoint for images (returns small JPEG). Uses ImageSharp for cross-platform resizing.
 app.MapGet("/api/files/{id:guid}/thumbnail", async (
     Guid id,
     IFileMetadataRepository repo,
@@ -581,17 +583,26 @@ app.MapGet("/api/files/{id:guid}/thumbnail", async (
 
     try
     {
-        // Try to create a small thumbnail using System.Drawing (available on Windows runners)
-        using var img = System.Drawing.Image.FromStream(stream);
-        var thumb = img.GetThumbnailImage(200, 200, () => false, IntPtr.Zero);
+        // Use ImageSharp to decode and resize the image to a 200x200 box while preserving aspect ratio
+        stream.Position = 0;
+        using var image = SixLabors.ImageSharp.Image.Load(stream);
+        var thumbWidth = 200;
+        var thumbHeight = 200;
+        image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
+        {
+            Size = new SixLabors.ImageSharp.Size(thumbWidth, thumbHeight),
+            Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max
+        }));
         var ms = new MemoryStream();
-        thumb.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+        // Encode as JPEG with reasonable quality
+        var encoder = new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality = 75 };
+        await image.SaveAsJpegAsync(ms, encoder, ct);
         ms.Position = 0;
         return Results.File(ms, "image/jpeg");
     }
-    catch
+    catch (Exception ex)
     {
-        // If thumbnailing fails, reset the original stream and return it
+        app.Logger.LogWarning(ex, "[THUMBNAIL] ImageSharp thumbnail generation failed, falling back to original stream");
         try { stream.Position = 0; } catch { }
         return Results.File(stream, contentType);
     }

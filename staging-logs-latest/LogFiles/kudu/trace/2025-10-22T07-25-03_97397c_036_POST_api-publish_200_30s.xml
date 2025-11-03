@@ -1,0 +1,86 @@
+<step title="Incoming Request" date="2025-10-22T07:25:03.529" instance="97397c" url="/api/publish?type=zip" method="POST" type="request" pid="7900,2,31" Cache-Control="no-cache" Content-Length="20567785" Content-Type="application/octet-stream" Accept="*/*" Accept-Encoding="gzip, deflate" Authorization="Bea..." Host="filesvc-stg-app.scm.chinacloudsites.cn" User-Agent="AZURECLI/2.77.0 (MSI)" x-ms-client-request-id="377ec1f8-af18-11f0-b52d-c4cb7696db44" X-ARR-LOG-ID="377ec1f8-af18-11f0-b52d-c4cb7696db44" CLIENT-IP="111.197.33.173:7121" X-SITE-DEPLOYMENT-ID="filesvc-stg-app" WAS-DEFAULT-HOSTNAME="filesvc-stg-app.scm.chinacloudsites.cn" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/publish?type=zip" >
+  <step title="Cleanup Xml Logs" date="2025-10-22T07:25:03.529" /><!-- duration: 16ms -->
+  <step title="OneDeploy" date="2025-10-22T07:25:03.561" >
+    <step title="Starting PushDeployAsync" date="2025-10-22T07:25:03.561" /><!-- duration: 0ms -->
+    <step title="Updating shutdown sentinel last write time" date="2025-10-22T07:25:03.576" SemaphoreCount="7" /><!-- duration: 0ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-10-22T07:25:03.592" /><!-- duration: 0ms -->
+    <step title="Saving request content to C:\local\Temp\zipdeploy\ralsybek.zip" date="2025-10-22T07:25:03.592" >
+      <step title="Total 20,567,785 bytes written to C:\local\Temp\zipdeploy\ralsybek.zip" date="2025-10-22T07:25:17.978" /><!-- duration: 16ms -->
+    </step><!-- duration: 14401ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-10-22T07:25:18.009" /><!-- duration: 0ms -->
+    <step title="Deleting shutdown sentinel file" date="2025-10-22T07:25:18.009" SemaphoreCount="8" /><!-- duration: 0ms -->
+    <step title="Starting FetchDeploy" date="2025-10-22T07:25:18.009" /><!-- duration: 16ms -->
+    <step title="Attempting to fetch target branch HEAD" date="2025-10-22T07:25:18.025" /><!-- duration: 16ms -->
+    <step title="Updating shutdown sentinel last write time" date="2025-10-22T07:25:18.040" SemaphoreCount="7" /><!-- duration: 0ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-10-22T07:25:18.071" /><!-- duration: 0ms -->
+    <step title="Performing fetch based deployment" date="2025-10-22T07:25:18.087" >
+      <step title="Creating temporary deployment" date="2025-10-22T07:25:18.087" /><!-- duration: 47ms -->
+      <step title="Fetching changes." date="2025-10-22T07:25:18.181" /><!-- duration: 0ms -->
+      <step title="Starting LocalZipHandler" date="2025-10-22T07:25:18.196" /><!-- duration: 0ms -->
+      <step title="Starting LocalZipFetch" date="2025-10-22T07:25:18.196" /><!-- duration: 18ms -->
+      <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\ralsybek.zip (19.61 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-10-22T07:25:18.233" /><!-- duration: 10ms -->
+      <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\ralsybek.zip (19.61 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-10-22T07:25:18.243" >
+        <step title="Renaming extractTargetDirectory(C:\local\Temp\zipdeploy\extracted) to tempDirectory(C:\local\Temp\zipdeploy\uuo5k5fi.o4f)" date="2025-10-22T07:25:18.243" /><!-- duration: 0ms -->
+        <step title="Extracting 112 entries to C:\local\Temp\zipdeploy\extracted directory" date="2025-10-22T07:25:18.259" >
+          <step title="Extracting to C:\local\Temp\zipdeploy\extracted\runtimes\browser-wasm\nativeassets\net8.0\e_sqlite3.a ..." date="2025-10-22T07:25:18.464" /><!-- duration: 76ms -->
+          <step title="Extracting to C:\local\Temp\zipdeploy\extracted\runtimes\linux-arm\native\libe_sqlite3.so ..." date="2025-10-22T07:25:18.557" /><!-- duration: 114ms -->
+          <step title="Extracting to C:\local\Temp\zipdeploy\extracted\runtimes\linux-arm64\native\libe_sqlite3.so ..." date="2025-10-22T07:25:18.671" /><!-- duration: 76ms -->
+          <step title="Extracting to C:\local\Temp\zipdeploy\extracted\runtimes\linux-armel\native\libe_sqlite3.so ..." date="2025-10-22T07:25:18.747" /><!-- duration: 75ms -->
+          <step title="Extracting to C:\local\Temp\zipdeploy\extracted\runtimes\linux-mips64\native\libe_sqlite3.so ..." date="2025-10-22T07:25:18.821" /><!-- duration: 94ms -->
+          <step title="Omitting extracting file traces ..." date="2025-10-22T07:25:18.932" /><!-- duration: 66ms -->
+        </step><!-- duration: 3235ms -->
+      </step><!-- duration: 3250ms -->
+      <step title="None repository commit" date="2025-10-22T07:25:21.636" >
+        <step title="Commit id: 57b7fff3e91240cf8e95232410d97721" date="2025-10-22T07:25:21.685" Message="OneDeploy" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 30ms -->
+      </step><!-- duration: 109ms -->
+      <step title="Before sending BuildRequestReceived status to /api/updatedeploystatus" date="2025-10-22T07:25:21.744" /><!-- duration: 0ms -->
+      <step title="DeploymentManager.Deploy(id:57b7fff3e91240cf8e95232410d97721)" date="2025-10-22T07:25:21.763" >
+        <step title="Collecting changeset information" date="2025-10-22T07:25:21.775" /><!-- duration: 109ms -->
+        <step title="Updating submodules" date="2025-10-22T07:25:21.900" >
+          <step title="Updating submodules." date="2025-10-22T07:25:22.015" /><!-- duration: 0ms -->
+        </step><!-- duration: 125ms -->
+        <step title="Preparing deployment for commit id &apos;57b7fff3e9&apos;." date="2025-10-22T07:25:22.104" /><!-- duration: 0ms -->
+        <step title="Determining deployment builder" date="2025-10-22T07:25:22.196" >
+          <step title="Builder is OneDeployBuilder" date="2025-10-22T07:25:22.196" /><!-- duration: 0ms -->
+        </step><!-- duration: 0ms -->
+        <step title="Copying SSH keys" date="2025-10-22T07:25:22.212" /><!-- duration: 20ms -->
+        <step title="Building" date="2025-10-22T07:25:22.243" >
+          <step title="Running build. Project type: OneDeploy" date="2025-10-22T07:25:22.275" /><!-- duration: 0ms -->
+          <step title="Copying the manifest" date="2025-10-22T07:25:22.321" /><!-- duration: 16ms -->
+          <step title="Clean deploying to C:\home\site\wwwroot" date="2025-10-22T07:25:22.400" /><!-- duration: 0ms -->
+          <step title="Generating deployment script." date="2025-10-22T07:25:22.462" /><!-- duration: 0ms -->
+          <step title="Generating deployment script" date="2025-10-22T07:25:22.478" >
+            <step title="Using cached version of the deployment script for command: -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;" date="2025-10-22T07:25:22.509" /><!-- duration: 0ms -->
+            <step title="Using cached version of deployment script (command: &apos;azure -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;&apos;)." date="2025-10-22T07:25:22.529" /><!-- duration: 11ms -->
+          </step><!-- duration: 63ms -->
+          <step title="Running deployment command..." date="2025-10-22T07:25:22.587" /><!-- duration: 0ms -->
+          <step title="Command: &quot;C:\home\site\deployments\tools\deploy.cmd&quot;" date="2025-10-22T07:25:22.587" /><!-- duration: 16ms -->
+          <step title="Executing external process" date="2025-10-22T07:25:22.619" type="process" path="starter.cmd" arguments="&quot;C:\home\site\deployments\tools\deploy.cmd&quot;" >
+            <step title="Handling Basic Web Site deployment." date="2025-10-22T07:25:23.170" /><!-- duration: 11ms -->
+            <step title="Creating app_offline.htm" date="2025-10-22T07:25:24.743" /><!-- duration: 18ms -->
+            <step title="KuduSync.NET from: &apos;C:\local\Temp\zipdeploy\extracted&apos; to: &apos;C:\home\site\wwwroot&apos;" date="2025-10-22T07:25:24.790" /><!-- duration: 0ms -->
+            <step title="Deleting app_offline.htm" date="2025-10-22T07:25:24.824" /><!-- duration: 0ms -->
+            <step title="Finished successfully." date="2025-10-22T07:25:24.853" /><!-- duration: 0ms -->
+          </step><!-- duration: 2249ms -->
+          <step title="Build completed succesfully." date="2025-10-22T07:25:24.900" /><!-- duration: 17ms -->
+          <step title="Running post deployment command(s)..." date="2025-10-22T07:25:25.103" /><!-- duration: 19ms -->
+          <step title="Requesting site restart" date="2025-10-22T07:25:25.343" /><!-- duration: 10ms -->
+          <step title="Requesting site restart" date="2025-10-22T07:25:25.402" /><!-- duration: 18ms -->
+          <step title="Requesting site restart. Attempt #1" date="2025-10-22T07:25:25.759" /><!-- duration: 0ms -->
+          <step title="Requesting site restart. Attempt #1" date="2025-10-22T07:25:25.811" /><!-- duration: 0ms -->
+          <step title="Successfully requested a restart. Attempt #1" date="2025-10-22T07:25:27.462" /><!-- duration: 578ms -->
+          <step title="Successfully requested a restart. Attempt #1" date="2025-10-22T07:25:28.918" /><!-- duration: 326ms -->
+          <step title="Deployment successful. DEPLOYMENTINFO: deploymentPath = OneDeploy, deployer = OneDeploy, os = windows, sku = Basic, siteName = filesvc-stg-app, siteHostName = filesvc-stg-app.chinacloudsites.cn, deploymentStatus = Success" date="2025-10-22T07:25:30.681" /><!-- duration: 17ms -->
+          <step title="Purge deployment items" date="2025-10-22T07:25:31.218" >
+            <step title="Remove ae768f2c8, Success, received at 10/21/2025 5:15:21 AM" date="2025-10-22T07:25:31.306" /><!-- duration: 18ms -->
+          </step><!-- duration: 125ms -->
+        </step><!-- duration: 9128ms -->
+      </step><!-- duration: 9626ms -->
+      <step title="Cleaning up temp files" date="2025-10-22T07:25:31.400" /><!-- duration: 18ms -->
+      <step title="Skip function trigger and logicapp sync because function is not enabled." date="2025-10-22T07:25:31.447" /><!-- duration: 0ms -->
+    </step><!-- duration: 13454ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-10-22T07:25:31.561" /><!-- duration: 11ms -->
+    <step title="Deleting shutdown sentinel file" date="2025-10-22T07:25:31.590" SemaphoreCount="8" /><!-- duration: 19ms -->
+  </step><!-- duration: 28058ms -->
+  <step title="Outgoing response" date="2025-10-22T07:25:31.761" type="response" statusCode="200" statusText="OK" Server="Microsoft-IIS/10.0" x-ms-request-id="377ec1f8-af18-11f0-b52d-c4cb7696db44" Cache-Control="private" X-AspNet-Version="4.0.30319" /><!-- duration: 816ms -->
+</step><!-- duration: 29777ms -->

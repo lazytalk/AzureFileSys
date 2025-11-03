@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open Dev SQLite DB",
+      "type": "shell",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\open-dev-db.ps1"
+      ],
+      "problemMatcher": []
+    }
+    ,
+    {
+      "label": "Run Dev Server (PowerShell)",
+      "type": "shell",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\dev-run.ps1",
+        "-Port",
+        "5090"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

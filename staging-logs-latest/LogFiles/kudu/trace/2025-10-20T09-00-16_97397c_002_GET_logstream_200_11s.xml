@@ -1,0 +1,9 @@
+<step title="Incoming Request" date="2025-10-20T09:00:16.334" instance="97397c" url="/logstream" method="GET" type="request" pid="2672,2,26" Accept-Encoding="identity" Authorization="Bea..." Host="filesvc-stg-app.scm.chinacloudsites.cn" User-Agent="AZURECLI/2.77.0 (MSI)" x-ms-client-request-id="36cd35d6-ad93-11f0-975c-c4cb7696db44" X-ARR-LOG-ID="36cd35d6-ad93-11f0-975c-c4cb7696db44" CLIENT-IP="111.197.33.173:6133" X-SITE-DEPLOYMENT-ID="filesvc-stg-app" WAS-DEFAULT-HOSTNAME="filesvc-stg-app.scm.chinacloudsites.cn" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/logstream" >
+  <step title="Cleanup Xml Logs" date="2025-10-20T09:00:16.334" /><!-- duration: 16ms -->
+  <step title="LogStreamHandler.BeginProcessRequest" date="2025-10-20T09:00:16.381" >
+    <step title="LockFile &apos;C:\home\site\locks\hooks.lock&apos; acquired" date="2025-10-20T09:00:16.615" /><!-- duration: 0ms -->
+    <step title="LockFile &apos;C:\home\site\locks\hooks.lock&apos; released" date="2025-10-20T09:00:16.712" /><!-- duration: 12ms -->
+  </step><!-- duration: 344ms -->
+  <step title="LogStreamHandler.EndProcessRequest" date="2025-10-20T09:00:27.538" /><!-- duration: 60ms -->
+  <step title="Outgoing response" date="2025-10-20T09:00:27.658" type="response" statusCode="200" statusText="OK" Server="Microsoft-IIS/10.0" Cache-Control="private" X-AspNet-Version="4.0.30319" Content-Type="text/plain; charset=utf-8" /><!-- duration: 94ms -->
+</step><!-- duration: 11436ms -->

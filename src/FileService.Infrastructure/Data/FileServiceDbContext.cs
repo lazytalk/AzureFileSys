@@ -18,8 +18,11 @@ public class FileServiceDbContext : DbContext
             b.Property(f => f.FileName).HasMaxLength(512);
             b.Property(f => f.OwnerUserId).HasMaxLength(128).IsRequired();
             b.Property(f => f.BlobPath).HasMaxLength(1024).IsRequired();
+            b.Property(f => f.IsDeleted).HasDefaultValue(false);
+            b.Property(f => f.DeletedAt);
             b.HasIndex(f => new { f.OwnerUserId, f.UploadedAt });
             b.HasIndex(f => f.BlobPath).IsUnique();
+            b.HasIndex(f => f.IsDeleted);
         });
     }
 }

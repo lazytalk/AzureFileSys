@@ -25,12 +25,24 @@ public class EfFileMetadataRepository : IFileMetadataRepository
         }
     }
 
+    public async Task SoftDeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var entity = await _ctx.Files.FindAsync([id], ct);
+        if (entity != null)
+        {
+            entity.IsDeleted = true;
+            entity.DeletedAt = DateTimeOffset.UtcNow;
+            await _ctx.SaveChangesAsync(ct);
+        }
+    }
+
     public Task<FileRecord?> GetAsync(Guid id, CancellationToken ct = default)
         => _ctx.Files.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id, ct);
 
     public async Task<IReadOnlyList<FileRecord>> ListAllAsync(int take = 200, int skip = 0, CancellationToken ct = default)
     {
         return await _ctx.Files.AsNoTracking()
+            .Where(f => !f.IsDeleted)
             .OrderByDescending(f => f.UploadedAt)
             .Skip(skip)
             .Take(take)
@@ -40,7 +52,7 @@ public class EfFileMetadataRepository : IFileMetadataRepository
     public async Task<IReadOnlyList<FileRecord>> ListByOwnerAsync(string ownerUserId, CancellationToken ct = default)
     {
         return await _ctx.Files.AsNoTracking()
-            .Where(f => f.OwnerUserId == ownerUserId)
+            .Where(f => f.OwnerUserId == ownerUserId && !f.IsDeleted)
             .OrderByDescending(f => f.UploadedAt)
             .ToListAsync(ct);
     }

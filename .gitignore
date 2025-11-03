@@ -1,0 +1,110 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Test results
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Azure & Secrets - CRITICAL
+tmp_creds.json
+diag_mgmt_token.txt
+*.token
+*.pfx
+*.p12
+*_credentials.json
+*_token.txt
+*_secret*.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.*.Local.json
+local.settings.json
+Properties/serviceDependencies.*.json
+Properties/launchSettings.json
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+files.db
+
+# Logs and diagnostics
+*.log
+logs/
+app-logs/
+app-logs-latest/
+staging-logs/
+staging-logs-extracted/
+*.zip
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.bak
+*~
+downloaded-temp.txt
+dev-run.err
+
+# HTML test files (adjust if needed for your project)
+cors-test.html
+resumable-uploader.html
+start.html
+stop.html
+status.html
+
+# Node (if using npm)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation (optional - uncomment if you want to track these)
+# ANALYSIS-SUMMARY.md
+# CODE-ANALYSIS.md
+# TESTING.md
+# QUICK-REFERENCE.md

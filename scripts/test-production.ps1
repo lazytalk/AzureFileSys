@@ -24,10 +24,7 @@ try {
     } catch {
         # If root fails, try a minimal API endpoint
         try {
-            $headers = @{
-                "X-PowerSchool-User" = "health-check"
-                "X-PowerSchool-Role" = "user"
-            }
+                $headers = @{}
             $listResponse = Invoke-RestMethod "$ProductionUrl/api/files" -Method Get -Headers $headers -TimeoutSec $TimeoutSeconds
             Write-Host " ✅ PASSED (API endpoint)" -ForegroundColor Green
         } catch {
@@ -39,10 +36,7 @@ try {
     Write-Host "2. ⏱️ Response Time Check..." -NoNewline
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
     try {
-        $headers = @{
-            "X-PowerSchool-User" = "health-check"
-            "X-PowerSchool-Role" = "user"
-        }
+            $headers = @{}
         $response = Invoke-RestMethod "$ProductionUrl/api/files" -Method Get -Headers $headers -TimeoutSec $TimeoutSeconds
         $stopwatch.Stop()
         $responseTime = $stopwatch.ElapsedMilliseconds

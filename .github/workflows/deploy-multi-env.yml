@@ -1,4 +1,4 @@
-name: Multi-Environment Build & Deploy
+﻿name: Multi-Environment Build & Deploy
 
 on:
   push:
@@ -17,35 +17,39 @@ jobs:
       artifact-name: ${{ steps.upload.outputs.artifact-id }}
     
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: ⚙️ Setup .NET
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       
-      - name: 📦 Restore dependencies
+      - name: Restore dependencies
         run: dotnet restore
       
-      - name: 🏗️ Build
+      - name: Build
         run: dotnet build --configuration Release --no-restore
       
-      - name: 🧪 Run tests
+      - name: Run tests
         run: dotnet test --configuration Release --no-build --verbosity normal
       
-      - name: 📱 Publish application
+      - name: Publish application
         run: dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish
       
-      - name: 🗄️ Create EF Bundle
-        run: dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish/efbundle.exe
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef
       
-      - name: 📦 Create deployment package
+      - name: Create EF Bundle
+        run: dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish/efbundle.exe
+        continue-on-error: true
+      
+      - name: Create deployment package
         run: |
           cd publish
           Compress-Archive * ../file-service-${{ github.sha }}.zip
       
-      - name: ⬆️ Upload build artifact
+      - name: Upload build artifact
         id: upload
         uses: actions/upload-artifact@v4
         with:
@@ -58,35 +62,32 @@ jobs:
     needs: build
     runs-on: windows-latest
     if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
-    environment: 
-      name: staging
-      url: https://filesvc-api-staging.azurewebsites.net
     
     steps:
-      - name: 📥 Download build artifact
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: file-service-${{ github.sha }}
       
-      - name: 🔐 Azure Login
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
-      - name: 🚀 Deploy to Staging
+      - name: Deploy to Staging
         run: |
-          az webapp deploy \
-            --resource-group file-svc-staging-rg \
-            --name filesvc-api-staging \
-            --src-path file-service-${{ github.sha }}.zip \
+          az webapp deploy `
+            --resource-group file-svc-staging-rg `
+            --name filesvc-api-staging `
+            --src-path file-service-${{ github.sha }}.zip `
             --type zip
       
-      - name: ⏱️ Wait for deployment
+      - name: Wait for deployment
         run: Start-Sleep 60
       
-      - name: 🧪 Run staging health check
+      - name: Run staging health check
         run: |
           $maxRetries = 5
           $retryCount = 0
@@ -96,79 +97,16 @@ jobs:
             try {
               $response = Invoke-RestMethod -Uri "https://filesvc-api-staging.azurewebsites.net/swagger/v1/swagger.json" -Method Get -TimeoutSec 30
               if ($response) {
-                Write-Host "✅ Staging health check passed"
+                Write-Host "Staging health check passed"
                 $success = $true
               }
             } catch {
               $retryCount++
-              Write-Host "⏳ Health check attempt $retryCount failed, retrying..."
+              Write-Host "Health check attempt $retryCount failed, retrying..."
               Start-Sleep 30
             }
           }
           
           if (-not $success) {
-            throw "❌ Staging health check failed after $maxRetries attempts"
+            throw "Staging health check failed after $maxRetries attempts"
           }
-
-  deploy-production:
-    name: Deploy to Production
-    needs: [build, deploy-staging]
-    runs-on: windows-latest
-    if: github.ref == 'refs/heads/main'
-    environment: 
-      name: production
-      url: https://filesvc-api-prod.azurewebsites.net
-    
-    steps:
-      - name: 📥 Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: file-service-${{ github.sha }}
-      
-      - name: 🔐 Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
-      - name: 🚀 Deploy to Production
-        run: |
-          az webapp deploy \
-            --resource-group file-svc-production-rg \
-            --name filesvc-api-prod \
-            --src-path file-service-${{ github.sha }}.zip \
-            --type zip
-      
-      - name: ⏱️ Wait for deployment
-        run: Start-Sleep 60
-      
-      - name: 🏥 Run production health check
-        run: |
-          $maxRetries = 3
-          $retryCount = 0
-          $success = $false
-          
-          while ($retryCount -lt $maxRetries -and -not $success) {
-            try {
-              # Production might not have Swagger, so test API endpoint
-              $headers = @{ "X-PowerSchool-User" = "health-check"; "X-PowerSchool-Role" = "user" }
-              $response = Invoke-RestMethod -Uri "https://filesvc-api-prod.azurewebsites.net/api/files" -Method Get -Headers $headers -TimeoutSec 30
-              Write-Host "✅ Production health check passed"
-              $success = $true
-            } catch {
-              $retryCount++
-              Write-Host "⏳ Health check attempt $retryCount failed, retrying..."
-              Start-Sleep 30
-            }
-          }
-          
-          if (-not $success) {
-            throw "❌ Production health check failed after $maxRetries attempts"
-          }
-      
-      - name: 📊 Post-deployment notification
-        run: |
-          Write-Host "🎉 Production deployment completed successfully!"
-          Write-Host "🔗 Production URL: https://filesvc-api-prod.azurewebsites.net"
-          Write-Host "📊 Monitor at: https://portal.azure.com"

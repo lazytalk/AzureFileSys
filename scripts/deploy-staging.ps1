@@ -1,151 +1,329 @@
 #!/usr/bin/env pwsh
-# deploy-staging.ps1 - Deploy File Service to Azure Staging Environment
+# Working Azure China deployment script with Table Storage
+# This script deploys the File Service to Azure China Cloud
 
 param(
-    [switch]$CreateResources,
-    [switch]$DeployApp,
-    [switch]$RunMigrations,
-    [string]$SubscriptionId = "",
-    [string]$Location = "chinaeast2"  # Azure China region
+    [string]$SubscriptionId,
+    [string]$Location = "chinaeast",
+    [string]$ResourcePrefix = "filesvc-stg",
+    [string]$CustomDomain = "kaiweneducation.com",
+    [string]$CertificateFile,
+    [string]$CertificatePassword,
+    [switch]$UseLetsEncrypt
 )
 
-# Staging Environment Variables
-$env = "staging"
-$resourceGroup = "file-svc-staging-rg"
-$storageAccount = "filesvcstg$(Get-Random -Minimum 1000 -Maximum 9999)"
-$webAppName = "filesvc-api-staging"
-$keyVaultName = "filesvc-kv-staging"
-$appInsightsName = "filesvc-ai-staging"
-$sqlServerName = "filesvc-sql-staging"
-$sqlDbName = "file-service-db"
-$sqlAdminUser = "fsadmin"
-$sqlAdminPassword = "YourSecurePassword123!" # CHANGE THIS TO A SECURE PASSWORD!
+$ResourceGroup = "${ResourcePrefix}-rg"
+$storageAccount = "filesvcstg" + $Location
+$keyVaultName = "${ResourcePrefix}-kv" 
+$appInsightsName = "${ResourcePrefix}-ai"
+$webAppName = "${ResourcePrefix}-app"
+$appServicePlan = "${ResourcePrefix}-plan"
+$containerName = "userfiles-staging"
 
-Write-Host "🧪 File Service - Staging Deployment" -ForegroundColor Cyan
-Write-Host "===================================" -ForegroundColor Cyan
+Write-Host "=== Azure File Service Deployment (China Cloud + Table Storage) ===" -ForegroundColor Cyan
 
-if ($SubscriptionId) {
-    Write-Host "Setting Azure subscription: $SubscriptionId"
-    az account set --subscription $SubscriptionId
+# Step 1: Setup Azure China Cloud
+Write-Host "Setting up Azure China Cloud..." -ForegroundColor Yellow
+az cloud set --name AzureChinaCloud
+
+if (-not $SubscriptionId) {
+    $SubscriptionId = az account show --query id --output tsv
 }
 
-if ($CreateResources) {
-    Write-Host "📦 Creating Azure resources for staging environment..." -ForegroundColor Yellow
-    
-    # Create staging resource group
-    Write-Host "Creating resource group: $resourceGroup"
-    az group create -n $resourceGroup -l $Location
+az account set --subscription $SubscriptionId
+$subscriptionName = az account show --query name --output tsv
+Write-Host "Using subscription: $subscriptionName" -ForegroundColor Green
 
-    # Create Application Insights
-    Write-Host "Creating Application Insights: $appInsightsName"
-    az monitor app-insights component create -a $appInsightsName -g $resourceGroup -l $Location --application-type web
-    $aiKey = az monitor app-insights component show -a $appInsightsName -g $resourceGroup --query instrumentationKey -o tsv
+Write-Host "Configuration:" -ForegroundColor Gray
+Write-Host "  Resource Group: $ResourceGroup"
+Write-Host "  Location: $Location"
+Write-Host "  Storage Account: $storageAccount"
+Write-Host "  Web App: $webAppName"
+Write-Host ""
 
-    # Create storage account
-    Write-Host "Creating storage account: $storageAccount"
-    az storage account create -n $storageAccount -g $resourceGroup -l $Location --sku Standard_LRS --kind StorageV2
-    az storage container create --account-name $storageAccount -n userfiles-staging --auth-mode key --public-access off
-    $storageConnString = az storage account show-connection-string -n $storageAccount -g $resourceGroup -o tsv
-
-    # Create SQL Server and Database (Basic tier for staging)
-    Write-Host "Creating Azure SQL Database: $sqlServerName"
-    az sql server create -n $sqlServerName -g $resourceGroup -l $Location --admin-user $sqlAdminUser --admin-password $sqlAdminPassword
-    az sql db create -s $sqlServerName -g $resourceGroup -n $sqlDbName --service-objective Basic
-    az sql server firewall-rule create -s $sqlServerName -g $resourceGroup -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-    $sqlConnString = az sql db show-connection-string -s $sqlServerName -n $sqlDbName -c ado.net | ForEach-Object { $_ -replace '<username>', $sqlAdminUser -replace '<password>', $sqlAdminPassword }
-
-    # Create Key Vault
-    Write-Host "Creating Key Vault: $keyVaultName"
-    az keyvault create -n $keyVaultName -g $resourceGroup -l $Location --enable-soft-delete true --enable-purge-protection true
-    az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
-    az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
-    az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-    az keyvault secret set --vault-name $keyVaultName -n PowerSchool--BaseUrl --value "https://test-powerschool.school.edu"
-    az keyvault secret set --vault-name $keyVaultName -n PowerSchool--ApiKey --value "staging-api-key-placeholder"
-
-    # Create App Service (Basic tier for staging)
-    Write-Host "Creating App Service: $webAppName"
-    az appservice plan create -n file-svc-staging-plan -g $resourceGroup --sku B1 --is-linux false
-    az webapp create -n $webAppName -g $resourceGroup -p file-svc-staging-plan --runtime "DOTNET|8.0"
-
-    # Configure Managed Identity
-    Write-Host "Configuring Managed Identity..."
-    az webapp identity assign -n $webAppName -g $resourceGroup
-    $principalId = az webapp identity show -n $webAppName -g $resourceGroup --query principalId -o tsv
-    az keyvault set-policy -n $keyVaultName -g $resourceGroup --object-id $principalId --secret-permissions get list
-    $storageId = az storage account show -n $storageAccount -g $resourceGroup --query id -o tsv
-    az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $storageId
-
-    # Configure App Settings
-    Write-Host "Configuring App Settings..."
-    az webapp config appsettings set -n $webAppName -g $resourceGroup --settings `
-      ASPNETCORE_ENVIRONMENT=Staging `
-      EnvironmentMode=Staging `
-      BlobStorage__UseLocalStub=false `
-      "BlobStorage__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)" `
-      BlobStorage__ContainerName=userfiles-staging `
-      Persistence__UseEf=true `
-      Persistence__UseSqlServer=true `
-      "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
-      "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-      "PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)" `
-      "PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
-
-    # Security Settings
-    Write-Host "Applying security settings..."
-    az webapp config set -n $webAppName -g $resourceGroup --https-only true --min-tls-version 1.2
-
-    Write-Host "✅ Staging resources created successfully!" -ForegroundColor Green
-    Write-Host "Staging URL: https://$webAppName.azurewebsites.net" -ForegroundColor Green
+# Step 2: Create Resource Group
+Write-Host "Creating Resource Group..." -ForegroundColor Yellow
+$rgExists = az group exists --name $ResourceGroup
+if ($rgExists -eq "true") {
+    Write-Host "Resource group already exists" -ForegroundColor Green
+} else {
+    az group create --name $ResourceGroup --location $Location | Out-Null
+    Write-Host "Resource group created" -ForegroundColor Green
 }
 
-if ($DeployApp) {
-    Write-Host "🚀 Deploying application to staging..." -ForegroundColor Yellow
-    
-    # Build and publish
-    Write-Host "Building application..."
-    dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish-staging --verbosity quiet
-    
-    # Create migration bundle
-    Write-Host "Creating migration bundle..."
-    dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish-staging/efbundle.exe --verbose
-    
-    # Create deployment package
-    Write-Host "Creating deployment package..."
-    Set-Location publish-staging
-    Compress-Archive -Path * -DestinationPath ../deploy-staging.zip -Force
-    Set-Location ..
-    
-    # Deploy to Azure
-    Write-Host "Deploying to Azure App Service..."
-    az webapp deploy -g $resourceGroup -n $webAppName --src-path deploy-staging.zip --type zip
-    
-    Write-Host "✅ Application deployed to staging!" -ForegroundColor Green
+# Step 3: Create Storage Account
+Write-Host "Creating Storage Account..." -ForegroundColor Yellow
+$storageExists = az storage account show --name $storageAccount --resource-group $ResourceGroup 2>$null
+if ($storageExists) {
+    Write-Host "Storage account already exists" -ForegroundColor Green
+} else {
+    az storage account create --name $storageAccount --resource-group $ResourceGroup --location $Location --sku Standard_LRS --kind StorageV2 | Out-Null
+    Write-Host "Storage account created" -ForegroundColor Green
 }
 
-if ($RunMigrations) {
-    Write-Host "🗄️ Running database migrations on staging..." -ForegroundColor Yellow
-    
-    # Get connection string from Key Vault and run migrations
-    try {
-        $connectionString = az keyvault secret show --vault-name $keyVaultName --name "Sql--ConnectionString" --query value -o tsv
-        if ($connectionString) {
-            Write-Host "Running EF migrations..."
-            ./publish-staging/efbundle.exe --connection $connectionString
-            Write-Host "✅ Database migrations completed!" -ForegroundColor Green
+$storageConnString = az storage account show-connection-string --name $storageAccount --resource-group $ResourceGroup --output tsv
+
+# Step 4: Create Key Vault
+Write-Host "Creating Key Vault..." -ForegroundColor Yellow
+$kvExists = az keyvault show --name $keyVaultName 2>$null
+if ($kvExists) {
+    Write-Host "Key Vault already exists" -ForegroundColor Green
+} else {
+    az keyvault create --name $keyVaultName --resource-group $ResourceGroup --location $Location | Out-Null
+    Start-Sleep -Seconds 10
+    Write-Host "Key Vault created" -ForegroundColor Green
+}
+
+# Note: secrets are written after RBAC for the deploying principal and the WebApp identity
+# to avoid Forbidden errors while RBAC propagates.
+
+# Step 6: Create App Service Plan
+Write-Host "Creating App Service Plan..." -ForegroundColor Yellow
+$planExists = az appservice plan show --name $appServicePlan --resource-group $ResourceGroup 2>$null
+if ($planExists) {
+    Write-Host "App Service Plan already exists" -ForegroundColor Green
+} else {
+    az appservice plan create --name $appServicePlan --resource-group $ResourceGroup --sku B1 | Out-Null
+    Write-Host "App Service Plan created" -ForegroundColor Green
+}
+
+# Step 7: Create Web App
+Write-Host "Creating Web App..." -ForegroundColor Yellow
+$webExists = az webapp show --name $webAppName --resource-group $ResourceGroup 2>$null
+if ($webExists) {
+    Write-Host "Web App already exists" -ForegroundColor Green
+} else {
+    az webapp create --name $webAppName --resource-group $ResourceGroup --plan $appServicePlan --runtime "dotnet:8" | Out-Null
+    Write-Host "Web App created" -ForegroundColor Green
+}
+
+# Verify configured runtime for the Web App (helpful sanity check)
+try {
+    $siteRuntime = az webapp show --name $webAppName --resource-group $ResourceGroup --query "siteConfig.linuxFxVersion" -o tsv 2>$null
+    if ($siteRuntime) { Write-Host "Web App runtime (linuxFxVersion): $siteRuntime" -ForegroundColor Green }
+    else { Write-Host "Could not read linuxFxVersion for Web App (it may be a Windows app)." -ForegroundColor Yellow }
+} catch { Write-Host "Failed to query Web App runtime: $_" -ForegroundColor Yellow }
+
+# Step 8: Configure Managed Identity
+Write-Host "Configuring Managed Identity..." -ForegroundColor Yellow
+$identity = az webapp identity show --name $webAppName --resource-group $ResourceGroup --query principalId --output tsv 2>$null
+if (-not $identity) {
+    az webapp identity assign --name $webAppName --resource-group $ResourceGroup | Out-Null
+    Start-Sleep -Seconds 10
+    $identity = az webapp identity show --name $webAppName --resource-group $ResourceGroup --query principalId --output tsv
+}
+
+$kvScope = az keyvault show --name $keyVaultName --resource-group $ResourceGroup --query id --output tsv
+# Try to set access policy for the Web App identity (for Key Vaults using access policy model).
+# This is best-effort: it will succeed for access-policy vaults and quietly continue for RBAC-enabled vaults.
+Write-Host "Attempting to set Key Vault access policy for Web App identity (best-effort)..." -ForegroundColor Yellow
+az keyvault set-policy --name $keyVaultName --object-id $identity --secret-permissions get list 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Key Vault access policy set for Web App identity" -ForegroundColor Green
+} else {
+    Write-Host "Could not set access policy (vault may be RBAC-enabled or you may lack permissions). Continuing." -ForegroundColor Yellow
+}
+
+# Assign RBAC role (necessary for RBAC-enabled vaults)
+az role assignment create --assignee $identity --role "Key Vault Secrets Officer" --scope $kvScope | Out-Null
+
+Write-Host "Managed Identity configured" -ForegroundColor Green
+
+try {
+    # Also assign the current deploying principal permissions so the script can set secrets immediately
+    $caller = az account show --query user.name --output tsv 2>$null
+    if ($caller) {
+        Write-Host "Granting Key Vault access policy to deploying principal: $caller" -ForegroundColor Yellow
+        # Prefer UPN if it's an email, otherwise try SPN or objectId
+        if ($caller -match "@") {
+            # Try to set a keyvault access policy; for RBAC enabled vaults this will fail.
+            $setPolicyResult = az keyvault set-policy --name $keyVaultName --upn $caller --secret-permissions get set list 2>$null | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Could not set access policy (vault may be RBAC enabled). Attempting role assignment to user objectId instead..." -ForegroundColor Yellow
+                $callerId = az ad user show --id $caller --query objectId -o tsv 2>$null
+                if ($callerId) {
+                    az role assignment create --assignee $callerId --role "Key Vault Secrets Officer" --scope $kvScope | Out-Null
+                }
+            }
         } else {
-            Write-Warning "Could not retrieve connection string from Key Vault"
+            # try as service principal name or object id via role assignment
+            $callerId = $null
+            try { $callerId = az ad sp show --id $caller --query objectId -o tsv 2>$null } catch {}
+            if (-not $callerId) {
+                try { $callerId = az ad user show --id $caller --query objectId -o tsv 2>$null } catch {}
+            }
+            if ($callerId) {
+                az role assignment create --assignee $callerId --role "Key Vault Secrets Officer" --scope $kvScope | Out-Null
+            }
         }
-    } catch {
-        Write-Error "Failed to run migrations: $($_.Exception.Message)"
+    }
+} catch {
+    Write-Host "Could not assign role to deploying principal (may be a service principal or lack permissions). Skipping." -ForegroundColor Yellow
+}
+
+# Wait for RBAC propagation for the WebApp identity
+Write-Host "Waiting for Key Vault role/policy propagation (this can take a minute)..." -ForegroundColor Yellow
+$propOk = $false
+# Increase attempts to give RBAC/KeyVault propagation more time
+for ($attempt=1; $attempt -le 20; $attempt++) {
+    $assignments = az role assignment list --scope $kvScope --assignee $identity --query "[].roleDefinitionName" --output tsv 2>$null
+    if ($assignments -and $assignments -match "Key Vault Secrets") {
+        $propOk = $true
+        break
+    }
+    Start-Sleep -Seconds 10
+}
+
+if (-not $propOk) {
+    Write-Warning "RBAC assignment may not have propagated yet. Continuing but Key Vault secret set may fail."
+}
+
+# Now store secrets (after attempting RBAC assignment)
+Write-Host "Storing secrets..." -ForegroundColor Yellow
+az keyvault secret set --vault-name $keyVaultName --name "BlobStorage-ConnectionString" --value $storageConnString | Out-Null
+az keyvault secret set --vault-name $keyVaultName --name "TableStorage-ConnectionString" --value $storageConnString | Out-Null
+Write-Host "Secrets stored (or attempted)" -ForegroundColor Green
+
+# Step 9: Configure App Settings
+Write-Host "Configuring App Settings..." -ForegroundColor Yellow
+
+$kvBlobRef = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage-ConnectionString)"
+$kvTableRef = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=TableStorage-ConnectionString)"
+
+# Use REST API for China Cloud compatibility
+# Only set essential runtime settings and secrets - all other config comes from appsettings.Staging.json
+$appSettingsBody = @{
+    properties = @{
+        "ASPNETCORE_ENVIRONMENT" = "Staging"
+        "BlobStorage__ConnectionString" = $kvBlobRef
+        "TableStorage__ConnectionString" = $kvTableRef
+        # Make the app listen on port 5543 (Kestrel) and expose that port to the App Service front-end
+        "WEBSITES_PORT" = "5543"
+        "ASPNETCORE_URLS" = "http://+:5543"
     }
 }
 
-Write-Host ""
-Write-Host "🎉 Staging deployment completed!" -ForegroundColor Green
-Write-Host "Staging URL: https://filesvc-api-staging.azurewebsites.net/swagger" -ForegroundColor Cyan
-Write-Host "Monitor logs: az webapp log tail -n filesvc-api-staging -g file-svc-staging-rg" -ForegroundColor Gray
+# Use management token + Invoke-RestMethod for reliable content-type handling in China Cloud
+$jsonBody = $appSettingsBody | ConvertTo-Json -Depth 4
+$token = az account get-access-token --resource https://management.chinacloudapi.cn/ --query accessToken -o tsv
+if (-not $token) {
+    Write-Warning "Failed to obtain management access token; attempting az rest as fallback"
+    $uri = "https://management.chinacloudapi.cn/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$webAppName/config/appsettings?api-version=2022-03-01"
+    az rest --method PUT --uri $uri --body $jsonBody --headers @{"Content-Type"="application/json"} | Out-Null
+} else {
+    $uri = "https://management.chinacloudapi.cn/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$webAppName/config/appsettings?api-version=2022-03-01"
+    Invoke-RestMethod -Method Put -Uri $uri -Headers @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" } -Body $jsonBody | Out-Null
+}
 
-# Cleanup temp files
-if (Test-Path "publish-staging") { Remove-Item -Recurse -Force publish-staging }
-if (Test-Path "deploy-staging.zip") { Remove-Item -Force deploy-staging.zip }
+Write-Host "App settings configured" -ForegroundColor Green
+
+# Step 10: Build and Deploy
+Write-Host "Building application..." -ForegroundColor Yellow
+
+if (Test-Path "publish-staging") { Remove-Item -Recurse -Force "publish-staging" }
+if (Test-Path "deploy-staging.zip") { Remove-Item -Force "deploy-staging.zip" }
+
+$buildOutput = dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish-staging 2>&1
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build failed: $buildOutput"
+    exit 1
+}
+
+Write-Host "Build completed" -ForegroundColor Green
+
+Write-Host "Creating deployment package..." -ForegroundColor Yellow
+Push-Location publish-staging
+Compress-Archive -Path * -DestinationPath ../deploy-staging.zip -Force
+Pop-Location
+
+Write-Host "Deploying to Azure..." -ForegroundColor Yellow
+az webapp deploy --resource-group $ResourceGroup --name $webAppName --src-path deploy-staging.zip --type zip | Out-Null
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Deployment completed successfully!" -ForegroundColor Green
+} else {
+    Write-Warning "Deployment may have issues. Check web app logs."
+}
+
+# Cleanup
+Remove-Item -Recurse -Force publish-staging -ErrorAction SilentlyContinue
+Remove-Item -Force deploy-staging.zip -ErrorAction SilentlyContinue
+
+# Step 11: Configure Custom Domain
+if ($CustomDomain) {
+    $fullHostname = "filesvc-stg-app.$CustomDomain"
+    Write-Host "Adding custom domain: $fullHostname" -ForegroundColor Yellow
+    az webapp config hostname add --resource-group $ResourceGroup --webapp-name $webAppName --hostname $fullHostname | Out-Null
+    Write-Host "Custom domain added" -ForegroundColor Green
+}
+
+# Step 12: Configure SSL Certificate
+if ($CertificateFile -and $CertificatePassword) {
+    Write-Host "Uploading provided SSL certificate..." -ForegroundColor Yellow
+    $thumbprint = az webapp config ssl upload --resource-group $ResourceGroup --name $webAppName --certificate-file $CertificateFile --certificate-password $CertificatePassword --query thumbprint -o tsv
+    Write-Host "Binding SSL certificate..." -ForegroundColor Yellow
+    $fullHostname = "filesvc-stg-app.$CustomDomain"
+    az webapp config ssl bind --resource-group $ResourceGroup --name $webAppName --certificate-thumbprint $thumbprint --ssl-type SNI --hostname $fullHostname | Out-Null
+    Write-Host "SSL certificate bound" -ForegroundColor Green
+} elseif ($UseLetsEncrypt -and $CustomDomain) {
+    $fullHostname = "filesvc-stg-app.$CustomDomain"
+    Write-Host "Obtaining Let's Encrypt SSL certificate for $fullHostname..." -ForegroundColor Yellow
+    # Install certbot if not present
+    if (-not (Get-Command certbot -ErrorAction SilentlyContinue)) {
+        Write-Host "Installing certbot..." -ForegroundColor Yellow
+        python -m pip install certbot
+    }
+    # Run certbot for DNS challenge
+    Write-Host "Running certbot for DNS challenge. You may need to add a TXT record to your DNS." -ForegroundColor Yellow
+    certbot certonly --manual --preferred-challenges dns -d $fullHostname --agree-tos --email "admin@$CustomDomain" --no-eff-email
+    # Assume cert is in /etc/letsencrypt/live/$fullHostname/
+    $certDir = "/etc/letsencrypt/live/$fullHostname"
+    if (Test-Path $certDir) {
+        $certPath = "$env:TEMP\$CustomDomain.pfx"
+        # Convert to PFX using PowerShell
+        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+        $cert.Import("$certDir\fullchain.pem", $null, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
+        $key = [System.IO.File]::ReadAllText("$certDir\privkey.pem")
+        # Note: Full conversion requires more steps; for simplicity, assume user provides PFX
+        Write-Host "Certificate obtained. Please convert to .pfx manually and provide via -CertificateFile." -ForegroundColor Yellow
+    } else {
+        Write-Host "Certificate not found. Please complete the DNS challenge manually." -ForegroundColor Red
+    }
+} elseif ($CustomDomain) {
+    $fullHostname = "filesvc-stg-app.$CustomDomain"
+    Write-Host "Generating self-signed SSL certificate for $fullHostname..." -ForegroundColor Yellow
+    $certName = "ssl-cert-$fullHostname".Replace(".", "-")
+    $certPassword = "P@ssword123!"
+    $certPath = "$env:TEMP\$certName.pfx"
+    # Generate self-signed certificate
+    $cert = New-SelfSignedCertificate -DnsName $fullHostname -CertStoreLocation "cert:\CurrentUser\My" -KeyExportPolicy Exportable -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider"
+    # Export to PFX with password
+    $securePassword = ConvertTo-SecureString -String $certPassword -Force -AsPlainText
+    Export-PfxCertificate -Cert $cert -FilePath $certPath -Password $securePassword
+    # Remove from store
+    Remove-Item -Path "cert:\CurrentUser\My\$($cert.Thumbprint)" -Force
+    Write-Host "Uploading certificate to App Service..." -ForegroundColor Yellow
+    $thumbprint = az webapp config ssl upload --resource-group $ResourceGroup --name $webAppName --certificate-file $certPath --certificate-password $certPassword --query thumbprint -o tsv
+    Write-Host "Binding SSL certificate..." -ForegroundColor Yellow
+    az webapp config ssl bind --resource-group $ResourceGroup --name $webAppName --certificate-thumbprint $thumbprint --ssl-type SNI --hostname $fullHostname | Out-Null
+    Remove-Item $certPath -Force
+    Write-Host "Self-signed SSL certificate generated, uploaded, and bound (Note: Self-signed certs are not trusted by browsers. Use a proper CA cert for production)." -ForegroundColor Green
+}
+
+Write-Host ""
+Write-Host "=== Deployment Complete ===" -ForegroundColor Cyan
+Write-Host "Web App URL: https://$webAppName.chinacloudsites.cn" -ForegroundColor White
+if ($CustomDomain) {
+    $fullHostname = "filesvc-stg-app.$CustomDomain"
+    Write-Host "Custom Domain URL: https://$fullHostname" -ForegroundColor White
+}
+Write-Host "Swagger URL: https://$webAppName.chinacloudsites.cn/swagger" -ForegroundColor White
+Write-Host ""
+Write-Host "Configuration:" -ForegroundColor Yellow
+Write-Host "- Using Azure Table Storage for metadata" -ForegroundColor White  
+Write-Host "- Using Azure Blob Storage for files" -ForegroundColor White
+Write-Host "- Managed Identity authentication" -ForegroundColor White
+Write-Host ""
+Write-Host "To monitor logs:" -ForegroundColor Yellow
+Write-Host "az webapp log tail --name $webAppName --resource-group $ResourceGroup" -ForegroundColor White

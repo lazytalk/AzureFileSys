@@ -1,0 +1,69 @@
+2025-10-16T08:43:58.6701923Z,Updating submodules.,5d5713dd-3faf-4aec-bdf1-fadd170c0f85,0
+2025-10-16T08:43:58.7326946Z,Preparing deployment for commit id '2cb3b8d989'.,540da167-e884-4f5d-a15e-a1fd71788d0f,0
+2025-10-16T08:43:58.9202044Z,Running build. Project type: OneDeploy,6acb2631-ed4a-4f53-aac7-258d2f0af44c,0
+2025-10-16T08:43:58.9517648Z,Copying the manifest,b88cb0ee-c8c3-4b15-a991-4a2ed1b8e9dc,0
+2025-10-16T08:43:58.9988614Z,Clean deploying to C:\home\site\wwwroot,8e4a34d0-bb32-4b0d-9a59-4192f71620c3,0
+2025-10-16T08:43:59.0613649Z,Generating deployment script.,96c4e52a-5ae9-4dea-bdf4-4fa2ca9c5379,0
+	2025-10-16T08:43:59.2340956Z,Using the following command to generate deployment script: 'azure site deploymentscript -y --no-dot-deployment -r "C:\local\Temp\zipdeploy\extracted" -o "C:\home\site\deployments\tools" --basic --sitePath "C:\local\Temp\zipdeploy\extracted"'.,,0
+	2025-10-16T08:44:00.2019949Z,Generating deployment script for Web Site,,0
+2025-10-16T08:44:00.2957436Z,Running deployment command...,d43058a9-bed0-4828-aacf-3fdee3907f95,0
+	2025-10-16T08:44:00.3113693Z,Command: "C:\home\site\deployments\tools\deploy.cmd",,0
+	2025-10-16T08:44:01.9595482Z,Handling Basic Web Site deployment.,,0
+	2025-10-16T08:44:01.9768161Z,Creating app_offline.htm,,0
+	2025-10-16T08:44:01.9768161Z,KuduSync.NET from: 'C:\local\Temp\zipdeploy\extracted' to: 'C:\home\site\wwwroot',,0
+	2025-10-16T08:44:02.0112242Z,Deleting file: 'hostingstart.html',,0
+	2025-10-16T08:44:02.0393256Z,Copying file: 'appsettings.Development.json',,0
+	2025-10-16T08:44:02.0549494Z,Copying file: 'appsettings.json',,0
+	2025-10-16T08:44:02.1019707Z,Copying file: 'appsettings.Production.json',,0
+	2025-10-16T08:44:02.1174621Z,Copying file: 'appsettings.Staging.json',,0
+	2025-10-16T08:44:02.1330867Z,Copying file: 'Azure.Core.dll',,0
+	2025-10-16T08:44:02.1487019Z,Copying file: 'Azure.Data.Tables.dll',,0
+	2025-10-16T08:44:02.1643284Z,Copying file: 'Azure.Identity.dll',,0
+	2025-10-16T08:44:02.1955787Z,Copying file: 'Azure.Storage.Blobs.dll',,0
+	2025-10-16T08:44:02.2128491Z,Copying file: 'Azure.Storage.Common.dll',,0
+	2025-10-16T08:44:02.2268274Z,Copying file: 'FileService.Api.deps.json',,0
+	2025-10-16T08:44:02.2580770Z,Copying file: 'FileService.Api.dll',,0
+	2025-10-16T08:44:02.2893263Z,Copying file: 'FileService.Api.exe',,0
+	2025-10-16T08:44:02.3232413Z,Copying file: 'FileService.Api.pdb',,0
+	2025-10-16T08:44:02.3362042Z,Copying file: 'FileService.Api.runtimeconfig.json',,0
+	2025-10-16T08:44:02.3674513Z,Copying file: 'FileService.Core.dll',,0
+	2025-10-16T08:44:02.3830765Z,Copying file: 'FileService.Core.pdb',,0
+	2025-10-16T08:44:02.4164512Z,Copying file: 'FileService.Infrastructure.dll',,0
+	2025-10-16T08:44:02.4320727Z,Copying file: 'FileService.Infrastructure.pdb',,0
+	2025-10-16T08:44:02.5011491Z,Copying file: 'Microsoft.Bcl.AsyncInterfaces.dll',,0
+	2025-10-16T08:44:02.5258226Z,Copying file: 'Microsoft.Data.SqlClient.dll',,0
+	2025-10-16T08:44:02.5414496Z,Copying file: 'Microsoft.Data.Sqlite.dll',,0
+	2025-10-16T08:44:02.5726987Z,Copying file: 'Microsoft.EntityFrameworkCore.Abstractions.dll',,0
+	2025-10-16T08:44:02.5883219Z,Copying file: 'Microsoft.EntityFrameworkCore.dll',,0
+	2025-10-16T08:44:02.6351988Z,Copying file: 'Microsoft.EntityFrameworkCore.Relational.dll',,0
+	2025-10-16T08:44:02.6664501Z,Copying file: 'Microsoft.EntityFrameworkCore.Sqlite.dll',,0
+	2025-10-16T08:44:02.6976999Z,Copying file: 'Microsoft.EntityFrameworkCore.SqlServer.dll',,0
+	2025-10-16T08:44:02.7289586Z,Copying file: 'Microsoft.Extensions.DependencyModel.dll',,0
+	2025-10-16T08:44:02.7636028Z,Copying file: 'Microsoft.Identity.Client.dll',,0
+	2025-10-16T08:44:02.7758695Z,Copying file: 'Microsoft.Identity.Client.Extensions.Msal.dll',,0
+	2025-10-16T08:44:02.7914487Z,Copying file: 'Microsoft.IdentityModel.Abstractions.dll',,0
+	2025-10-16T08:44:02.8070758Z,Copying file: 'Microsoft.IdentityModel.JsonWebTokens.dll',,0
+	2025-10-16T08:44:02.8383251Z,Copying file: 'Microsoft.IdentityModel.Logging.dll',,0
+	2025-10-16T08:44:02.8540930Z,Copying file: 'Microsoft.IdentityModel.Protocols.dll',,0
+	2025-10-16T08:44:02.8851999Z,Copying file: 'Microsoft.IdentityModel.Protocols.OpenIdConnect.dll',,0
+	2025-10-16T08:44:02.9164521Z,Copying file: 'Microsoft.IdentityModel.Tokens.dll',,0
+	2025-10-16T08:44:02.9633771Z,Copying file: 'Microsoft.OpenApi.dll',,0
+	2025-10-16T08:44:02.9945744Z,Copying file: 'Microsoft.SqlServer.Server.dll',,0
+	2025-10-16T08:44:03.1664503Z,Copying file: 'Microsoft.Win32.SystemEvents.dll',,0
+	2025-10-16T08:44:03.2133269Z,Copying file: 'SQLitePCLRaw.batteries_v2.dll',,0
+	2025-10-16T08:44:03.2289497Z,Copying file: 'SQLitePCLRaw.core.dll',,0
+	2025-10-16T08:44:03.2445745Z,Copying file: 'SQLitePCLRaw.provider.e_sqlite3.dll',,0
+	2025-10-16T08:44:03.2602088Z,Copying file: 'Swashbuckle.AspNetCore.Swagger.dll',,0
+	2025-10-16T08:44:03.2758367Z,Copying file: 'Swashbuckle.AspNetCore.SwaggerGen.dll',,0
+	2025-10-16T08:44:03.3070850Z,Copying file: 'Swashbuckle.AspNetCore.SwaggerUI.dll',,0
+	2025-10-16T08:44:03.3227106Z,Copying file: 'System.ClientModel.dll',,0
+	2025-10-16T08:44:03.3404165Z,Copying file: 'System.Configuration.ConfigurationManager.dll',,0
+	2025-10-16T08:44:03.3560515Z,Copying file: 'System.Drawing.Common.dll',,0
+	2025-10-16T08:44:03.3716764Z,Omitting next output lines...,,0
+	2025-10-16T08:44:03.3873143Z,Finished successfully.,,0
+2025-10-16T08:44:03.4341801Z,Build completed succesfully.,0f066065-7bac-4d1f-97b5-bfbbb2ca1364,0
+2025-10-16T08:44:03.5123023Z,Running post deployment command(s)...,c7e0cee4-964a-4bed-a0c4-5643ae6f0e8b,0
+2025-10-16T08:44:03.5904275Z,Requesting site restart,ab3514db-cdf9-4abf-bc86-357680e83873,0
+2025-10-16T08:44:03.6841797Z,Requesting site restart. Attempt #1,d1e1d9b7-cee9-4aca-8812-2aee590512ea,0
+2025-10-16T08:44:05.5748104Z,Successfully requested a restart. Attempt #1,b66c68fe-18fe-4c23-8666-b46621e8dcfb,0
+2025-10-16T08:44:05.6216849Z,Deployment successful.,1eee2ff4-2a9b-42be-9767-0c94cecf3aa8,0

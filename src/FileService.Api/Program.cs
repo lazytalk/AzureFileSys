@@ -57,6 +57,7 @@ if (useEf && !isDevelopment && builder.Configuration.GetValue("Persistence:AutoM
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.Use(async (ctx, next) =>
 {
@@ -123,6 +124,93 @@ if (isDevMode)
             return Results.BadRequest("Invalid token format");
         }
     });
+}
+
+// Health Check Endpoint
+app.MapGet("/api/health/check", async (HttpContext ctx, CancellationToken ct) =>
+{
+    var checks = new List<object>();
+    var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+    
+    // Test 1: Upload endpoint (OPTIONS check - doesn't require file)
+    var uploadCheck = await TestEndpoint("Upload File", "POST", $"{baseUrl}/api/files/upload", ctx, ct);
+    checks.Add(uploadCheck);
+    
+    // Test 2: List files endpoint
+    var listCheck = await TestEndpoint("List Files", "GET", $"{baseUrl}/api/files", ctx, ct);
+    checks.Add(listCheck);
+    
+    // Test 3: Get file endpoint (test with fake GUID)
+    var getCheck = await TestEndpoint("Get File", "GET", $"{baseUrl}/api/files/00000000-0000-0000-0000-000000000000", ctx, ct);
+    checks.Add(getCheck);
+    
+    // Test 4: Delete file endpoint (test with fake GUID)
+    var deleteCheck = await TestEndpoint("Delete File", "DELETE", $"{baseUrl}/api/files/00000000-0000-0000-0000-000000000000", ctx, ct);
+    checks.Add(deleteCheck);
+    
+    // Test 5: Swagger endpoint
+    var swaggerCheck = await TestEndpoint("Swagger UI", "GET", $"{baseUrl}/swagger/index.html", ctx, ct);
+    checks.Add(swaggerCheck);
+    
+    return Results.Ok(new { checks });
+});
+
+async Task<object> TestEndpoint(string name, string method, string url, HttpContext ctx, CancellationToken ct)
+{
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    try
+    {
+        using var http = new HttpClient();
+        http.Timeout = TimeSpan.FromSeconds(5);
+        
+        // Add dev user to bypass auth
+        http.DefaultRequestHeaders.Add("X-PowerSchool-User", "healthcheck");
+        http.DefaultRequestHeaders.Add("X-PowerSchool-Role", "admin");
+        
+        HttpResponseMessage response = method switch
+        {
+            "GET" => await http.GetAsync(url, ct),
+            "POST" => await http.PostAsync(url, new StringContent(""), ct),
+            "DELETE" => await http.DeleteAsync(url, ct),
+            _ => throw new InvalidOperationException($"Unsupported method: {method}")
+        };
+        
+        sw.Stop();
+        
+        // Determine status based on response
+        string status = response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.OK => "healthy",
+            System.Net.HttpStatusCode.NoContent => "healthy",
+            System.Net.HttpStatusCode.NotFound => "healthy", // 404 is OK for test endpoints
+            System.Net.HttpStatusCode.Forbidden or 
+            System.Net.HttpStatusCode.Unauthorized => "warning", // Auth issues but service is up
+            _ => "unhealthy"
+        };
+        
+        return new 
+        { 
+            name,
+            status,
+            message = $"{response.StatusCode} ({(int)response.StatusCode})",
+            responseTime = sw.ElapsedMilliseconds
+        };
+    }
+    catch (HttpRequestException ex)
+    {
+        sw.Stop();
+        return new { name, status = "unhealthy", message = $"Connection failed: {ex.Message}", responseTime = sw.ElapsedMilliseconds };
+    }
+    catch (OperationCanceledException)
+    {
+        sw.Stop();
+        return new { name, status = "unhealthy", message = "Request timeout (>5s)", responseTime = sw.ElapsedMilliseconds };
+    }
+    catch (Exception ex)
+    {
+        sw.Stop();
+        return new { name, status = "unhealthy", message = $"Error: {ex.Message}", responseTime = sw.ElapsedMilliseconds };
+    }
 }
 
 // Map Endpoints (initial version; can be moved to controllers or Minimal APIs kept)

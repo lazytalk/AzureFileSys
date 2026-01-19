@@ -1,0 +1,59 @@
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Visual Studio
+.vs/
+.vscode
+*.user
+*.sln.user
+*.suo
+
+# Build results
+bin/
+obj/
+out/
+*.dll
+*.exe
+*.pdb
+
+# NuGet
+.nuget/
+*.nupkg
+*.snupkg
+packages/
+
+# Entity Framework
+*.db
+*.db-shm
+*.db-wal
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+artifacts/
+publish/
+
+# Test results
+TestResults/
+.coverage
+
+# Azure
+local.settings.json

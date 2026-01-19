@@ -251,10 +251,6 @@
         
         <div style="text-align: center;">
             <button class="refresh-button" onclick="checkHealth()">🔄 Refresh Now</button>
-            <div class="auto-refresh">
-                <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
-                <label for="autoRefresh">Auto-refresh every 5 seconds</label>
-            </div>
         </div>
         
         <div class="footer">
@@ -351,17 +347,7 @@
             document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleTimeString()}`;
         }
         
-        function toggleAutoRefresh() {
-            if (document.getElementById('autoRefresh').checked) {
-                autoRefreshInterval = setInterval(checkHealth, 5000);
-            } else {
-                clearInterval(autoRefreshInterval);
-            }
-        }
-        
-        // Initial check
-        checkHealth();
-        toggleAutoRefresh();
+        // Manual-only: no auto-refresh, no initial run
     </script>
 </body>
 </html>

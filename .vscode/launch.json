@@ -12,13 +12,19 @@
             "stopAtEntry": false,
             "serverReadyAction": {
                 "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
-                "uriFormat": "%s",
+                "uriFormat": "%s/swagger?devUser=testuser",
                 "action": "openExternally"
             },
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
                 "ASPNETCORE_URLS": "http://localhost:5090"
             }
+        },
+        {
+            "name": "Open Health (Edge)",
+            "type": "pwa-msedge",
+            "request": "launch",
+            "url": "http://localhost:5090/health.html"
         },
         {
             "name": ".NET Core Launch (Tests)",
@@ -30,6 +36,16 @@
             "cwd": "${workspaceFolder}/tests/FileService.Tests",
             "console": "internalConsole",
             "stopAtEntry": false
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Dev: API + Health",
+            "configurations": [
+                ".NET Core Launch (Dev)",
+                "Open Health (Edge)"
+            ],
+            "stopAll": true
         }
     ]
 }

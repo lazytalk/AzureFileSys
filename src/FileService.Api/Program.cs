@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using System.Net.Http.Headers;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +63,20 @@ app.UseStaticFiles();
 
 app.Use(async (ctx, next) =>
 {
+    // Skip authentication for Swagger, static files, and health checks
+    if (ctx.Request.Path.StartsWithSegments("/swagger") || 
+        ctx.Request.Path.StartsWithSegments("/_framework") ||
+        ctx.Request.Path.StartsWithSegments("/_vs") ||
+        ctx.Request.Path.StartsWithSegments("/api/health") ||
+        ctx.Request.Path.StartsWithSegments("/dev/powerschool") ||
+        ctx.Request.Path.Value?.EndsWith(".html") == true ||
+        ctx.Request.Path.Value?.EndsWith(".css") == true ||
+        ctx.Request.Path.Value?.EndsWith(".js") == true)
+    {
+        await next();
+        return;
+    }
+
     var userCtx = ctx.RequestServices.GetRequiredService<PowerSchoolUserContext>();
     // Dev shortcut: allow ?devUser=xxx
     if (isDevMode && ctx.Request.Query.TryGetValue("devUser", out var devUser))
@@ -131,27 +147,136 @@ app.MapGet("/api/health/check", async (HttpContext ctx, CancellationToken ct) =>
 {
     var checks = new List<object>();
     var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
-    
-    // Test 1: Upload endpoint (OPTIONS check - doesn't require file)
-    var uploadCheck = await TestEndpoint("Upload File", "POST", $"{baseUrl}/api/files/upload", ctx, ct);
-    checks.Add(uploadCheck);
-    
-    // Test 2: List files endpoint
-    var listCheck = await TestEndpoint("List Files", "GET", $"{baseUrl}/api/files", ctx, ct);
-    checks.Add(listCheck);
-    
-    // Test 3: Get file endpoint (test with fake GUID)
-    var getCheck = await TestEndpoint("Get File", "GET", $"{baseUrl}/api/files/00000000-0000-0000-0000-000000000000", ctx, ct);
-    checks.Add(getCheck);
-    
-    // Test 4: Delete file endpoint (test with fake GUID)
-    var deleteCheck = await TestEndpoint("Delete File", "DELETE", $"{baseUrl}/api/files/00000000-0000-0000-0000-000000000000", ctx, ct);
-    checks.Add(deleteCheck);
-    
-    // Test 5: Swagger endpoint
-    var swaggerCheck = await TestEndpoint("Swagger UI", "GET", $"{baseUrl}/swagger/index.html", ctx, ct);
-    checks.Add(swaggerCheck);
-    
+
+    static string MapStatus(System.Net.HttpStatusCode code)
+        => code switch
+        {
+            System.Net.HttpStatusCode.OK => "healthy",
+            System.Net.HttpStatusCode.Created => "healthy",
+            System.Net.HttpStatusCode.Accepted => "healthy",
+            System.Net.HttpStatusCode.NoContent => "healthy",
+            System.Net.HttpStatusCode.NotFound => "healthy",
+            System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.Unauthorized => "warning",
+            _ => "unhealthy"
+        };
+
+    using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+    http.DefaultRequestHeaders.Add("X-PowerSchool-User", "healthcheck");
+    http.DefaultRequestHeaders.Add("X-PowerSchool-Role", "admin");
+
+    string? createdId = null;
+
+    // 1) Upload test file
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var env = ctx.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var testFilePath = Path.Combine(env.WebRootPath ?? string.Empty, "health-test.txt");
+            byte[] data = File.Exists(testFilePath)
+                ? await File.ReadAllBytesAsync(testFilePath, ct)
+                : Encoding.UTF8.GetBytes("health upload from server check\n");
+
+            using var form = new MultipartFormDataContent();
+            var fileContent = new ByteArrayContent(data);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+            form.Add(fileContent, "file", "health-test.txt");
+
+            var response = await http.PostAsync($"{baseUrl}/api/files/upload", form, ct);
+            sw.Stop();
+            var status = MapStatus(response.StatusCode);
+
+            try
+            {
+                // Try read id from JSON body
+                var body = await response.Content.ReadAsStringAsync(ct);
+                if (!string.IsNullOrWhiteSpace(body))
+                {
+                    using var doc = JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("id", out var idEl))
+                        createdId = idEl.GetString();
+                    else if (doc.RootElement.TryGetProperty("Id", out var idEl2))
+                        createdId = idEl2.GetString();
+                }
+                // Fallback: parse Location header
+                if (string.IsNullOrEmpty(createdId) && response.Headers.Location != null)
+                {
+                    var seg = response.Headers.Location.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+                    if (!string.IsNullOrWhiteSpace(seg)) createdId = seg;
+                }
+            }
+            catch { /* ignore parse issues */ }
+
+            checks.Add(new { name = "Upload File", status, message = $"{response.StatusCode} ({(int)response.StatusCode})", responseTime = sw.ElapsedMilliseconds });
+        }
+        catch (Exception ex)
+        {
+            checks.Add(new { name = "Upload File", status = "unhealthy", message = ex.Message, responseTime = sw.ElapsedMilliseconds });
+        }
+    }
+
+    // 2) List files
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var response = await http.GetAsync($"{baseUrl}/api/files", ct);
+            sw.Stop();
+            checks.Add(new { name = "List Files", status = MapStatus(response.StatusCode), message = $"{response.StatusCode} ({(int)response.StatusCode})", responseTime = sw.ElapsedMilliseconds });
+        }
+        catch (Exception ex)
+        {
+            checks.Add(new { name = "List Files", status = "unhealthy", message = ex.Message, responseTime = sw.ElapsedMilliseconds });
+        }
+    }
+
+    // 3) Get file (use created id when available)
+    {
+        var targetId = string.IsNullOrWhiteSpace(createdId) ? "00000000-0000-0000-0000-000000000000" : createdId;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var response = await http.GetAsync($"{baseUrl}/api/files/{targetId}", ct);
+            sw.Stop();
+            checks.Add(new { name = "Get File", status = MapStatus(response.StatusCode), message = $"{response.StatusCode} ({(int)response.StatusCode})", responseTime = sw.ElapsedMilliseconds });
+        }
+        catch (Exception ex)
+        {
+            checks.Add(new { name = "Get File", status = "unhealthy", message = ex.Message, responseTime = sw.ElapsedMilliseconds });
+        }
+    }
+
+    // 4) Delete file (use created id when available)
+    {
+        var targetId = string.IsNullOrWhiteSpace(createdId) ? "00000000-0000-0000-0000-000000000000" : createdId;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var response = await http.DeleteAsync($"{baseUrl}/api/files/{targetId}", ct);
+            sw.Stop();
+            checks.Add(new { name = "Delete File", status = MapStatus(response.StatusCode), message = $"{response.StatusCode} ({(int)response.StatusCode})", responseTime = sw.ElapsedMilliseconds });
+        }
+        catch (Exception ex)
+        {
+            checks.Add(new { name = "Delete File", status = "unhealthy", message = ex.Message, responseTime = sw.ElapsedMilliseconds });
+        }
+    }
+
+    // 5) Swagger endpoint
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var response = await http.GetAsync($"{baseUrl}/swagger/index.html", ct);
+            sw.Stop();
+            checks.Add(new { name = "Swagger UI", status = MapStatus(response.StatusCode), message = $"{response.StatusCode} ({(int)response.StatusCode})", responseTime = sw.ElapsedMilliseconds });
+        }
+        catch (Exception ex)
+        {
+            checks.Add(new { name = "Swagger UI", status = "unhealthy", message = ex.Message, responseTime = sw.ElapsedMilliseconds });
+        }
+    }
+
     return Results.Ok(new { checks });
 });
 
@@ -167,13 +292,46 @@ async Task<object> TestEndpoint(string name, string method, string url, HttpCont
         http.DefaultRequestHeaders.Add("X-PowerSchool-User", "healthcheck");
         http.DefaultRequestHeaders.Add("X-PowerSchool-Role", "admin");
         
-        HttpResponseMessage response = method switch
+        HttpResponseMessage response;
+        if (method == "POST" && url.EndsWith("/api/files/upload", StringComparison.OrdinalIgnoreCase))
         {
-            "GET" => await http.GetAsync(url, ct),
-            "POST" => await http.PostAsync(url, new StringContent(""), ct),
-            "DELETE" => await http.DeleteAsync(url, ct),
-            _ => throw new InvalidOperationException($"Unsupported method: {method}")
-        };
+            // Compose multipart/form-data with a small test file from wwwroot
+            var env = ctx.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            var testFilePath = Path.Combine(env.WebRootPath ?? string.Empty, "health-test.txt");
+            byte[] data;
+            string fileName = "health-test.txt";
+            if (!File.Exists(testFilePath))
+            {
+                data = Encoding.UTF8.GetBytes("health upload from server check\n");
+            }
+            else
+            {
+                data = await File.ReadAllBytesAsync(testFilePath, ct);
+            }
+
+            using var form = new MultipartFormDataContent();
+            var fileContent = new ByteArrayContent(data);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+            form.Add(fileContent, "file", fileName);
+            response = await http.PostAsync(url, form, ct);
+        }
+        else if (method == "POST")
+        {
+            // Generic POST probe
+            response = await http.PostAsync(url, new StringContent(string.Empty), ct);
+        }
+        else if (method == "GET")
+        {
+            response = await http.GetAsync(url, ct);
+        }
+        else if (method == "DELETE")
+        {
+            response = await http.DeleteAsync(url, ct);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unsupported method: {method}");
+        }
         
         sw.Stop();
         
@@ -181,6 +339,8 @@ async Task<object> TestEndpoint(string name, string method, string url, HttpCont
         string status = response.StatusCode switch
         {
             System.Net.HttpStatusCode.OK => "healthy",
+            System.Net.HttpStatusCode.Created => "healthy",
+            System.Net.HttpStatusCode.Accepted => "healthy",
             System.Net.HttpStatusCode.NoContent => "healthy",
             System.Net.HttpStatusCode.NotFound => "healthy", // 404 is OK for test endpoints
             System.Net.HttpStatusCode.Forbidden or 
@@ -215,7 +375,7 @@ async Task<object> TestEndpoint(string name, string method, string url, HttpCont
 
 // Map Endpoints (initial version; can be moved to controllers or Minimal APIs kept)
 app.MapPost("/api/files/upload", async (
-    HttpRequest request,
+    [FromForm] IFormFile file,
     PowerSchoolUserContext user,
     IFileStorageService storage,
     IFileMetadataRepository repo,
@@ -223,11 +383,6 @@ app.MapPost("/api/files/upload", async (
 {
     try
     {
-        if (!request.HasFormContentType)
-            return Results.BadRequest("Form data expected");
-
-        var form = await request.ReadFormAsync(ct);
-        var file = form.Files.FirstOrDefault();
         if (file == null || file.Length == 0)
             return Results.BadRequest("No file provided");
 
@@ -258,7 +413,7 @@ app.MapPost("/api/files/upload", async (
 }).DisableAntiforgery();
 
 app.MapGet("/api/files", async (
-    [FromQuery] bool all,
+    [FromQuery] bool? all,
     PowerSchoolUserContext user,
     IFileMetadataRepository repo,
     CancellationToken ct) =>
@@ -273,7 +428,8 @@ app.MapGet("/api/files", async (
     
     try
     {
-        var list = all && user.IsAdmin
+        var includeAll = all.GetValueOrDefault(false);
+        var list = includeAll && user.IsAdmin
             ? await repo.ListAllAsync(take: 100, ct: ct)
             : await repo.ListByOwnerAsync(user.UserId, ct);
         Console.WriteLine($"[LIST] Found {list.Count} files for user");

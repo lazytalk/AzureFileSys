@@ -51,6 +51,17 @@
             "runOptions": {
                 "runOn": "folderOpen"
             }
+        },
+        {
+            "label": "dev-build-and-open-health",
+            "dependsOn": ["dev-build-and-start"],
+            "command": "powershell",
+            "type": "shell",
+            "args": [
+                "-Command",
+                "Start-Process powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-Command','Start-Sleep -Seconds 3; Start-Process http://localhost:5090/health.html'"
+            ],
+            "problemMatcher": []
         }
     ]
 }

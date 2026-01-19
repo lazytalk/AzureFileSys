@@ -20,7 +20,15 @@ Verify:
 dotnet --version
 ```
 
-## Restore & Build
+## Quick Start
+
+### Option 1: VS Code (Recommended)
+1. Open the project in VS Code
+2. Press **F5** or select **"Dev: API + Health"** from the debug dropdown
+3. Swagger UI and health monitoring page will open automatically in your browser
+4. API runs on `http://localhost:5090`
+
+### Option 2: Command Line
 After installing the SDK:
 ```powershell
 dotnet restore
@@ -29,8 +37,8 @@ dotnet test
 dotnet run --project src/FileService.Api/FileService.Api.csproj
 ```
 
-Navigate to Swagger UI (once real hosting or local run):
-`https://localhost:5001/swagger` (port may vary; check console output)
+Navigate to Swagger UI:
+`http://localhost:5090/swagger`
 
 ## Example Requests
 

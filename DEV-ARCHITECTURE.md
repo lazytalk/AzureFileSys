@@ -87,7 +87,22 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 
 ## 🚀 Development Workflow
 
-### **1. Quick Start**
+### **1. Quick Start with VS Code**
+```
+1. Open the project in VS Code
+2. Press F5 or select "Dev: API + Health" from the debug dropdown
+3. VS Code will:
+   - Build the project automatically
+   - Start the API server on http://localhost:5090
+   - Open Swagger UI in your default browser
+   - Open the health monitoring page in a separate tab
+4. Set breakpoints and debug as needed
+```
+
+**Launch Configuration**:
+- **Dev: API + Health** - Builds, starts API, and opens both Swagger UI and health page
+
+### **2. Quick Start with PowerShell Scripts**
 ```powershell
 # Start API on default port 5090
 .\scripts\dev-run.ps1
@@ -99,7 +114,7 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 .\scripts\dev-run.ps1 -SqlitePath "my-dev.db"
 ```
 
-### **2. Testing & Validation**
+### **3. Testing & Validation**
 ```powershell
 # Full end-to-end test (comprehensive)
 .\scripts\smoke-test.ps1
@@ -111,7 +126,7 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 .\scripts\smoke-test.ps1 -Port 5125
 ```
 
-### **3. Database Management**
+### **4. Database Management**
 ```powershell
 # Apply pending migrations
 .\scripts\migrate-dev.ps1
@@ -268,6 +283,6 @@ curl http://localhost:5125/swagger/index.html
 
 This architecture provides a **robust, reliable, and fast development experience** while maintaining **production readiness** with proper Azure integrations! 🎉
 
-**Last Updated**: September 4, 2025  
-**Architecture Version**: 1.0  
+**Last Updated**: January 20, 2026  
+**Architecture Version**: 1.1  
 **Tested Platforms**: Windows 10/11, .NET 9.0

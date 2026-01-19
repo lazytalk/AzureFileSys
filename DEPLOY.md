@@ -31,12 +31,9 @@ The service supports three deployment environments:
 ---
 ## 2. Environment Configuration Matrix
 
-## 2. Environment Configuration Matrix
-
 | Setting | Development | Staging | Production |
 |---------|-------------|---------|------------|
 | `ASPNETCORE_ENVIRONMENT` | Development | Staging | Production |
-| `EnvironmentMode` | Development | Staging | Production |
 | `BlobStorage__UseLocalStub` | true | false | false |
 | `BlobStorage__ConnectionString` | (empty) | Key Vault Reference | Key Vault Reference |
 | `BlobStorage__ContainerName` | userfiles | userfiles-staging | userfiles-prod |
@@ -51,18 +48,49 @@ The service supports three deployment environments:
 > **Note**: Key Vault References use format: `@Microsoft.KeyVault(VaultName=<vault>;SecretName=<secret>)`
 
 ---
-## 3. Multi-Environment Azure Architecture
+## 3. Quick Start - Unified Deployment
+
+The unified `deploy.ps1` script handles both staging and production deployments:
+
+### **Deploy to Staging**
+```powershell
+cd scripts
+.\deploy.ps1 -Environment Staging -CreateResources -DeployApp -RunMigrations
+```
+
+### **Deploy to Production** 
+```powershell
+cd scripts
+# Option 1: Rebuild from source
+.\deploy.ps1 -Environment Production -CreateResources -DeployApp -RunMigrations
+
+# Option 2: Promote tested staging build (recommended)
+.\deploy.ps1 -Environment Production -DeployApp -RunMigrations -PromoteFromStaging
+```
+
+### **Parameters**
+- `-Environment` (required): `Staging` or `Production`
+- `-CreateResources`: Create all Azure resources (resource group, SQL DB, Storage, Key Vault, App Service)
+- `-DeployApp`: Build and deploy the application
+- `-RunMigrations`: Run Entity Framework migrations
+- `-PromoteFromStaging` (production only): Use staging build instead of rebuilding
+- `-Location`: Override deployment region (default: from config)
+- `-SqlAdminPassword`: Override SQL admin password (default: from config)
+- `-SubscriptionId`: Set Azure subscription
+
+---
+## 4. Multi-Environment Azure Architecture
 
 ```
 Azure Subscription
-├── 📂 file-svc-staging-rg          # Staging Resource Group
+├── 📂 KWE-RescourceGroup-ChinaNorth3-Staging-FileSystem          # Staging Resource Group
 │   ├── 🌐 filesvc-api-staging      # Staging Web App
 │   ├── 🗄️ filesvc-sql-staging      # Staging SQL Server
 │   ├── 💾 filesvcstgstaging123     # Staging Storage Account
 │   ├── 🔐 filesvc-kv-staging       # Staging Key Vault
 │   └── 📊 filesvc-ai-staging       # Staging App Insights
 │
-└── 📂 file-svc-production-rg       # Production Resource Group
+└── 📂 KWE-RescourceGroup-ChinaNorth3-Production-FileSystem       # Production Resource Group
     ├── 🌐 filesvc-api-prod         # Production Web App
     ├── 🗄️ filesvc-sql-prod         # Production SQL Server
     ├── 💾 filesvcstgprod456        # Production Storage Account
@@ -71,14 +99,11 @@ Azure Subscription
 ```
 
 ---
-## 4. Configuration Keys Reference
-
-## 4. Configuration Keys Reference
+## 5. Configuration Keys Reference
 
 | Env Var / Key | Purpose | Dev Default | Staging | Production |
 |---------------|---------|-------------|---------|------------|
 | `ASPNETCORE_ENVIRONMENT` | ASP.NET environment mode | Development | Staging | Production |
-| `EnvironmentMode` | App-specific environment features | Development | Staging | Production |
 | `BlobStorage__UseLocalStub` | Use in-memory file bytes | true | false | false |
 | `BlobStorage__ConnectionString` | Azure Storage connection | (empty) | Key Vault Ref | Key Vault Ref |
 | `BlobStorage__ContainerName` | Container for user files | userfiles | userfiles-staging | userfiles-prod |
@@ -92,198 +117,78 @@ Azure Subscription
 > **Note**: Double underscore (`__`) maps to nested JSON keys. Key Vault Ref = `@Microsoft.KeyVault(...)`
 
 ---
-## 5. Local Development (No Changes)
+## 6. Local Development (No Changes)
 
-1. Install .NET 8 SDK.
-2. Run dev script:
+1. Run dev script (installs .NET 8 SDK if needed):
    ```powershell
    cd scripts
    ./dev-run.ps1 -Port 5090 -SqlitePath dev-files.db
    ```
-3. Upload test:
+2. Upload test:
    ```powershell
    Invoke-RestMethod -Method Post -Uri 'http://localhost:5090/api/files/upload?devUser=demo1' -Form @{ file=Get-Item ..\README.md }
    ```
-4. List:
+3. List:
    ```powershell
    Invoke-RestMethod -Method Get -Uri 'http://localhost:5090/api/files?devUser=demo1'
    ```
 
 ---
-## 6. Staging Environment Deployment
-
-### 6.1 Create Staging Resources
+## 7. Complete Staging Deployment
 
 ```powershell
-# Staging Environment Variables
-$env = "staging"
-$resourceGroup = "file-svc-staging-rg"
-$location = "eastus"
-$storageAccount = "filesvcstg$(Get-Random)"
-$webAppName = "filesvc-api-staging"
-$keyVaultName = "filesvc-kv-staging"
-$appInsightsName = "filesvc-ai-staging"
-$sqlServerName = "filesvc-sql-staging"
-$sqlDbName = "file-service-db"
-$sqlAdminUser = "fsadmin"
-$sqlAdminPassword = "StagingPassword123!" # Change this!
+# 1. Create all Azure resources
+.\deploy.ps1 -Environment Staging -CreateResources
 
-# Create staging resource group
-Write-Host "Creating staging resource group..."
-az group create -n $resourceGroup -l $location
+# 2. Deploy application
+.\deploy.ps1 -Environment Staging -DeployApp
 
-# Create Application Insights
-Write-Host "Creating Application Insights for staging..."
-az monitor app-insights component create -a $appInsightsName -g $resourceGroup -l $location --application-type web
-$aiKey = az monitor app-insights component show -a $appInsightsName -g $resourceGroup --query instrumentationKey -o tsv
+# 3. Run migrations
+.\deploy.ps1 -Environment Staging -RunMigrations
 
-# Create storage account
-Write-Host "Creating staging storage account..."
-az storage account create -n $storageAccount -g $resourceGroup -l $location --sku Standard_LRS --kind StorageV2
-az storage container create --account-name $storageAccount -n userfiles-staging --auth-mode key --public-access off
-$storageConnString = az storage account show-connection-string -n $storageAccount -g $resourceGroup -o tsv
-
-# Create SQL Server and Database (Basic tier for staging)
-Write-Host "Creating staging Azure SQL Database..."
-az sql server create -n $sqlServerName -g $resourceGroup -l $location --admin-user $sqlAdminUser --admin-password $sqlAdminPassword
-az sql db create -s $sqlServerName -g $resourceGroup -n $sqlDbName --service-objective Basic
-az sql server firewall-rule create -s $sqlServerName -g $resourceGroup -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-$sqlConnString = az sql db show-connection-string -s $sqlServerName -n $sqlDbName -c ado.net | % { $_ -replace '<username>', $sqlAdminUser -replace '<password>', $sqlAdminPassword }
-
-# Create Key Vault
-Write-Host "Creating staging Key Vault..."
-az keyvault create -n $keyVaultName -g $resourceGroup -l $location --enable-soft-delete true --enable-purge-protection true
-az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
-az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
-az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--BaseUrl --value "https://test-powerschool.school.edu"
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--ApiKey --value "staging-api-key-here"
-
-# Create App Service (Basic tier for staging)
-Write-Host "Creating staging App Service..."
-az appservice plan create -n file-svc-staging-plan -g $resourceGroup --sku B1 --is-linux false
-az webapp create -n $webAppName -g $resourceGroup -p file-svc-staging-plan --runtime "DOTNET|8.0"
-
-# Configure Managed Identity
-Write-Host "Configuring staging Managed Identity..."
-az webapp identity assign -n $webAppName -g $resourceGroup
-$principalId = az webapp identity show -n $webAppName -g $resourceGroup --query principalId -o tsv
-az keyvault set-policy -n $keyVaultName -g $resourceGroup --object-id $principalId --secret-permissions get list
-$storageId = az storage account show -n $storageAccount -g $resourceGroup --query id -o tsv
-az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $storageId
-
-# Configure App Settings
-Write-Host "Configuring staging App Settings..."
-az webapp config appsettings set -n $webAppName -g $resourceGroup --settings `
-  ASPNETCORE_ENVIRONMENT=Staging `
-  EnvironmentMode=Staging `
-  BlobStorage__UseLocalStub=false `
-  "BlobStorage__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)" `
-  BlobStorage__ContainerName=userfiles-staging `
-  Persistence__UseEf=true `
-  Persistence__UseSqlServer=true `
-  "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
-  "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-  "PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)" `
-  "PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
-
-# Security Settings
-Write-Host "Applying staging security settings..."
-az webapp config set -n $webAppName -g $resourceGroup --https-only true --min-tls-version 1.2
-
-Write-Host "Staging deployment complete!"
-Write-Host "Staging URL: https://$webAppName.azurewebsites.net"
+# OR: Do all at once
+.\deploy.ps1 -Environment Staging -CreateResources -DeployApp -RunMigrations
 ```
 
 ---
-## 7. Production Environment Deployment
+## 8. Production Deployment Workflow
 
-### 7.1 Create Production Resources
+### **Option A: Promote Tested Staging Build (Recommended)**
+```powershell
+# 1. Deploy to staging first
+.\deploy.ps1 -Environment Staging -CreateResources -DeployApp -RunMigrations
+
+# 2. Test staging thoroughly...
+
+# 3. Create production resources
+.\deploy.ps1 -Environment Production -CreateResources
+
+# 4. Promote staging build to production
+.\deploy.ps1 -Environment Production -DeployApp -PromoteFromStaging -RunMigrations
+```
+
+**Benefits:**
+- ✅ Same code tested in staging goes to production
+- ✅ Fast deployment (no rebuild)
+- ✅ Reduces risk of production-specific build issues
+- ✅ Follows industry best practices
+
+### **Option B: Fresh Build for Production**
+```powershell
+.\deploy.ps1 -Environment Production -CreateResources -DeployApp -RunMigrations
+```
+
+---
+## 9. Deployment Operations
+
+
+Run the production deployment script to create resources:
 
 ```powershell
-# Production Environment Variables
-$env = "production"
-$resourceGroup = "file-svc-production-rg"
-$location = "eastus"
-$storageAccount = "filesvcprd$(Get-Random)"
-$webAppName = "filesvc-api-prod"
-$keyVaultName = "filesvc-kv-prod"
-$appInsightsName = "filesvc-ai-prod"
-$sqlServerName = "filesvc-sql-prod"
-$sqlDbName = "file-service-db"
-$sqlAdminUser = "fsadmin"
-$sqlAdminPassword = "ProductionPassword123!" # Change this!
-
-# Create production resource group
-Write-Host "Creating production resource group..."
-az group create -n $resourceGroup -l $location
-
-# Create Application Insights
-Write-Host "Creating Application Insights for production..."
-az monitor app-insights component create -a $appInsightsName -g $resourceGroup -l $location --application-type web
-$aiKey = az monitor app-insights component show -a $appInsightsName -g $resourceGroup --query instrumentationKey -o tsv
-
-# Create storage account with enhanced settings
-Write-Host "Creating production storage account..."
-az storage account create -n $storageAccount -g $resourceGroup -l $location --sku Standard_GRS --kind StorageV2 --enable-versioning true
-az storage container create --account-name $storageAccount -n userfiles-prod --auth-mode key --public-access off
-# Enable soft delete for production
-az storage account blob-service-properties update --account-name $storageAccount --enable-delete-retention true --delete-retention-days 30
-$storageConnString = az storage account show-connection-string -n $storageAccount -g $resourceGroup -o tsv
-
-# Create SQL Server and Database (Standard tier for production)
-Write-Host "Creating production Azure SQL Database..."
-az sql server create -n $sqlServerName -g $resourceGroup -l $location --admin-user $sqlAdminUser --admin-password $sqlAdminPassword
-az sql db create -s $sqlServerName -g $resourceGroup -n $sqlDbName --service-objective S2
-az sql server firewall-rule create -s $sqlServerName -g $resourceGroup -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-# Configure automated backups for production
-az sql db update -s $sqlServerName -n $sqlDbName -g $resourceGroup --backup-storage-redundancy Zone
-$sqlConnString = az sql db show-connection-string -s $sqlServerName -n $sqlDbName -c ado.net | % { $_ -replace '<username>', $sqlAdminUser -replace '<password>', $sqlAdminPassword }
-
-# Create Key Vault with enhanced security
-Write-Host "Creating production Key Vault..."
-az keyvault create -n $keyVaultName -g $resourceGroup -l $location --enable-soft-delete true --enable-purge-protection true --enable-rbac-authorization false
-az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
-az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
-az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--BaseUrl --value "https://powerschool.school.edu"
-az keyvault secret set --vault-name $keyVaultName -n PowerSchool--ApiKey --value "production-api-key-here"
-
-# Create App Service (Premium tier for production)
-Write-Host "Creating production App Service..."
-az appservice plan create -n file-svc-production-plan -g $resourceGroup --sku P1v2 --is-linux false
-az webapp create -n $webAppName -g $resourceGroup -p file-svc-production-plan --runtime "DOTNET|8.0"
-
-# Configure Managed Identity
-Write-Host "Configuring production Managed Identity..."
-az webapp identity assign -n $webAppName -g $resourceGroup
-$principalId = az webapp identity show -n $webAppName -g $resourceGroup --query principalId -o tsv
-az keyvault set-policy -n $keyVaultName -g $resourceGroup --object-id $principalId --secret-permissions get list
-$storageId = az storage account show -n $storageAccount -g $resourceGroup --query id -o tsv
-az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $storageId
-
-# Configure App Settings
-Write-Host "Configuring production App Settings..."
-az webapp config appsettings set -n $webAppName -g $resourceGroup --settings `
-  ASPNETCORE_ENVIRONMENT=Production `
-  EnvironmentMode=Production `
-  BlobStorage__UseLocalStub=false `
-  "BlobStorage__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)" `
-  BlobStorage__ContainerName=userfiles-prod `
-  Persistence__UseEf=true `
-  Persistence__UseSqlServer=true `
-  "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
-  "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-  "PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)" `
-  "PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
-
-# Enhanced security settings for production
-Write-Host "Applying production security settings..."
-az webapp config set -n $webAppName -g $resourceGroup --https-only true --min-tls-version 1.2 --ftps-state Disabled
-
-Write-Host "Production deployment complete!"
-Write-Host "Production URL: https://$webAppName.azurewebsites.net"
+.\scripts\deploy-production.ps1 -CreateResources
 ```
+
+See `scripts/deploy-production.ps1` for the full script implementation.
 
 ---
 ## 8. Deployment Automation Scripts
@@ -291,377 +196,28 @@ Write-Host "Production URL: https://$webAppName.azurewebsites.net"
 Create these PowerShell scripts in your `scripts/` folder:
 
 ### 8.1 `deploy-staging.ps1`
-```powershell
-param(
-    [switch]$CreateResources,
-    [switch]$DeployApp,
-    [switch]$RunMigrations
-)
 
-$resourceGroup = "file-svc-staging-rg"
-$webAppName = "filesvc-api-staging"
-
-if ($CreateResources) {
-    Write-Host "Creating staging Azure resources..."
-    # Insert staging resource creation script from section 6.1
-}
-
-if ($DeployApp) {
-    Write-Host "Deploying application to staging..."
-    dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish-staging
-    
-    # Create migration bundle
-    dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish-staging/efbundle.exe
-    
-    cd publish-staging
-    Compress-Archive * ../deploy-staging.zip -Force
-    az webapp deploy -g $resourceGroup -n $webAppName --src-path ../deploy-staging.zip --type zip
-    cd ..
-}
-
-if ($RunMigrations) {
-    Write-Host "Running database migrations on staging..."
-    # Get connection string from Key Vault and run migrations
-    $connectionString = az keyvault secret show --vault-name "filesvc-kv-staging" --name "Sql--ConnectionString" --query value -o tsv
-    ./publish-staging/efbundle.exe --connection $connectionString
-}
-
-Write-Host "Staging deployment completed!"
-Write-Host "Staging URL: https://filesvc-api-staging.azurewebsites.net/swagger"
-```
+See `scripts/deploy-staging.ps1` for the full script.
 
 ### 8.2 `deploy-production.ps1`
-```powershell
-param(
-    [switch]$CreateResources,
-    [switch]$DeployApp,
-    [switch]$RunMigrations,
-    [switch]$PromoteFromStaging
-)
 
-$resourceGroup = "file-svc-production-rg"
-$webAppName = "filesvc-api-prod"
-
-if ($CreateResources) {
-    Write-Host "Creating production Azure resources..."
-    # Insert production resource creation script from section 7.1
-}
-
-if ($PromoteFromStaging) {
-    Write-Host "Promoting staging build to production..."
-    # Use the same build artifact from staging
-    Copy-Item "deploy-staging.zip" "deploy-production.zip"
-} elseif ($DeployApp) {
-    Write-Host "Creating fresh production build..."
-    dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish-production
-    
-    # Create migration bundle
-    dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish-production/efbundle.exe
-    
-    cd publish-production
-    Compress-Archive * ../deploy-production.zip -Force
-    cd ..
-}
-
-if ($DeployApp -or $PromoteFromStaging) {
-    Write-Host "Deploying to production..."
-    az webapp deploy -g $resourceGroup -n $webAppName --src-path deploy-production.zip --type zip
-}
-
-if ($RunMigrations) {
-    Write-Host "Running database migrations on production..."
-    $connectionString = az keyvault secret show --vault-name "filesvc-kv-prod" --name "Sql--ConnectionString" --query value -o tsv
-    ./publish-production/efbundle.exe --connection $connectionString
-}
-
-Write-Host "Production deployment completed!"
-Write-Host "Production URL: https://filesvc-api-prod.azurewebsites.net/swagger"
-```
+See `scripts/deploy-production.ps1` for the full script.
 
 ---
 ## 9. CI/CD Pipeline for Multi-Environment
 
-Resources (baseline):
-1. Resource Group
-2. Storage Account (Blob)
-3. App Service Plan + Web App
-4. (Optional now) Azure SQL Server + Database (later when replacing SQLite)
-5. Key Vault (recommended for secrets)
-6. Application Insights (telemetry)
+For automated deployment, use the scripts in `scripts/` folder. The pipeline should include:
 
-### 4.1 Create Resource Group
-```powershell
-az group create -n file-svc-rg -l eastus
-```
+- Resource creation (using `-CreateResources`)
+- App deployment (using `-DeployApp`)
+- Database migrations (using `-RunMigrations`)
 
-### 4.2 Storage Account
-```powershell
-az storage account create -n <storageacctname> -g file-svc-rg -l eastus --sku Standard_LRS --kind StorageV2
-az storage container create --account-name <storageacctname> -n userfiles --auth-mode key --public-access off
-```
-Retrieve connection string:
-```powershell
-az storage account show-connection-string -n <storageacctname> -g file-svc-rg -o tsv
-```
-
-### 4.3 App Service
-```powershell
-az appservice plan create -n file-svc-plan -g file-svc-rg --sku P1v2 --is-linux false
-az webapp create -n <appname-filesvc> -g file-svc-rg -p file-svc-plan --runtime "DOTNET|8.0"
-```
-
-### 4.4 Application Insights (Monitoring)
-```powershell
-az monitor app-insights component create -a file-svc-ai -g file-svc-rg -l eastus --application-type web
-```
-Get instrumentation key:
-```powershell
-az monitor app-insights component show -a file-svc-ai -g file-svc-rg --query instrumentationKey -o tsv
-```
-
-### 4.5 Azure SQL Database (Production Database)
-```powershell
-# Create SQL Server
-az sql server create -n <sql-server-name> -g file-svc-rg -l eastus --admin-user <admin-user> --admin-password <admin-password>
-
-# Create Database
-az sql db create -s <sql-server-name> -g file-svc-rg -n file-service-db --service-objective Basic
-
-# Configure firewall (allow Azure services)
-az sql server firewall-rule create -s <sql-server-name> -g file-svc-rg -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-```
-Get connection string:
-```powershell
-az sql db show-connection-string -s <sql-server-name> -n file-service-db -c ado.net
-```
-
-### 4.6 Key Vault (Secure Secrets Management)
-```powershell
-az keyvault create -n <kv-name> -g file-svc-rg -l eastus --enable-soft-delete true --enable-purge-protection true
-az keyvault secret set --vault-name <kv-name> -n BlobStorage--ConnectionString --value "<storage-conn-string>"
-az keyvault secret set --vault-name <kv-name> -n Sql--ConnectionString --value "<sql-conn-string>"
-az keyvault secret set --vault-name <kv-name> -n ApplicationInsights--InstrumentationKey --value "<ai-key>"
-```
-
-### 4.7 Managed Identity (Secure Access)
-```powershell
-# Enable system-assigned managed identity for the web app
-az webapp identity assign -n <appname-filesvc> -g file-svc-rg
-
-# Get the principal ID
-$principalId = az webapp identity show -n <appname-filesvc> -g file-svc-rg --query principalId -o tsv
-
-# Grant Key Vault access to the managed identity
-az keyvault set-policy -n <kv-name> -g file-svc-rg --object-id $principalId --secret-permissions get list
-
-# Grant Storage Blob Data Contributor role to managed identity
-$storageId = az storage account show -n <storageacctname> -g file-svc-rg --query id -o tsv
-az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $storageId
-```
-
-### 4.8 App Settings (Production with Key Vault References)
-```powershell
-az webapp config appsettings set -n <appname-filesvc> -g file-svc-rg --settings \
-  EnvironmentMode=Production \
-  BlobStorage__UseLocalStub=false \
-  BlobStorage__ConnectionString="@Microsoft.KeyVault(VaultName=<kv-name>;SecretName=BlobStorage--ConnectionString)" \
-  BlobStorage__ContainerName=userfiles \
-  Persistence__UseEf=true \
-  Persistence__UseSqlServer=true \
-  Sql__ConnectionString="@Microsoft.KeyVault(VaultName=<kv-name>;SecretName=Sql--ConnectionString)" \
-  ApplicationInsights__InstrumentationKey="@Microsoft.KeyVault(VaultName=<kv-name>;SecretName=ApplicationInsights--InstrumentationKey)" \
-  ASPNETCORE_ENVIRONMENT=Production
-```
-
-> Later replace direct connection string with a Key Vault reference or Managed Identity (using `@Microsoft.KeyVault(...)`).
-
-### 4.9 Deploy (zip deploy with production settings)
-From repository root (after build):
-```powershell
-# Build for production
-dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish
-
-# Add database migration to deployment
-dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o publish/efbundle.exe
-
-cd publish
-Compress-Archive * ../deploy.zip -Force
-az webapp deploy -g file-svc-rg -n <appname-filesvc> --src-path ../deploy.zip --type zip
-
-# Run database migrations (if using SQL Server)
-# Option 1: Run efbundle remotely via Kudu console at https://<appname-filesvc>.scm.azurewebsites.net/DebugConsole
-# Option 2: Use connection string locally to migrate
-# dotnet ef database update -s src/FileService.Api/FileService.Api.csproj --connection "<sql-connection-string>"
-```
-
-### 4.10 Security Hardening
-```powershell
-# Enable HTTPS only
-az webapp config set -n <appname-filesvc> -g file-svc-rg --https-only true
-
-# Configure minimum TLS version
-az webapp config set -n <appname-filesvc> -g file-svc-rg --min-tls-version 1.2
-
-# Add security headers (via web.config or startup configuration)
-# Disable detailed error pages in production (handled in code via ASPNETCORE_ENVIRONMENT)
-```
-
-### 4.11 Monitoring & Alerting Setup
-```powershell
-# Create alert for high error rate
-az monitor metrics alert create \
-  --name "FileService-HighErrorRate" \
-  --resource-group file-svc-rg \
-  --scopes "/subscriptions/<subscription-id>/resourceGroups/file-svc-rg/providers/Microsoft.Web/sites/<appname-filesvc>" \
-  --condition "count 'Http Server Errors' 'Http5xx' 'Total' > 10" \
-  --description "Alert when HTTP 5xx errors exceed 10 in 5 minutes" \
-  --evaluation-frequency 5m \
-  --window-size 5m \
-  --severity 2
-
-# Create alert for high response time
-az monitor metrics alert create \
-  --name "FileService-HighResponseTime" \
-  --resource-group file-svc-rg \
-  --scopes "/subscriptions/<subscription-id>/resourceGroups/file-svc-rg/providers/Microsoft.Web/sites/<appname-filesvc>" \
-  --condition "average 'Response Time' 'AverageResponseTime' 'Total' > 5000" \
-  --description "Alert when average response time exceeds 5 seconds" \
-  --evaluation-frequency 5m \
-  --window-size 15m \
-  --severity 3
-```
-
-Browse: `https://<appname-filesvc>.azurewebsites.net/swagger`
+See `scripts/deploy-staging.ps1` and `scripts/deploy-production.ps1` for implementation details.
 
 ---
-## 5. CI/CD (GitHub Actions Outline)
 
-Create `.github/workflows/deploy.yml` (future):
 
-```yaml
-name: Build & Deploy
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-      - name: Restore
-        run: dotnet restore
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-      - name: Test
-        run: dotnet test --configuration Release --no-build --verbosity normal
-      - name: Publish
-        run: dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o publish
-      - name: Zip
-        run: Compress-Archive -Path publish/* -DestinationPath deploy.zip
-      - name: Deploy
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
-          package: deploy.zip
-```
-
-Secrets needed:
-- `AZURE_PUBLISH_PROFILE` (export from Portal > Web App > Get publish profile)
-- `AZURE_WEBAPP_NAME`
-
-> Future improvement: Use OIDC + `azure/login@v2` + `az webapp deploy` instead of publish profile.
-
----
-## 6. Complete Production Deployment Script
-
-Here's a comprehensive script that creates all necessary Azure resources:
-
-```powershell
-# Variables - Replace with your values
-$resourceGroup = "file-svc-rg"
-$location = "eastus"
-$storageAccount = "filesvcstg$(Get-Random)"
-$webAppName = "filesvc-api-$(Get-Random)"
-$keyVaultName = "filesvc-kv-$(Get-Random)"
-$appInsightsName = "filesvc-ai"
-$sqlServerName = "filesvc-sql-$(Get-Random)"
-$sqlDbName = "file-service-db"
-$sqlAdminUser = "fsadmin"
-$sqlAdminPassword = "YourSecurePassword123!" # Change this!
-
-# Create resource group
-Write-Host "Creating resource group..."
-az group create -n $resourceGroup -l $location
-
-# Create Application Insights
-Write-Host "Creating Application Insights..."
-az monitor app-insights component create -a $appInsightsName -g $resourceGroup -l $location --application-type web
-$aiKey = az monitor app-insights component show -a $appInsightsName -g $resourceGroup --query instrumentationKey -o tsv
-
-# Create storage account
-Write-Host "Creating storage account..."
-az storage account create -n $storageAccount -g $resourceGroup -l $location --sku Standard_LRS --kind StorageV2
-az storage container create --account-name $storageAccount -n userfiles --auth-mode key --public-access off
-$storageConnString = az storage account show-connection-string -n $storageAccount -g $resourceGroup -o tsv
-
-# Create SQL Server and Database
-Write-Host "Creating Azure SQL Database..."
-az sql server create -n $sqlServerName -g $resourceGroup -l $location --admin-user $sqlAdminUser --admin-password $sqlAdminPassword
-az sql db create -s $sqlServerName -g $resourceGroup -n $sqlDbName --service-objective Basic
-az sql server firewall-rule create -s $sqlServerName -g $resourceGroup -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-$sqlConnString = az sql db show-connection-string -s $sqlServerName -n $sqlDbName -c ado.net | % { $_ -replace '<username>', $sqlAdminUser -replace '<password>', $sqlAdminPassword }
-
-# Create Key Vault
-Write-Host "Creating Key Vault..."
-az keyvault create -n $keyVaultName -g $resourceGroup -l $location --enable-soft-delete true --enable-purge-protection true
-az keyvault secret set --vault-name $keyVaultName -n BlobStorage--ConnectionString --value $storageConnString
-az keyvault secret set --vault-name $keyVaultName -n Sql--ConnectionString --value $sqlConnString
-az keyvault secret set --vault-name $keyVaultName -n ApplicationInsights--InstrumentationKey --value $aiKey
-
-# Create App Service
-Write-Host "Creating App Service..."
-az appservice plan create -n file-svc-plan -g $resourceGroup --sku P1v2 --is-linux false
-az webapp create -n $webAppName -g $resourceGroup -p file-svc-plan --runtime "DOTNET|8.0"
-
-# Configure Managed Identity
-Write-Host "Configuring Managed Identity..."
-az webapp identity assign -n $webAppName -g $resourceGroup
-$principalId = az webapp identity show -n $webAppName -g $resourceGroup --query principalId -o tsv
-az keyvault set-policy -n $keyVaultName -g $resourceGroup --object-id $principalId --secret-permissions get list
-$storageId = az storage account show -n $storageAccount -g $resourceGroup --query id -o tsv
-az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $storageId
-
-# Configure App Settings
-Write-Host "Configuring App Settings..."
-az webapp config appsettings set -n $webAppName -g $resourceGroup --settings `
-  EnvironmentMode=Production `
-  BlobStorage__UseLocalStub=false `
-  "BlobStorage__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)" `
-  BlobStorage__ContainerName=userfiles `
-  Persistence__UseEf=true `
-  Persistence__UseSqlServer=true `
-  "Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)" `
-  "ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)" `
-  ASPNETCORE_ENVIRONMENT=Production
-
-# Security Settings
-Write-Host "Applying security settings..."
-az webapp config set -n $webAppName -g $resourceGroup --https-only true --min-tls-version 1.2
-
-Write-Host "Deployment complete!"
-Write-Host "Web App URL: https://$webAppName.azurewebsites.net"
-Write-Host "Storage Account: $storageAccount"
-Write-Host "SQL Server: $sqlServerName.database.windows.net"
-Write-Host "Key Vault: $keyVaultName"
-```
-
-## 7. Database Migrations for Production
-## 7. Database Migrations for Production
+## 10. Database Migrations for Production
 
 ### Add SQL Server Support to the Project
 1. **Add SQL Server Package**:
@@ -682,18 +238,10 @@ if (builder.Configuration.GetValue<bool>("Persistence:UseSqlServer"))
 ```
 
 3. **Create and Apply Migrations**:
-```powershell
-# Generate initial migration
-dotnet ef migrations add InitialCreate -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj
 
-# Create migration bundle for deployment
-dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o efbundle.exe
+Use the `-RunMigrations` switch in the deploy scripts to apply migrations. See `scripts/deploy-staging.ps1` and `scripts/deploy-production.ps1` for details.
 
-# Apply migrations to production database
-./efbundle.exe --connection "<sql-connection-string>"
-```
-
-## 8. Infrastructure as Code (Optional Enhancement)
+## 11. Infrastructure as Code (Optional Enhancement)
 
 Create `azure-resources.bicep` for reproducible deployments:
 
@@ -740,10 +288,10 @@ resource webApp 'Microsoft.Web/sites@2021-01-15' = {
 
 Deploy with:
 ```powershell
-az deployment group create -g file-svc-rg --template-file azure-resources.bicep --parameters appName=filesvc-api sqlAdminPassword=YourSecurePassword123!
+az deployment group create -g filesvc-rg --template-file azure-resources.bicep --parameters appName=filesvc-api sqlAdminPassword=YourSecurePassword123!
 ```
 
-## 9. Production Deployment Checklist
+## 12. Production Deployment Checklist
 
 ### Pre-Deployment
 - [ ] Update `appsettings.Production.json` with production settings
@@ -776,7 +324,7 @@ az deployment group create -g file-svc-rg --template-file azure-resources.bicep 
 - [ ] Test user authentication and role-based access
 - [ ] Set up audit logging for authentication events
 
-## 10. Monitoring & Maintenance
+## 13. Monitoring & Maintenance
 
 ### Application Insights Queries
 ```kusto
@@ -810,15 +358,15 @@ FROM FileRecords
 GROUP BY CreatedBy;
 ```
 
-## 11. Backup & Disaster Recovery
+## 14. Backup & Disaster Recovery
 
 ### Database Backups
 ```powershell
 # Configure automated backups (7-day retention)
-az sql db update -s <sql-server-name> -n <db-name> -g file-svc-rg --backup-storage-redundancy Local
+az sql db update -s <sql-server-name> -n <db-name> -g filesvc-rg --backup-storage-redundancy Local
 
 # Manual backup
-az sql db export -s <sql-server-name> -n <db-name> -g file-svc-rg --admin-user <admin-user> --admin-password <password> --storage-key-type StorageAccessKey --storage-key <storage-key> --storage-uri "https://<storage-account>.blob.core.windows.net/backups/backup-$(Get-Date -Format 'yyyyMMdd-HHmmss').bacpac"
+az sql db export -s <sql-server-name> -n <db-name> -g filesvc-rg --admin-user <admin-user> --admin-password <password> --storage-key-type StorageAccessKey --storage-key <storage-key> --storage-uri "https://<storage-account>.blob.core.windows.net/backups/backup-$(Get-Date -Format 'yyyyMMdd-HHmmss').bacpac"
 ```
 
 ### Blob Storage Backups
@@ -831,8 +379,7 @@ az storage account blob-service-properties update --account-name <storage-accoun
 ```
 
 ---
-
-## Summary
+## 15. Summary
 
 The deployment guide now provides:
 
@@ -846,7 +393,7 @@ The deployment guide now provides:
 
 This guide ensures a production-ready deployment with enterprise-grade security, monitoring, and reliability! 🚀
 
-## 13. Troubleshooting Multi-Environment Issues
+## 16. Troubleshooting Multi-Environment Issues
 
 | Environment | Symptom | Possible Cause | Fix |
 |-------------|---------|----------------|-----|
@@ -882,7 +429,7 @@ az role assignment list --assignee <managed-identity-principal-id> --scope <stor
 ```
 
 ---
-## 14. Environment Management Best Practices
+## 17. Environment Management Best Practices
 
 ### 14.1 Configuration Management
 - ✅ **Use Key Vault** for all secrets and connection strings
@@ -918,7 +465,7 @@ az role assignment list --assignee <managed-identity-principal-id> --scope <stor
 - 🔄 **Cleanup**: Automated cleanup of old test data in staging
 
 ---
-## 15. Quick Start Commands
+## 18. Quick Start Commands
 
 ### 15.1 Create Both Environments (One Command)
 ```powershell
@@ -954,7 +501,7 @@ az role assignment list --assignee <managed-identity-principal-id> --scope <stor
 - **Production**: `https://filesvc-api-prod.azurewebsites.net` (Swagger disabled)
 
 ---
-## 16. Cost Estimation
+## 19. Cost Estimation
 
 ### Monthly Azure Costs (Estimate)
 
@@ -974,7 +521,7 @@ az role assignment list --assignee <managed-identity-principal-id> --scope <stor
 - 🔄 **Monitor usage** with Azure Cost Management
 
 ---
-## Summary
+## 20. Conclusion
 
 Your **multi-environment deployment** is now ready! 🎉
 

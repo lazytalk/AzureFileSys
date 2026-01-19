@@ -44,8 +44,7 @@ builder.Services.AddScoped<PowerSchoolUserContext>();
 
 var app = builder.Build();
 
-var envMode = builder.Configuration.GetValue<string>("EnvironmentMode") ?? builder.Environment.EnvironmentName;
-var isDevMode = envMode.Equals("Development", StringComparison.OrdinalIgnoreCase);
+var isDevMode = builder.Environment.IsDevelopment();
 // Apply pending migrations only if configured (dev convenience). For production you may set AutoMigrate=false and run migrations explicitly.
 if (useEf && !isDevelopment && builder.Configuration.GetValue("Persistence:AutoMigrate", true))
 {

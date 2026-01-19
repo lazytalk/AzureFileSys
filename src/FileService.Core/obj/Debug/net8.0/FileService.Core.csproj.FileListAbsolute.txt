@@ -9,3 +9,15 @@ C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileSe
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\refint\FileService.Core.dll
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.pdb
 C:\Users\wang_\Desktop\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\ref\FileService.Core.dll
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\bin\Debug\net8.0\FileService.Core.deps.json
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\bin\Debug\net8.0\FileService.Core.dll
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\bin\Debug\net8.0\FileService.Core.pdb
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.AssemblyInfoInputs.cache
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.AssemblyInfo.cs
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.csproj.CoreCompileInputs.cache
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.sourcelink.json
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.dll
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\refint\FileService.Core.dll
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\FileService.Core.pdb
+C:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\src\FileService.Core\obj\Debug\net8.0\ref\FileService.Core.dll

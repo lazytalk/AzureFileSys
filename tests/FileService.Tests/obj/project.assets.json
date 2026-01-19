@@ -2657,11 +2657,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\tests\\FileService.Tests\\FileService.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\tests\\FileService.Tests\\FileService.Tests.csproj",
       "projectName": "FileService.Tests",
-      "projectPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\tests\\FileService.Tests\\FileService.Tests.csproj",
+      "projectPath": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\tests\\FileService.Tests\\FileService.Tests.csproj",
       "packagesPath": "C:\\Users\\wang_\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\tests\\FileService.Tests\\obj\\",
+      "outputPath": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\tests\\FileService.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\wang_\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -2676,11 +2676,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {
-              "projectPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj"
+            "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {
+              "projectPath": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj"
             },
-            "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj": {
-              "projectPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj"
+            "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Infrastructure\\FileService.Infrastructure.csproj"
             }
           }
         }

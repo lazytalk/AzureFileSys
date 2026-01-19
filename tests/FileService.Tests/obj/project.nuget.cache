@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "QIhsIK32d50=",
+  "dgSpecHash": "CuzYWtqw3t4=",
   "success": true,
-  "projectFilePath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\tests\\FileService.Tests\\FileService.Tests.csproj",
+  "projectFilePath": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\tests\\FileService.Tests\\FileService.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\wang_\\.nuget\\packages\\azure.core\\1.39.0\\azure.core.1.39.0.nupkg.sha512",
     "C:\\Users\\wang_\\.nuget\\packages\\azure.storage.blobs\\12.20.0\\azure.storage.blobs.12.20.0.nupkg.sha512",

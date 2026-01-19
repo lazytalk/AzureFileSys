@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {}
+    "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {}
   },
   "projects": {
-    "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {
+    "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj",
+        "projectUniqueName": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj",
         "projectName": "FileService.Core",
-        "projectPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj",
+        "projectPath": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Core\\FileService.Core.csproj",
         "packagesPath": "C:\\Users\\wang_\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\wang_\\Desktop\\AzureFileSys\\src\\FileService.Core\\obj\\",
+        "outputPath": "C:\\Users\\wang_\\Documents\\Codes\\AzureFileSys\\AzureFileSys\\src\\FileService.Core\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\wang_\\AppData\\Roaming\\NuGet\\NuGet.Config"

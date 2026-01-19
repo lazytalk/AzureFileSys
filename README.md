@@ -12,8 +12,8 @@ This repository contains an initial scaffold for a file management backend align
 - Stub PowerSchool auth via headers: `X-PowerSchool-User`, optional `X-PowerSchool-Role` ("admin" for elevated privileges).
 
 ## Prerequisites
-Install .NET 8 SDK (LTS) on your machine:
-https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+Install .NET 9 SDK on your machine:
+https://dotnet.microsoft.com/en-us/download/dotnet/9.0
 
 Verify:
 ```powershell

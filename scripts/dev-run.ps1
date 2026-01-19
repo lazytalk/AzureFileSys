@@ -6,21 +6,21 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host "Checking prerequisites..." -ForegroundColor Cyan
 
-# Helper function to validate .NET 8 SDK
-function Assert-DotNet8Required {
+# Helper function to validate .NET 9 SDK
+function Assert-DotNet9Required {
     $dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
     if (-not $dotnetCmd) {
         Write-Host ".NET SDK not found." -ForegroundColor Red
-        Write-Host "Please install .NET 8 SDK from https://dotnet.microsoft.com/download/dotnet/8.0" -ForegroundColor Yellow
+        Write-Host "Please install .NET 9 SDK from https://dotnet.microsoft.com/download/dotnet/9.0" -ForegroundColor Yellow
         exit 1
     }
     
     $versionOutput = & $dotnetCmd --version 2>&1
     if ($versionOutput -match '^(\d+)\.') {
         $majorVersion = [int]$matches[1]
-        if ($majorVersion -lt 8) {
-            Write-Host ".NET SDK version $versionOutput found, but .NET 8 or higher is required." -ForegroundColor Red
-            Write-Host "Please install .NET 8 SDK from https://dotnet.microsoft.com/download/dotnet/8.0" -ForegroundColor Yellow
+        if ($majorVersion -lt 9) {
+            Write-Host ".NET SDK version $versionOutput found, but .NET 9 or higher is required." -ForegroundColor Red
+            Write-Host "Please install .NET 9 SDK from https://dotnet.microsoft.com/download/dotnet/9.0" -ForegroundColor Yellow
             exit 1
         }
     } else {
@@ -30,8 +30,8 @@ function Assert-DotNet8Required {
     return $dotnetCmd.Source
 }
 
-# Verify .NET 8 SDK is available
-$dotnetPath = Assert-DotNet8Required
+# Verify .NET 9 SDK is available
+$dotnetPath = Assert-DotNet9Required
 Write-Host ".NET SDK version check passed" -ForegroundColor Green
 
 # Load development configuration from deploy-settings.ps1

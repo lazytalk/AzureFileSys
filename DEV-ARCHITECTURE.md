@@ -79,10 +79,10 @@ AzureFileSys/
 ### **SQLite Database Location**
 ```
 # Development database location
-src/FileService.Api/bin/Debug/net8.0/files.db
+src/FileService.Api/bin/Debug/net9.0/files.db
 
 # Custom database (when using dev-run.ps1 -SqlitePath "custom.db")
-src/FileService.Api/bin/Debug/net8.0/custom.db
+src/FileService.Api/bin/Debug/net9.0/custom.db
 ```
 
 ## 🚀 Development Workflow
@@ -232,7 +232,7 @@ netstat -an | findstr :5090
 .\scripts\dev-run.ps1 -RecreateDb
 
 # Check database file location
-dir src\FileService.Api\bin\Debug\net8.0\*.db
+dir src\FileService.Api\bin\Debug\net9.0\*.db
 ```
 
 #### **Smoke Test Failures**
@@ -270,4 +270,4 @@ This architecture provides a **robust, reliable, and fast development experience
 
 **Last Updated**: September 4, 2025  
 **Architecture Version**: 1.0  
-**Tested Platforms**: Windows 10/11, .NET 8.0
+**Tested Platforms**: Windows 10/11, .NET 9.0

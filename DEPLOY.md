@@ -119,7 +119,7 @@ Azure Subscription
 ---
 ## 6. Local Development (No Changes)
 
-1. Run dev script (installs .NET 8 SDK if needed):
+1. Run dev script (installs .NET 9 SDK if needed):
    ```powershell
    cd scripts
    ./dev-run.ps1 -Port 5090 -SqlitePath dev-files.db

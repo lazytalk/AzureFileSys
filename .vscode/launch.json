@@ -1,21 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": ".NET Core Launch (Dev)",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "dev-build-and-start",
-            "program": "${workspaceFolder}/src/FileService.Api/bin/Debug/net9.0/FileService.Api.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "stopAtEntry": false,
-            "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development",
-                "ASPNETCORE_URLS": "http://localhost:5090"
-            }
-        },
-        {
+              {
             "name": "Dev: API + Health",
             "type": "coreclr",
             "request": "launch",

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env pwsh
+#!/usr/bin/env pwsh
 # deploy.ps1 - Unified deployment script for staging and production environments
 
 param(
@@ -15,11 +15,7 @@ param(
     [string]$SqlAdminPassword = ""
 )
 
-Set-Variable -Name ErrorActionPreference -Value 'Stop' -Scope Script
-
-# Set UTF-8 encoding for better compatibility (must be after param)
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$ErrorActionPreference = 'Stop'
 
 # ============================================================================
 # ENVIRONMENT CONFIGURATION
@@ -52,38 +48,31 @@ if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# Set Azure China Cloud
-Write-Host "Setting Azure China Cloud..." -ForegroundColor $env.Color
-
-# Unset environment variable that might override the cloud setting
-if (Test-Path Env:\AZURE_CLOUD_NAME) { Remove-Item Env:\AZURE_CLOUD_NAME }
-
-az cloud set --name AzureChinaCloud
-$currentCloud = az cloud show --query name -o tsv
-
-if ($currentCloud -eq "AzureChinaCloud") {
-    Write-Host "✓ Azure China Cloud configured" -ForegroundColor Green
-} else {
-    Write-Error "Failed to set Azure China Cloud. Current cloud: $currentCloud"
-    exit 1
-}
-
 # Check if logged in to Azure
 try {
-    $accountInfo = az account show -o json | ConvertFrom-Json
+    $accountInfo = az account show 2>&1 | ConvertFrom-Json
     Write-Host "✓ Authenticated as: $($accountInfo.user.name)" -ForegroundColor Green
     Write-Host "✓ Current subscription: $($accountInfo.name) ($($accountInfo.id))" -ForegroundColor Green
+    
+    # Check if using Azure China Cloud (optional warning)
+    $currentCloud = az cloud show --query name -o tsv 2>$null
+    if ($currentCloud -ne "AzureChinaCloud") {
+        Write-Warning "Not using Azure China Cloud. If deploying to China, run: az cloud set --name AzureChinaCloud"
+    } else {
+        Write-Host "✓ Using Azure China Cloud" -ForegroundColor Green
+    }
 } catch {
-    Write-Host "Not logged in to Azure CLI. Initiating login..." -ForegroundColor Yellow
-    az login
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Azure login failed"
+    Write-Error "Not logged in to Azure CLI. Please run: az login"
+    $login = Read-Host "Would you like to login now? (y/n)"
+    if ($login -eq 'y') {
+        az login
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Azure login failed"
+            exit 1
+        }
+    } else {
         exit 1
     }
-    
-    # Verify login succeeded
-    $accountInfo = az account show -o json | ConvertFrom-Json
-    Write-Host "✓ Authenticated as: $($accountInfo.user.name)" -ForegroundColor Green
 }
 
 Write-Host "" # Empty line for readability

@@ -46,6 +46,7 @@ $envConfig = switch ($Environment) {
             "AppServicePlanName" = "filesvc-staging-plan"
             "PowerSchoolBaseUrl" = "https://test-powerschool.school.edu"
             "SqlAdminPassword" = "StagingSecurePass123!"
+            "CustomDomain" = "filesvc-stg-app.kaiweneducation.com"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Staging"
             "BlobStorage__UseLocalStub" = "false"
@@ -65,6 +66,7 @@ $envConfig = switch ($Environment) {
             "AppServicePlanName" = "filesvc-prod-plan"
             "PowerSchoolBaseUrl" = "https://ps.school.edu"
             "SqlAdminPassword" = "ProductionSecurePass456!"
+            "CustomDomain" = "filesvc.kaiweneducation.com"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Production"
             "BlobStorage__UseLocalStub" = "false"
@@ -103,6 +105,7 @@ $resources = @{
     "AppServiceSku" = $envConfig["AppServiceSku"]
     "AppServicePlanName" = $envConfig["AppServicePlanName"] + "-$suffix"
     "PowerSchoolBaseUrl" = $envConfig["PowerSchoolBaseUrl"]
+    "CustomDomain" = $envConfig["CustomDomain"]
     "StorageAccount" = "filesvc$($envConfig["EnvSuffix"])$suffix"
     "WebAppName" = "filesvc-$($envConfig["EnvSuffix"])-app"
     "KeyVaultName" = "kv-fsvc-$($envConfig["EnvSuffix"])-$suffix"

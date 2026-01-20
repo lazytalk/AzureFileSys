@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Service API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .status {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 30px;
+        }
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .link-button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #334155;
+            transition: all 0.2s;
+        }
+        .link-button:hover {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .link-title {
+            font-weight: 600;
+            font-size: 1em;
+        }
+        .link-desc {
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        .arrow {
+            font-size: 1.5em;
+            opacity: 0.5;
+        }
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+        .info h3 {
+            color: #1e40af;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+        .info p {
+            color: #1e3a8a;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        .info code {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .endpoints {
+            margin-top: 20px;
+        }
+        .endpoint {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+        .method {
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        .method.get { background: #10b981; color: white; }
+        .method.post { background: #3b82f6; color: white; }
+        .method.delete { background: #ef4444; color: white; }
+        .path {
+            color: #334155;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗂️ File Service API</h1>
+        <p class="subtitle">Azure-backed file storage and management service</p>
+        <span class="status" id="status">⏳ Checking...</span>
+        
+        <div class="links">
+            <a href="/api/health/check" class="link-button" id="healthLink">
+                <div>
+                    <div class="link-title">Health Check</div>
+                    <div class="link-desc">View system status and diagnostics</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            
+            <a href="/swagger" class="link-button" id="swaggerLink">
+                <div>
+                    <div class="link-title">API Documentation</div>
+                    <div class="link-desc">Interactive Swagger/OpenAPI docs</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            
+            <a href="/health.html" class="link-button">
+                <div>
+                    <div class="link-title">Health Monitor</div>
+                    <div class="link-desc">Real-time health monitoring dashboard</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+        </div>
+        
+        <div class="info">
+            <h3>📋 Available Endpoints</h3>
+            <div class="endpoints">
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/files/upload</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/files</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/files/{id}</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method delete">DELETE</span>
+                    <span class="path">/api/files/{id}</span>
+                </div>
+            </div>
+            <p style="margin-top: 15px;">
+                <strong>Authentication:</strong> All file endpoints require <code>X-PowerSchool-User</code> and <code>X-PowerSchool-Role</code> headers.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Check health status on load
+        async function checkHealth() {
+            const statusEl = document.getElementById('status');
+            const healthLink = document.getElementById('healthLink');
+            const swaggerLink = document.getElementById('swaggerLink');
+            
+            try {
+                const response = await fetch('/api/health/check');
+                if (response.ok) {
+                    statusEl.textContent = '✅ Service Online';
+                    statusEl.style.background = '#10b981';
+                } else {
+                    statusEl.textContent = '⚠️ Service Degraded';
+                    statusEl.style.background = '#f59e0b';
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ Service Offline';
+                statusEl.style.background = '#ef4444';
+            }
+
+            // Check if Swagger is available
+            try {
+                const swaggerResponse = await fetch('/swagger/index.html');
+                if (!swaggerResponse.ok) {
+                    swaggerLink.style.opacity = '0.5';
+                    swaggerLink.querySelector('.link-desc').textContent = 'Not available in production';
+                }
+            } catch (error) {
+                swaggerLink.style.opacity = '0.5';
+                swaggerLink.querySelector('.link-desc').textContent = 'Not available in production';
+            }
+        }
+
+        checkHealth();
+    </script>
+</body>
+</html>

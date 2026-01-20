@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 var useEf = builder.Configuration.GetValue("Persistence:UseEf", true);
+var useSqlServer = builder.Configuration.GetValue("Persistence:UseSqlServer", false);
 // Force in-memory for development to avoid database hanging issues, unless explicitly overridden to use EF
 var isDevelopment = builder.Environment.IsDevelopment();
 var forceEf = builder.Configuration.GetValue("Persistence:ForceEf", false);
@@ -22,13 +23,32 @@ if (isDevelopment && !forceEf)
 }
 else if (useEf)
 {
-    var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
-    builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
-        opt.UseSqlite($"Data Source={dbPath}"));
+    if (useSqlServer)
+    {
+        // Use SQL Server for staging/production
+        var sqlConnectionString = builder.Configuration.GetValue<string>("Sql:ConnectionString");
+        if (string.IsNullOrWhiteSpace(sqlConnectionString))
+        {
+            Console.WriteLine("[STARTUP ERROR] SQL Server connection string is missing!");
+            throw new InvalidOperationException("SQL Server connection string (Sql:ConnectionString) is required when UseSqlServer=true");
+        }
+        Console.WriteLine("[STARTUP] Using SQL Server database");
+        builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
+            opt.UseSqlServer(sqlConnectionString));
+    }
+    else
+    {
+        // Use SQLite for local/dev scenarios
+        var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
+        Console.WriteLine($"[STARTUP] Using SQLite database at: {dbPath}");
+        builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
+            opt.UseSqlite($"Data Source={dbPath}"));
+    }
     builder.Services.AddScoped<IFileMetadataRepository, FileService.Infrastructure.Data.EfFileMetadataRepository>();
 }
 else
 {
+    Console.WriteLine("[STARTUP] Using in-memory repository");
     builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
 }
 builder.Services.Configure<FileService.Infrastructure.Storage.BlobStorageOptions>(builder.Configuration.GetSection("BlobStorage"));
@@ -61,6 +81,12 @@ if (useEf && !isDevelopment && builder.Configuration.GetValue("Persistence:AutoM
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
+
+// Configure default files (serves index.html when accessing root /)
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    DefaultFileNames = new List<string> { "index.html" }
+});
 app.UseStaticFiles();
 
 app.Use(async (ctx, next) =>
@@ -162,7 +188,15 @@ app.MapGet("/api/health/check", async (HttpContext ctx, CancellationToken ct) =>
             _ => "unhealthy"
         };
 
-    using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+    // Create HttpClient with certificate validation bypass for self-signed certs
+    var handler = new HttpClientHandler();
+    // In non-production environments, allow self-signed certificates
+    if (!builder.Environment.IsProduction())
+    {
+        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+    }
+    
+    using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
     http.DefaultRequestHeaders.Add("X-PowerSchool-User", "healthcheck");
     http.DefaultRequestHeaders.Add("X-PowerSchool-Role", "admin");
 

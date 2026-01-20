@@ -11,9 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 var useEf = builder.Configuration.GetValue("Persistence:UseEf", true);
-// Force in-memory for development to avoid database hanging issues
+// Force in-memory for development to avoid database hanging issues, unless explicitly overridden to use EF
 var isDevelopment = builder.Environment.IsDevelopment();
-if (isDevelopment)
+var forceEf = builder.Configuration.GetValue("Persistence:ForceEf", false);
+
+if (isDevelopment && !forceEf)
 {
     Console.WriteLine("[STARTUP] Using in-memory repository for development mode");
     builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();

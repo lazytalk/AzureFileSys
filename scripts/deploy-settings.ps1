@@ -90,6 +90,9 @@ if ([string]::IsNullOrWhiteSpace($SqlAdminPassword)) {
 # SECTION 3: BUILD RESOURCE NAMES
 # ============================================================================
 
+# Use company abbreviation as suffix for global uniqueness
+$suffix = "kwe"
+
 $resources = @{
     "Environment" = $Environment
     "EnvSuffix" = $envConfig["EnvSuffix"]
@@ -98,13 +101,13 @@ $resources = @{
     "ResourceGroup" = $envConfig["ResourceGroup"]
     "SqlTier" = $envConfig["SqlTier"]
     "AppServiceSku" = $envConfig["AppServiceSku"]
-    "AppServicePlanName" = $envConfig["AppServicePlanName"]
+    "AppServicePlanName" = $envConfig["AppServicePlanName"] + "-$suffix"
     "PowerSchoolBaseUrl" = $envConfig["PowerSchoolBaseUrl"]
-    "StorageAccount" = "filesvc$($envConfig["EnvSuffix"])$(Get-Random -Minimum 1000 -Maximum 9999)"
-    "WebAppName" = "filesvc-api-$($envConfig["EnvLabel"])"
-    "KeyVaultName" = "filesvc-kv-$($envConfig["EnvLabel"])"
+    "StorageAccount" = "filesvc$($envConfig["EnvSuffix"])$suffix"
+    "WebAppName" = "filesvc-$($envConfig["EnvSuffix"])-app"
+    "KeyVaultName" = "kv-fsvc-$($envConfig["EnvSuffix"])-$suffix"
     "AppInsightsName" = "filesvc-ai-$($envConfig["EnvLabel"])"
-    "SqlServerName" = "filesvc-sql-$($envConfig["EnvLabel"])"
+    "SqlServerName" = "filesvc-sql-$($envConfig["EnvLabel"])-$suffix"
     "SqlDbName" = "file-service-db"
     "SqlAdminUser" = "fsadmin"
     "SqlAdminPassword" = $SqlAdminPassword

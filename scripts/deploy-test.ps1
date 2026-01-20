@@ -24,12 +24,12 @@ $ErrorActionPreference = 'Stop'
 $config = @{
     Staging = @{
         Color = "Cyan"
-        Emoji = "🧪"
+        Emoji = "ðŸ§ª"
         IsProduction = $false
     }
     Production = @{
         Color = "Magenta"
-        Emoji = "🚀"
+        Emoji = "ðŸš€"
         IsProduction = $true
     }
 }
@@ -51,15 +51,15 @@ if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
 # Check if logged in to Azure
 try {
     $accountInfo = az account show 2>&1 | ConvertFrom-Json
-    Write-Host "✓ Authenticated as: $($accountInfo.user.name)" -ForegroundColor Green
-    Write-Host "✓ Current subscription: $($accountInfo.name) ($($accountInfo.id))" -ForegroundColor Green
+    Write-Host "âœ“ Authenticated as: $($accountInfo.user.name)" -ForegroundColor Green
+    Write-Host "âœ“ Current subscription: $($accountInfo.name) ($($accountInfo.id))" -ForegroundColor Green
     
     # Check if using Azure China Cloud (optional warning)
     $currentCloud = az cloud show --query name -o tsv 2>$null
     if ($currentCloud -ne "AzureChinaCloud") {
         Write-Warning "Not using Azure China Cloud. If deploying to China, run: az cloud set --name AzureChinaCloud"
     } else {
-        Write-Host "✓ Using Azure China Cloud" -ForegroundColor Green
+        Write-Host "âœ“ Using Azure China Cloud" -ForegroundColor Green
     }
 } catch {
     Write-Error "Not logged in to Azure CLI. Please run: az login"
@@ -109,7 +109,7 @@ Write-Host ("=" * (20 + $Environment.Length)) -ForegroundColor $env.Color
 # ============================================================================
 
 if ($CreateResources) {
-    Write-Host "📦 Creating Azure resources for $Environment environment..." -ForegroundColor Yellow
+    Write-Host "ðŸ“¦ Creating Azure resources for $Environment environment..." -ForegroundColor Yellow
     
     $resourceGroup = $resources["ResourceGroup"]
     $storageAccount = $resources["StorageAccount"]
@@ -201,7 +201,7 @@ if ($CreateResources) {
         az webapp config set -n $webAppName -g $resourceGroup --https-only true --min-tls-version 1.2
     }
     
-    Write-Host "✅ $Environment resources created successfully!" -ForegroundColor Green
+    Write-Host "âœ… $Environment resources created successfully!" -ForegroundColor Green
     Write-Host "$Environment URL: https://$($resources['WebAppName']).azurewebsites.net" -ForegroundColor Green
 }
 
@@ -210,10 +210,10 @@ if ($CreateResources) {
 # ============================================================================
 
 if ($Environment -eq "Production" -and $PromoteFromStaging) {
-    Write-Host "🔄 Promoting staging build to production..." -ForegroundColor Yellow
+    Write-Host "ðŸ”„ Promoting staging build to production..." -ForegroundColor Yellow
     if (Test-Path "deploy-staging.zip") {
         Copy-Item "deploy-staging.zip" "deploy-production.zip"
-        Write-Host "✅ Staging build promoted to production package" -ForegroundColor Green
+        Write-Host "âœ… Staging build promoted to production package" -ForegroundColor Green
         
         # Deploy without rebuilding
         Write-Host "Deploying to Azure App Service..."
@@ -223,7 +223,7 @@ if ($Environment -eq "Production" -and $PromoteFromStaging) {
         exit 1
     }
 } elseif ($DeployApp) {
-    Write-Host "🚀 Deploying application to $Environment..." -ForegroundColor Yellow
+    Write-Host "ðŸš€ Deploying application to $Environment..." -ForegroundColor Yellow
     
     $environmentLabel = $Environment.ToLower()
     $publishDir = "publish-$environmentLabel"
@@ -247,7 +247,7 @@ if ($Environment -eq "Production" -and $PromoteFromStaging) {
     Write-Host "Deploying to Azure App Service..."
     az webapp deploy -g $resources["ResourceGroup"] -n $resources["WebAppName"] --src-path $deployZip --type zip
     
-    Write-Host "✅ Application deployed to $Environment!" -ForegroundColor Green
+    Write-Host "âœ… Application deployed to $Environment!" -ForegroundColor Green
 }
 
 # ============================================================================
@@ -255,7 +255,7 @@ if ($Environment -eq "Production" -and $PromoteFromStaging) {
 # ============================================================================
 
 if ($RunMigrations) {
-    Write-Host "🗄️ Running database migrations on $Environment..." -ForegroundColor Yellow
+    Write-Host "ðŸ—„ï¸ Running database migrations on $Environment..." -ForegroundColor Yellow
     
     try {
         $connectionString = az keyvault secret show --vault-name $resources["KeyVaultName"] --name "Sql__ConnectionString" --query value -o tsv
@@ -270,7 +270,7 @@ if ($RunMigrations) {
                 exit 1
             }
             
-            Write-Host "✅ Database migrations completed!" -ForegroundColor Green
+            Write-Host "âœ… Database migrations completed!" -ForegroundColor Green
         } else {
             Write-Warning "Could not retrieve connection string from Key Vault"
         }
@@ -295,7 +295,7 @@ if (Test-Path $deployZip) { Remove-Item -Force $deployZip }
 # ============================================================================
 
 Write-Host ""
-Write-Host "🎉 $Environment deployment completed!" -ForegroundColor Green
+Write-Host "ðŸŽ‰ $Environment deployment completed!" -ForegroundColor Green
 Write-Host "$Environment URL: https://$($resources['WebAppName']).azurewebsites.net/swagger" -ForegroundColor Cyan
 $webAppName = $resources['WebAppName']
 $resourceGroup = $resources['ResourceGroup']

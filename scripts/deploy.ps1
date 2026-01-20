@@ -247,22 +247,30 @@ if ($CreateResources) {
     Write-Host "Configuring Managed Identity..."
     az webapp identity assign -n $webAppName -g $resourceGroup
     $principalId = az webapp identity show -n $webAppName -g $resourceGroup --query principalId -o tsv
-    az keyvault set-policy -n $keyVaultName -g $resourceGroup --object-id $principalId --secret-permissions get list
+    
+    # Assign RBAC role for Key Vault (Key Vault Secrets User)
+    $kvId = az keyvault show -n $keyVaultName -g $resourceGroup --query id -o tsv
+    az role assignment create --assignee $principalId --role "Key Vault Secrets User" --scope $kvId
+    
     $storageId = az storage account show -n $storageAccount -g $resourceGroup --query id -o tsv
     az role assignment create --assignee $principalId --role "Storage Blob Data Contributor" --scope $storageId
     
     # Configure App Settings
     Write-Host "Configuring App Settings..."
-    $settings = @()
-    foreach ($k in $appSettings.Keys) {
-        $settings += ("$k=$($appSettings[$k])")
-    }
-    $settings += ("BlobStorage__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)")
-    $settings += ("Sql__ConnectionString=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)")
-    $settings += ("ApplicationInsights__InstrumentationKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)")
-    $settings += ("PowerSchool__BaseUrl=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)")
-    $settings += ("PowerSchool__ApiKey=@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)")
-    az webapp config appsettings set -n $webAppName -g $resourceGroup --settings $settings
+    
+    # Use JSON format to avoid shell quoting issues with KeyVault references
+    $finalSettings = $appSettings.Clone()
+    $finalSettings["BlobStorage__ConnectionString"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)"
+    $finalSettings["Sql__ConnectionString"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)"
+    $finalSettings["ApplicationInsights__InstrumentationKey"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)"
+    $finalSettings["PowerSchool__BaseUrl"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)"
+    $finalSettings["PowerSchool__ApiKey"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
+
+    $json = $finalSettings | ConvertTo-Json -Compress
+    # Escape double quotes for shell compatibility (Windows argument passing)
+    $jsonArg = $json.Replace('"', '\"')
+    
+    az webapp config appsettings set -n $webAppName -g $resourceGroup --settings "$jsonArg"
     
     # Security Settings
     Write-Host "Applying security settings..."

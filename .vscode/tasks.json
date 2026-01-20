@@ -11,7 +11,14 @@
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true,
+                "showReuseMessage": false,
+                "focus": false
+            }
         },
         {
             "label": "publish",
@@ -23,7 +30,14 @@
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true,
+                "showReuseMessage": false,
+                "focus": false
+            }
         },
         {
             "label": "watch",
@@ -35,7 +49,14 @@
                 "--project",
                 "${workspaceFolder}/FileService.sln"
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true,
+                "showReuseMessage": false,
+                "focus": false
+            }
         },
         {
             "label": "dev-build-and-start",
@@ -50,6 +71,13 @@
             "problemMatcher": "$msCompile",
             "runOptions": {
                 "runOn": "folderOpen"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true,
+                "showReuseMessage": false,
+                "focus": false
             }
         },
         {
@@ -61,7 +89,14 @@
                 "-Command",
                 "Start-Process powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-Command','Start-Sleep -Seconds 3; Start-Process http://localhost:5090/health.html'"
             ],
-            "problemMatcher": []
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true,
+                "showReuseMessage": false,
+                "focus": false
+            }
         }
     ]
 }

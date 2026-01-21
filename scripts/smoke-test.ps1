@@ -91,28 +91,61 @@ $tmp = New-TemporaryFile
 Set-Content -Path $tmp.FullName -Value "hello world from test" -NoNewline
 Write-Host "Test file created: $($tmp.FullName)" -ForegroundColor Gray
 
-# Upload using curl.exe (multipart/form-data)
-Write-Host "Checking for curl.exe..." -ForegroundColor Yellow
-$curl = "curl.exe"
-if (-not (Get-Command $curl -ErrorAction SilentlyContinue)) { 
-  Write-Host "curl.exe not found, trying to kill process..." -ForegroundColor Red
-  try { $proc.Kill() } catch {}; 
-  throw 'curl.exe not found on PATH' 
+# 1. Begin Upload
+Write-Host "Starting upload sequence..." -ForegroundColor Yellow
+$beginUri = "$base/api/files/begin-upload?devUser=alice"
+$beginBody = @{
+    fileName = "test-file.txt"
+    contentType = "text/plain"
+    sizeBytes = (Get-Item $tmp.FullName).Length
+} | ConvertTo-Json
+
+$beginHeaders = @{ 'X-PowerSchool-User' = 'alice'; 'X-PowerSchool-Role' = 'user'; 'Content-Type' = 'application/json' }
+try {
+    Write-Host "Requesting upload slot..." -ForegroundColor Gray
+    $beginResp = Invoke-RestMethod -Method Post -Uri $beginUri -Body $beginBody -Headers $beginHeaders -TimeoutSec 10
+    $uploadUrl = $beginResp.uploadUrl
+    $fileId = $beginResp.fileId
+    Write-Host "Begin upload success. FileID: $fileId" -ForegroundColor Green
+    Write-Host "Internal Blob Path: $($beginResp.blobPath)" -ForegroundColor Gray
+    # Write-Host "Upload URL: $uploadUrl" -ForegroundColor Gray
+} catch {
+    Write-Host "Failed begin-upload: $($_.Exception.Message)" -ForegroundColor Red
+    try { $proc.Kill() } catch {}
+    exit 1
 }
-Write-Host "curl.exe found, uploading file..." -ForegroundColor Yellow
-$uploadUri = "$base/api/files/upload?devUser=alice"
-$uploadArgs = @('-sS', '-X', 'POST', '-F', "file=@$($tmp.FullName);type=text/plain", '-H', "X-PowerSchool-User: alice", '-H', "X-PowerSchool-Role: user", $uploadUri)
-Write-Host "Upload command: curl $($uploadArgs -join ' ')" -ForegroundColor Gray
-$json = & $curl @uploadArgs | Out-String
-Write-Host "Upload response: $json" -ForegroundColor Gray
-try { $obj = $json | ConvertFrom-Json } catch { 
-  Write-Host "Failed to parse JSON response: $json" -ForegroundColor Red
-  Write-Host "SMOKE TEST FAILED - Upload response was not valid JSON" -ForegroundColor Red
-  try { $proc.Kill() } catch { Write-Host "Failed to kill process: $($_.Exception.Message)" }
-  exit 1
+
+# 2. Upload to Blob (PUT)
+if ($uploadUrl -like "stub://*") {
+    Write-Host "Stub storage detected, skipping actual HTTP PUT to blob..." -ForegroundColor DarkYellow
+} else {
+    Write-Host "Uploading content to Blob Storage..." -ForegroundColor Yellow
+    try {
+        # Azure Blob PUT requires x-ms-blob-type header
+        $blobHeaders = @{ 'x-ms-blob-type' = 'BlockBlob' }
+        Invoke-RestMethod -Method Put -Uri $uploadUrl -InFile $tmp.FullName -Headers $blobHeaders -TimeoutSec 60
+        Write-Host "Blob upload complete." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to upload to blob: $($_.Exception.Message)" -ForegroundColor Red
+        try { $proc.Kill() } catch {}
+        exit 1
+    }
 }
-$id = $obj.id
-Write-Host "Upload successful, file ID: $id" -ForegroundColor Green
+
+# 3. Complete Upload
+Write-Host "Completing upload..." -ForegroundColor Yellow
+$completeUri = "$base/api/files/complete-upload/$($fileId)?devUser=alice"
+try {
+    $completeResp = Invoke-RestMethod -Method Post -Uri $completeUri -Headers $beginHeaders -TimeoutSec 10
+    $id = $completeResp.id
+    Write-Host "Upload finalized. Status: $($completeResp.status)" -ForegroundColor Green
+} catch {
+    Write-Host "Failed to complete-upload: $($_.Exception.Message)" -ForegroundColor Red
+    try { $proc.Kill() } catch {}
+    exit 1
+}
+
+Write-Host "Full upload sequence successful, file ID: $id" -ForegroundColor Green
 
 # List files for alice (send both dev bypass and headers)
 Write-Host "Listing files for alice..." -ForegroundColor Yellow

@@ -1,0 +1,8 @@
+<step title="Incoming Request" date="2026-01-21T03:51:05.038" instance="89efd1" url="/logstream" method="GET" type="request" pid="6960,2,7" Accept-Encoding="identity" Authorization="Bea..." Host="filesvc-stg-app.scm.chinacloudsites.cn" User-Agent="AZURECLI/2.77.0 (MSI)" x-ms-client-request-id="61734a77-f67c-11f0-8739-c4cb7696db44" X-ARR-LOG-ID="61734a77-f67c-11f0-8739-c4cb7696db44" CLIENT-IP="123.123.134.23:9880" X-SITE-DEPLOYMENT-ID="filesvc-stg-app" WAS-DEFAULT-HOSTNAME="filesvc-stg-app.scm.chinacloudsites.cn" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/logstream" >
+  <step title="LogStreamHandler.BeginProcessRequest" date="2026-01-21T03:51:05.649" >
+    <step title="LockFile &apos;C:\home\site\locks\hooks.lock&apos; acquired" date="2026-01-21T03:51:05.929" /><!-- duration: 20ms -->
+    <step title="LockFile &apos;C:\home\site\locks\hooks.lock&apos; released" date="2026-01-21T03:51:06.022" /><!-- duration: 0ms -->
+  </step><!-- duration: 390ms -->
+  <step title="LogStreamHandler.EndProcessRequest" date="2026-01-21T03:52:05.795" /><!-- duration: 20ms -->
+  <step title="Outgoing response" date="2026-01-21T03:52:05.875" type="response" statusCode="200" statusText="OK" Server="Microsoft-IIS/10.0" Cache-Control="private" X-AspNet-Version="4.0.30319" Content-Type="text/plain; charset=utf-8" /><!-- duration: 0ms -->
+</step><!-- duration: 60837ms -->

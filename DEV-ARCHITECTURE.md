@@ -25,7 +25,9 @@ AzureFileSys/
 - **Framework**: ASP.NET Core 8.0 Minimal APIs
 - **Authentication**: PowerSchool header-based auth (`X-PowerSchool-User`, `X-PowerSchool-Role`)
 - **Endpoints**: 
-  - `POST /api/files/upload` - Upload files with multipart form data
+  - `POST /api/files/begin-upload` - **(New)** Initialize upload session and get Write SAS token
+  - `PUT [SAS_URL]` - **(Client-Side)** Direct upload to Blob Storage (bypass API server)
+  - `POST /api/files/complete-upload/{id}` - **(New)** Finalize upload and mark file as available
   - `GET /api/files?all=false` - List files with user filtering
   - `GET /api/files/{id}` - Get file details and download URL
   - `DELETE /api/files/{id}` - Delete files with access control

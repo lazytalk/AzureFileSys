@@ -41,11 +41,11 @@
     <div class="row">
       <label>
         Base URL
-        <input id="baseUrl" type="text" value="https://filesvc-stg-app.chinacloudsites.cn" />
+        <input id="baseUrl" type="text" value="https://filesvc-stg-app.kaiweneducation.com" />
       </label>
       <label>
         X-PowerSchool-User
-        <input id="psUser" type="text" placeholder="e.g. admin1" />
+        <input id="psUser" type="text" value="admin1"/>
       </label>
       <label>
         X-PowerSchool-Role
@@ -79,6 +79,7 @@
     <div class="row">
       <button id="btnRefresh">Refresh List</button>
       <button id="btnDeleteSelected" class="danger">Delete Selected</button>
+      <button id="btnDownloadSelected" class="secondary" style="border-color: #0078d4; color: #0078d4;">Download Selected (Zip)</button>
     </div>
     <table id="filesTable">
       <thead>
@@ -89,6 +90,7 @@
           <th class="right">Size</th>
           <th>Owner</th>
           <th>Uploaded At</th>
+          <th>Actions</th>
           <th>Id</th>
         </tr>
       </thead>
@@ -144,42 +146,98 @@
     }
 
     function xhrUpload(file, baseUrl) {
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const url = `${baseUrl}/api/files/upload`;
-        xhr.open('POST', url);
-        // Add headers
-        headers().forEach((v, k) => xhr.setRequestHeader(k, v));
+      return new Promise(async (resolve, reject) => {
+        try {
+          // Step 1: Begin Upload (Get SAS)
+          const beginPayload = {
+            fileName: file.name,
+            sizeBytes: file.size,
+            contentType: file.type || 'application/octet-stream'
+          };
+          
+          el('uploadStatus').innerHTML = 'Requesting upload slot...';
+          const beginRes = await fetch(`${baseUrl}/api/files/begin-upload`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...Object.fromEntries(headers())
+            },
+            body: JSON.stringify(beginPayload)
+          });
 
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const now = performance.now();
-            state.uploadedBytes += (e.loaded - state.lastUploadedBytes);
-            state.lastUploadedBytes = e.loaded;
-            const elapsedMs = now - state.startTime;
-            const speed = elapsedMs > 0 ? (state.uploadedBytes / (elapsedMs / 1000)) : 0;
-            const percent = state.totalBytes > 0 ? (state.uploadedBytes / state.totalBytes) * 100 : 0;
-            setProgress(percent, speed);
+          if (!beginRes.ok) {
+              const errText = await beginRes.text();
+              throw new Error(`Begin-upload failed: ${beginRes.status} - ${errText}`);
           }
-        };
+          const beginJson = await beginRes.json();
+          const fileId = beginJson.fileId || beginJson.FileId;
+          const uploadUrl = beginJson.uploadUrl || beginJson.UploadUrl;
 
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState === 4) {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve(xhr.responseText || 'OK');
-            } else {
-              const body = xhr.responseText ? ` | ${xhr.responseText}` : '';
-              reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}${body}`));
+          if (!fileId || !uploadUrl) throw new Error('Invalid server response (missing fileId or uploadUrl)');
+
+          // Step 2: Upload to Blob (Direct PUT)
+          el('uploadStatus').innerHTML = 'Uploading to blob storage...';
+          
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', uploadUrl);
+          xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob'); // Vital for Azure Block Blobs
+          // No auth headers here - SAS token is in the URL
+
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const now = performance.now();
+              // Calculate delta since last progress event isn't easy with multiple files,
+              // so we just track total for "this" file relative to global state?
+              // Simplified: We assume single stream tracking for the bar here.
+              // For multi-file, this logic is a bit simple but suffices for a tool.
+              const currentFileUploaded = e.loaded; // Bytes uploaded for THIS file
+              // We need to feed this back to the global state. 
+              // BUT: The global state design above (state.uploadedBytes) accumulates.
+              // Let's just update the UI with "current file" logic or fix the tracker.
+              // Fix: We'll just update based on delta from THIS XHR instance.
+              
+              const delta = e.loaded - (xhr.lastLoaded || 0);
+              xhr.lastLoaded = e.loaded;
+              
+              state.uploadedBytes += delta;
+              const elapsedMs = now - state.startTime;
+              const speed = elapsedMs > 0 ? (state.uploadedBytes / (elapsedMs / 1000)) : 0;
+              const percent = state.totalBytes > 0 ? (state.uploadedBytes / state.totalBytes) * 100 : 0;
+              setProgress(percent, speed);
             }
-          }
-        };
+          };
 
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.onabort = () => reject(new Error('Upload aborted'));
+          xhr.onreadystatechange = async () => {
+            if (xhr.readyState === 4) {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                 // Step 3: Complete Upload
+                 try {
+                     el('uploadStatus').innerHTML = 'Finalizing upload...';
+                     const completeRes = await fetch(`${baseUrl}/api/files/complete-upload/${fileId}`, {
+                         method: 'POST',
+                         headers: Object.fromEntries(headers())
+                     });
+                     if (!completeRes.ok) {
+                         const errText = await completeRes.text();
+                         throw new Error(`Complete-upload failed: ${completeRes.status} - ${errText}`);
+                     }
+                     resolve('OK');
+                 } catch (err) {
+                     reject(err);
+                 }
+              } else {
+                reject(new Error(`Blob upload failed: ${xhr.status} ${xhr.statusText}`));
+              }
+            }
+          };
 
-        const form = new FormData();
-        form.append('file', file, file.name);
-        xhr.send(form);
+          xhr.onerror = () => reject(new Error('Network error during blob upload'));
+          xhr.onabort = () => reject(new Error('Upload aborted'));
+          xhr.send(file);
+          
+        } catch (err) {
+          reject(err);
+        }
       });
     }
 
@@ -262,10 +320,144 @@
           <td class="right">${formatBytes(Number(size) || 0)}</td>
           <td>${owner}</td>
           <td>${uploadedAt ? new Date(uploadedAt).toLocaleString() : ''}</td>
+          <td>
+            <button class="small-btn download-btn" data-id="${id}">Download</button>
+          </td>
           <td class="small">${id}</td>
         `;
         tbody.appendChild(tr);
       }
+      
+      // Wire up row buttons
+      document.querySelectorAll('.download-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => downloadOne(e.target.getAttribute('data-id')));
+      });
+    }
+
+    async function downloadOne(id) {
+        const baseUrl = el('baseUrl').value.trim();
+        try {
+            // Get SAS URL
+            const res = await fetch(`${baseUrl}/api/files/${id}`, { headers: headers(), mode: 'cors' });
+            if (!res.ok) throw new Error(`Get failed: ${res.status}`);
+            const data = await res.json();
+            const url = data.downloadUrl || data.DownloadUrl; // Case sensitivity check
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                alert('No download URL returned');
+            }
+        } catch (err) {
+            alert('Download error: ' + err.message);
+        }
+    }
+
+    async function downloadSelectedZip() {
+      const baseUrl = el('baseUrl').value.trim();
+      const checks = Array.from(document.querySelectorAll('.rowCheck:checked'));
+      if (checks.length === 0) { el('listStatus').textContent = 'No files selected.'; return; }
+      
+      const ids = checks.map(c => c.getAttribute('data-id'));
+      el('listStatus').textContent = `Zipping ${ids.length} files...`;
+      
+      try {
+          // 1. Start Job
+          el('listStatus').textContent = `Requesting zip for ${ids.length} files...`;
+          const res = await fetch(`${baseUrl}/api/files/download-zip`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  ...Object.fromEntries(headers())
+              },
+              body: JSON.stringify(ids)
+          });
+          
+          if (res.status !== 202) {
+              // Fallback for old behaviour if any (or error)
+               if (!res.ok) throw new Error(`Zip request failed: ${res.status}`);
+               // Direct download buffer response?
+               const blob = await res.blob();
+               if (blob.size === 0) throw new Error("Received 0 bytes");
+               downloadBlob(blob);
+               return;
+          }
+
+          const jobJson = await res.json();
+          const jobId = jobJson.jobId || jobJson.JobId;
+          el('listStatus').textContent = `Zip job started (${jobId}). Processing...`;
+
+          // 2. Poll Status
+          await pollZipJob(baseUrl, jobId);
+          
+      } catch (err) {
+          el('listStatus').innerHTML = `<span class="error">${err.message}</span>`;
+      }
+    }
+
+    async function pollZipJob(baseUrl, jobId) {
+        let attempts = 0;
+        const maxAttempts = 60; // 2 minutes approx
+        
+        const interval = setInterval(async () => {
+            attempts++;
+            try {
+                const res = await fetch(`${baseUrl}/api/files/download-zip/${jobId}`, { headers: headers() });
+                if (!res.ok) throw new Error("Poll failed");
+                const job = await res.json();
+                
+                if (job.status === 'Completed' || job.Status === 'Completed') {
+                    clearInterval(interval);
+                    const url = job.downloadUrl || job.DownloadUrl;
+                    if (!url) {
+                        el('listStatus').innerHTML = `<span class="error">Zip ready but no download URL returned.</span>`;
+                        return;
+                    }
+
+                    // Provide a clickable link and navigate directly (avoids popup blockers)
+                    const linkHtml = `<a href="${url}" target="_blank">Download zip</a>`;
+                    el('listStatus').innerHTML = `<span class="success">Zip ready! ${linkHtml}</span>`;
+                    window.location.href = url;
+
+                    // Delay cleanup to allow download to start; still frees storage automatically
+                    setTimeout(async () => {
+                        try {
+                            await fetch(`${baseUrl}/api/files/download-zip/${jobId}`, { 
+                                method: 'DELETE', 
+                                headers: headers() 
+                            });
+                            console.log('Zip file cleaned up from storage');
+                        } catch (err) {
+                            console.error('Cleanup failed:', err);
+                        }
+                    }, 30000);
+                } else if (job.status === 'Failed' || job.Status === 'Failed') {
+                    clearInterval(interval);
+                    el('listStatus').innerHTML = `<span class="error">Zip generation failed: ${job.error || job.Error}</span>`;
+                } else {
+                    el('listStatus').textContent = `Processing zip... (${attempts}s)`;
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    el('listStatus').textContent = "Zip generation timed out (check back later?)";
+                }
+            } catch (err) {
+                console.error(err);
+                // Keep trying or stop?
+            }
+        }, 2000);
+    }
+
+    function downloadBlob(blob) {
+         const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = `files_export_${new Date().getTime()}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          el('listStatus').textContent = 'Zip download started.';
     }
 
     async function deleteSelected() {
@@ -296,6 +488,7 @@
     el('btnUploadMulti').addEventListener('click', uploadMultiple);
     el('btnRefresh').addEventListener('click', refreshList);
     el('btnDeleteSelected').addEventListener('click', deleteSelected);
+    el('btnDownloadSelected').addEventListener('click', downloadSelectedZip);
 
     // Initial list
     // Optionally auto-load list on page ready

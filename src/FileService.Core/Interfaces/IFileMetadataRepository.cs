@@ -8,5 +8,6 @@ public interface IFileMetadataRepository
     Task<IReadOnlyList<FileRecord>> ListByOwnerAsync(string ownerUserId, CancellationToken ct = default);
     Task<IReadOnlyList<FileRecord>> ListAllAsync(int take = 200, int skip = 0, CancellationToken ct = default);
     Task AddAsync(FileRecord record, CancellationToken ct = default);
+    Task UpdateAsync(FileRecord record, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
 }

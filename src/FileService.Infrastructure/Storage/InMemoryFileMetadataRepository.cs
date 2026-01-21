@@ -14,6 +14,15 @@ public class InMemoryFileMetadataRepository : IFileMetadataRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateAsync(FileRecord record, CancellationToken ct = default)
+    {
+        if (_store.ContainsKey(record.Id))
+        {
+            _store[record.Id] = record;
+        }
+        return Task.CompletedTask;
+    }
+
     public Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
         _store.Remove(id);
@@ -29,6 +38,7 @@ public class InMemoryFileMetadataRepository : IFileMetadataRepository
     public Task<IReadOnlyList<FileRecord>> ListAllAsync(int take = 200, int skip = 0, CancellationToken ct = default)
     {
         var list = _store.Values
+            .Where(f => f.IsUploaded)
             .OrderByDescending(f => f.UploadedAt)
             .Skip(skip)
             .Take(take)
@@ -39,7 +49,7 @@ public class InMemoryFileMetadataRepository : IFileMetadataRepository
     public Task<IReadOnlyList<FileRecord>> ListByOwnerAsync(string ownerUserId, CancellationToken ct = default)
     {
         var list = _store.Values
-            .Where(f => f.OwnerUserId.Equals(ownerUserId, StringComparison.OrdinalIgnoreCase))
+            .Where(f => f.OwnerUserId.Equals(ownerUserId, StringComparison.OrdinalIgnoreCase) && f.IsUploaded)
             .OrderByDescending(f => f.UploadedAt)
             .ToList();
         return Task.FromResult((IReadOnlyList<FileRecord>)list);

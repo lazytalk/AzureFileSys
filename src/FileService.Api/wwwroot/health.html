@@ -260,7 +260,7 @@
 
     <script>
         const endpoints = [
-            { name: 'Upload File', method: 'POST', path: '/api/files/upload', testDesc: 'Accept file upload' },
+            { name: 'Upload File', method: 'Direct-to-Blob', path: '/api/files/begin-upload -> PUT', testDesc: 'Full upload cycle (Begin -> PUT -> Complete)' },
             { name: 'List Files', method: 'GET', path: '/api/files', testDesc: 'Retrieve user files' },
             { name: 'Get File', method: 'GET', path: '/api/files/{id}', testDesc: 'Retrieve file metadata', isTemplate: true },
             { name: 'Delete File', method: 'DELETE', path: '/api/files/{id}', testDesc: 'Delete file', isTemplate: true },

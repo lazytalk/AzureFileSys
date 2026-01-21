@@ -35,9 +35,9 @@ public class TableStorageFileMetadataRepository : IFileMetadataRepository
     {
         var results = new List<FileRecord>();
         
-        // Efficient query by PartitionKey
+        // Efficient query by PartitionKey, filtered by IsUploaded stauts
         var query = _tableClient.QueryAsync<FileRecordEntity>(
-            filter: $"PartitionKey eq '{ownerUserId}'",
+            filter: $"PartitionKey eq '{ownerUserId}' and IsUploaded eq true",
             cancellationToken: ct);
 
         await foreach (var entity in query)
@@ -54,7 +54,9 @@ public class TableStorageFileMetadataRepository : IFileMetadataRepository
         int count = 0;
         int skipped = 0;
 
-        var query = _tableClient.QueryAsync<FileRecordEntity>(cancellationToken: ct);
+        var query = _tableClient.QueryAsync<FileRecordEntity>(
+            filter: "IsUploaded eq true",
+            cancellationToken: ct);
 
         await foreach (var entity in query)
         {
@@ -78,6 +80,13 @@ public class TableStorageFileMetadataRepository : IFileMetadataRepository
     {
         var entity = FileRecordEntity.FromFileRecord(record);
         await _tableClient.AddEntityAsync(entity, ct);
+    }
+
+    public async Task UpdateAsync(FileRecord record, CancellationToken ct = default)
+    {
+        var entity = FileRecordEntity.FromFileRecord(record);
+        // Uses Upsert (Merge) to update properties
+        await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Merge, ct);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
@@ -109,6 +118,7 @@ public class FileRecordEntity : ITableEntity
     public long SizeBytes { get; set; }
     public DateTimeOffset UploadedAt { get; set; }
     public string BlobPath { get; set; } = string.Empty;
+    public bool IsUploaded { get; set; }
 
     public static FileRecordEntity FromFileRecord(FileRecord record)
     {
@@ -120,7 +130,8 @@ public class FileRecordEntity : ITableEntity
             ContentType = record.ContentType,
             SizeBytes = record.SizeBytes,
             UploadedAt = record.UploadedAt,
-            BlobPath = record.BlobPath
+            BlobPath = record.BlobPath,
+            IsUploaded = record.IsUploaded
         };
     }
 
@@ -134,7 +145,8 @@ public class FileRecordEntity : ITableEntity
             ContentType = ContentType,
             SizeBytes = SizeBytes,
             UploadedAt = UploadedAt,
-            BlobPath = BlobPath
+            BlobPath = BlobPath,
+            IsUploaded = IsUploaded
         };
     }
 }

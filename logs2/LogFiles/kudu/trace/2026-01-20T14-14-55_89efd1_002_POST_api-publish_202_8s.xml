@@ -1,0 +1,15 @@
+<step title="Incoming Request" date="2026-01-20T14:14:55.051" instance="89efd1" url="/api/publish?type=zip&amp;async=True" method="POST" type="request" pid="2924,2,8" Cache-Control="no-cache" Content-Length="38074192" Content-Type="application/octet-stream" Accept="*/*" Accept-Encoding="gzip, deflate" Authorization="Bea..." Host="filesvc-stg-app.scm.chinacloudsites.cn" User-Agent="AZURECLI/2.80.0 (MSI)" x-ms-client-request-id="4e13c66b-f60a-11f0-b9c0-68ecc5669012" X-ARR-LOG-ID="4e13c66b-f60a-11f0-b9c0-68ecc5669012" CLIENT-IP="45.251.107.28:3075" X-SITE-DEPLOYMENT-ID="filesvc-stg-app" WAS-DEFAULT-HOSTNAME="filesvc-stg-app.scm.chinacloudsites.cn" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/publish?type=zip&amp;async=True" X-MS-COLDSTART="1" >
+  <step title="OneDeploy" date="2026-01-20T14:14:57.227" >
+    <step title="Starting PushDeployAsync" date="2026-01-20T14:14:57.317" /><!-- duration: 0ms -->
+    <step title="Updating shutdown sentinel last write time" date="2026-01-20T14:14:57.519" SemaphoreCount="7" /><!-- duration: 14ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2026-01-20T14:14:57.533" /><!-- duration: 0ms -->
+    <step title="Saving request content to C:\local\Temp\zipdeploy\iepz3ado.zip" date="2026-01-20T14:14:57.549" >
+      <step title="Total 38,074,192 bytes written to C:\local\Temp\zipdeploy\iepz3ado.zip" date="2026-01-20T14:15:02.375" /><!-- duration: 0ms -->
+    </step><!-- duration: 4844ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2026-01-20T14:15:02.394" /><!-- duration: 13ms -->
+    <step title="Deleting shutdown sentinel file" date="2026-01-20T14:15:02.407" SemaphoreCount="8" /><!-- duration: 17ms -->
+    <step title="Starting FetchDeploy" date="2026-01-20T14:15:02.443" /><!-- duration: 30ms -->
+    <step title="Start deployment in the background" date="2026-01-20T14:15:02.473" /><!-- duration: 233ms -->
+  </step><!-- duration: 5508ms -->
+  <step title="Outgoing response" date="2026-01-20T14:15:02.911" type="response" statusCode="202" statusText="Accepted" Server="Microsoft-IIS/10.0" x-ms-request-id="4e13c66b-f60a-11f0-b9c0-68ecc5669012" Retry-After="30" Cache-Control="private" X-AspNet-Version="4.0.30319" Location="https://filesvc-stg-app.scm.chinacloudsites.cn/api/deployments/latest?deployer=OneDeploy&amp;time=2026-01-20_14-15-02Z" /><!-- duration: 0ms -->
+</step><!-- duration: 7872ms -->

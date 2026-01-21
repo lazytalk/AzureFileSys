@@ -206,6 +206,10 @@ if ($CreateResources) {
             az storage account create -n $storageAccount -g $resourceGroup -l $resources["Location"] --sku Standard_LRS --kind StorageV2
             az storage container create --account-name $storageAccount -n "userfiles-$envLabel" --auth-mode key --public-access off
         }
+        
+        # Configure CORS for Direct-to-Blob uploads (Staging and Production)
+        Write-Host "Configuring CORS for Blob Storage to allow direct uploads..." -ForegroundColor Gray
+        az storage cors add --account-name $storageAccount --services b --origins "*" --methods DELETE GET HEAD MERGE POST OPTIONS PUT --allowed-headers "*" --exposed-headers "*" --max-age 86400
     }
     $storageConnString = az storage account show-connection-string -n $storageAccount -g $resourceGroup -o tsv
     

@@ -1,0 +1,3 @@
+<step title="Begin HttpPost https://filesvc-stg-app.scm.chinacloudsites.cn/api/app/restart, x-ms-request-id: 4ba930b8-f67d-11f0-baff-c4cb7696db44" date="2026-01-21T03:57:57.477" instance="89efd1" >
+  <step title="Cleanup Xml Logs" date="2026-01-21T03:57:57.477" /><!-- duration: 11ms -->
+</step><!-- duration: 11ms -->

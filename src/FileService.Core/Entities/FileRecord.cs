@@ -9,4 +9,5 @@ public class FileRecord
     public string OwnerUserId { get; set; } = string.Empty; // PowerSchool user identifier
     public DateTimeOffset UploadedAt { get; set; } = DateTimeOffset.UtcNow;
     public string BlobPath { get; set; } = string.Empty;
+    public bool IsUploaded { get; set; } = false;
 }

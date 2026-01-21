@@ -170,7 +170,15 @@
             <div class="endpoints">
                 <div class="endpoint">
                     <span class="method post">POST</span>
-                    <span class="path">/api/files/upload</span>
+                    <span class="path">/api/files/begin-upload</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method put">PUT</span>
+                    <span class="path">(Direct to Blob via SAS)</span>
+                </div>
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/files/complete-upload/{id}</span>
                 </div>
                 <div class="endpoint">
                     <span class="method get">GET</span>

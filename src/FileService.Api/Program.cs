@@ -56,16 +56,32 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LocalTools", policy =>
-        policy.WithOrigins(
-            "http://localhost:8080",
-            "http://localhost:9000"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod());
+    {
+        if (builder.Environment.IsDevelopment() || builder.Environment.IsStaging())
+        {
+            policy.SetIsOriginAllowed(_ => true) // Allow any origin in Dev/Staging (including file://)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else
+        {
+            policy.WithOrigins(
+                "http://localhost:8080",
+                "http://localhost:9000",
+                "https://filesvc-stg-app.kaiweneducation.com"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        }
+    });
 });
 
 // Simple PowerSchool auth stub middleware registration
 builder.Services.AddScoped<PowerSchoolUserContext>();
+
+// Simple in-memory job tracker for zip generation
+var zipJobs = new System.Collections.Concurrent.ConcurrentDictionary<Guid, ZipJobStatus>();
 
 var app = builder.Build();
 
@@ -205,7 +221,7 @@ app.MapGet("/api/health/check", async (HttpContext ctx, CancellationToken ct) =>
 
     string? createdId = null;
 
-    // 1) Upload test file
+    // 1) Upload test file (Direct-to-Blob Flow)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
@@ -216,37 +232,49 @@ app.MapGet("/api/health/check", async (HttpContext ctx, CancellationToken ct) =>
                 ? await File.ReadAllBytesAsync(testFilePath, ct)
                 : Encoding.UTF8.GetBytes("health upload from server check\n");
 
-            using var form = new MultipartFormDataContent();
-            var fileContent = new ByteArrayContent(data);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-            form.Add(fileContent, "file", "health-test.txt");
+            // A. Begin Upload
+            var beginReq = new BeginUploadRequest 
+            { 
+                FileName = "health-test.txt", 
+                SizeBytes = data.Length, 
+                ContentType = "text/plain" 
+            };
+            var beginResp = await http.PostAsJsonAsync($"{baseUrl}/api/files/begin-upload", beginReq, ct);
+            if (!beginResp.IsSuccessStatusCode) throw new Exception($"Begin upload failed: {beginResp.StatusCode}");
+            
+            var beginJson = await beginResp.Content.ReadFromJsonAsync<System.Text.Json.Nodes.JsonObject>(cancellationToken: ct);
+            var fileId = beginJson?["fileId"]?.ToString();
+            var uploadUrl = beginJson?["uploadUrl"]?.ToString();
+            
+            if (string.IsNullOrEmpty(fileId) || string.IsNullOrEmpty(uploadUrl))
+                throw new Exception("Invalid start-upload response");
 
-            var response = await http.PostAsync($"{baseUrl}/api/files/upload", form, ct);
-            sw.Stop();
-            var status = MapStatus(response.StatusCode);
+            createdId = fileId; 
 
-            try
+            // B. Upload to Blob (PUT)
+            // Note: If using Stub, URL has stub:// scheme. We must handle or mock it.
+            if (uploadUrl.StartsWith("stub://"))
             {
-                // Try read id from JSON body
-                var body = await response.Content.ReadAsStringAsync(ct);
-                if (!string.IsNullOrWhiteSpace(body))
-                {
-                    using var doc = JsonDocument.Parse(body);
-                    if (doc.RootElement.TryGetProperty("id", out var idEl))
-                        createdId = idEl.GetString();
-                    else if (doc.RootElement.TryGetProperty("Id", out var idEl2))
-                        createdId = idEl2.GetString();
-                }
-                // Fallback: parse Location header
-                if (string.IsNullOrEmpty(createdId) && response.Headers.Location != null)
-                {
-                    var seg = response.Headers.Location.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
-                    if (!string.IsNullOrWhiteSpace(seg)) createdId = seg;
-                }
+                // In a real integration test, we might skip or have a special handler.
+                // For now, we simulate success for stub.
             }
-            catch { /* ignore parse issues */ }
+            else
+            {
+                // Create a separate client for Blob Storage (no auth headers, purely SAS)
+                using var blobHttp = new HttpClient();
+                blobHttp.Timeout = TimeSpan.FromSeconds(10);
+                blobHttp.DefaultRequestHeaders.Add("x-ms-blob-type", "BlockBlob"); // Required for Azure Block Blob
+                var putResp = await blobHttp.PutAsync(uploadUrl, new ByteArrayContent(data), ct);
+                if (!putResp.IsSuccessStatusCode) 
+                    throw new Exception($"Blob upload failed: {putResp.StatusCode}");
+            }
 
-            checks.Add(new { name = "Upload File", status, message = $"{response.StatusCode} ({(int)response.StatusCode})", responseTime = sw.ElapsedMilliseconds });
+            // C. Complete Upload
+            var compResp = await http.PostAsync($"{baseUrl}/api/files/complete-upload/{fileId}", null, ct);
+            if (!compResp.IsSuccessStatusCode) throw new Exception($"Complete upload failed: {compResp.StatusCode}");
+
+            sw.Stop();
+            checks.Add(new { name = "Upload File", status = "healthy", message = "OK (Direct-to-Blob)", responseTime = sw.ElapsedMilliseconds });
         }
         catch (Exception ex)
         {
@@ -413,8 +441,8 @@ async Task<object> TestEndpoint(string name, string method, string url, HttpCont
 }
 
 // Map Endpoints (initial version; can be moved to controllers or Minimal APIs kept)
-app.MapPost("/api/files/upload", async (
-    [FromForm] IFormFile file,
+app.MapPost("/api/files/begin-upload", async (
+    [FromBody] BeginUploadRequest request,
     PowerSchoolUserContext user,
     IFileStorageService storage,
     IFileMetadataRepository repo,
@@ -422,34 +450,88 @@ app.MapPost("/api/files/upload", async (
 {
     try
     {
-        if (file == null || file.Length == 0)
-            return Results.BadRequest("No file provided");
+        if (string.IsNullOrWhiteSpace(request.FileName))
+            return Results.BadRequest("FileName is required");
 
-        if (file.Length > 50 * 1024 * 1024)
+        // Limit file size check could be enforced here if we trust the client, 
+        // but real enforcement happens at storage level or implementation detail.
+        if (request.SizeBytes > 50 * 1024 * 1024)
             return Results.BadRequest("File too large (50 MB limit)");
 
-        var blobPath = $"{user.UserId}/{Guid.NewGuid()}_{file.FileName}";
-        await using var stream = file.OpenReadStream();
-        await storage.UploadAsync(blobPath, stream, file.ContentType, ct);
+        var fileId = Guid.NewGuid();
+        // Naming convention: {userId}/{fileId}_{originalName}
+        var blobPath = $"{user.UserId}/{fileId}_{request.FileName}";
 
         var record = new FileService.Core.Entities.FileRecord
         {
-            FileName = file.FileName,
-            ContentType = file.ContentType,
-            SizeBytes = file.Length,
+            Id = fileId,
+            FileName = request.FileName,
+            ContentType = request.ContentType ?? "application/octet-stream",
+            SizeBytes = request.SizeBytes,
             OwnerUserId = user.UserId,
-            BlobPath = blobPath
+            BlobPath = blobPath,
+            IsUploaded = false // Not yet available
         };
+        
         await repo.AddAsync(record, ct);
 
-        return Results.Created($"/api/files/{record.Id}", new { record.Id, record.FileName });
+        // Generate SAS URL for the client to upload directly
+        var sasUrl = await storage.GetWriteSasUrlAsync(blobPath, TimeSpan.FromMinutes(15), ct);
+
+        return Results.Ok(new { FileId = record.Id, UploadUrl = sasUrl });
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[UPLOAD ERROR] {ex}");
-        return Results.Problem($"Upload failed: {ex.Message}");
+        Console.WriteLine($"[BEGIN-UPLOAD ERROR] {ex}");
+        return Results.Problem($"Failed to start upload: {ex.Message}");
     }
-}).DisableAntiforgery();
+});
+
+app.MapPost("/api/files/complete-upload/{id:guid}", async (
+    Guid id,
+    PowerSchoolUserContext user,
+    IFileMetadataRepository repo,
+    IFileStorageService storage,
+    CancellationToken ct) =>
+{
+    try
+    {
+        var rec = await repo.GetAsync(id, ct);
+        if (rec == null) return Results.NotFound();
+
+        if (!user.IsAdmin && !rec.OwnerUserId.Equals(user.UserId, StringComparison.OrdinalIgnoreCase))
+            return Results.Forbid();
+
+        // Verify Storage before finalizing
+        var actualSize = await storage.GetBlobSizeAsync(rec.BlobPath, ct);
+        if (actualSize == null)
+        {
+            Console.WriteLine($"[COMPLETE-UPLOAD ERROR] Blob for {id} not found at path {rec.BlobPath}");
+            return Results.Problem("Upload verification failed: file content not found in storage.");
+        }
+
+        if (actualSize == 0)
+        {
+            Console.WriteLine($"[COMPLETE-UPLOAD ERROR] Blob for {id} found but has 0 bytes.");
+            // We'll trust the user if they intended to upload 0 bytes? 
+            // Usually not. But let's fail it.
+            return Results.Problem("Upload verification failed: file content is empty (0 bytes).");
+        }
+
+        // Mark as uploaded and ensure size matches actual
+        rec.SizeBytes = actualSize.Value;
+        rec.IsUploaded = true;
+        await repo.UpdateAsync(rec, ct);
+
+        Console.WriteLine($"[COMPLETE-UPLOAD] File {id} marked as uploaded");
+        return Results.Ok(new { rec.Id, rec.FileName, Status = "Available" });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[COMPLETE-UPLOAD ERROR] {ex}");
+        return Results.Problem($"Failed to complete upload: {ex.Message}");
+    }
+});
 
 app.MapGet("/api/files", async (
     [FromQuery] bool? all,
@@ -540,6 +622,146 @@ app.MapDelete("/api/files/{id:guid}", async (
     return Results.NoContent();
 });
 
+// Async Batch Download (Zip Job Start)
+app.MapPost("/api/files/download-zip", async (
+    [FromBody] List<Guid> fileIds,
+    PowerSchoolUserContext user,
+    IFileMetadataRepository repo,
+    IFileStorageService storage,
+    CancellationToken ct) =>
+{
+    if (fileIds == null || fileIds.Count == 0)
+        return Results.BadRequest("No file IDs provided");
+    
+    // 1. Validate permissions synchronously
+    var validRecords = new List<FileService.Core.Entities.FileRecord>();
+    foreach(var id in fileIds)
+    {
+        var rec = await repo.GetAsync(id, ct);
+        if (rec != null && (user.IsAdmin || rec.OwnerUserId.Equals(user.UserId, StringComparison.OrdinalIgnoreCase)))
+        {
+            validRecords.Add(rec);
+        }
+    }
+
+    if (validRecords.Count == 0)
+        return Results.NotFound("No valid files found to download");
+
+    // 2. Start Background Job
+    var jobId = Guid.NewGuid();
+    zipJobs[jobId] = new ZipJobStatus { Status = "Processing", Progress = "Started" };
+
+    // Fire and forget (careful with scope - using singletons here so it's safer)
+    _ = Task.Run(async () =>
+    {
+        try 
+        {
+            Console.WriteLine($"[ZIP-JOB] Starting job {jobId} for {validRecords.Count} files");
+            
+            var zipBlobPath = $"exports/{jobId}.zip";
+            
+            // Streaming mode: Open a write stream to Azure Blob immediately.
+            // This ensures we don't buffer the whole zip in RAM.
+            using (var blobStream = await storage.OpenWriteAsync(zipBlobPath, "application/zip", CancellationToken.None))
+            using (var archive = new System.IO.Compression.ZipArchive(blobStream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: false))
+            {
+                foreach (var rec in validRecords)
+                {
+                    try 
+                    {
+                        var entry = archive.CreateEntry(rec.FileName);
+                        using var entryStream = entry.Open();
+                        // Note: Using CancellationToken.None to avoid aborting if HTTP request cancels
+                        using var sourceStream = await storage.DownloadAsync(rec.BlobPath, CancellationToken.None);
+                        
+                        if (sourceStream != null)
+                            await sourceStream.CopyToAsync(entryStream, CancellationToken.None);
+                        else 
+                        {
+                            using var w = new StreamWriter(entryStream);
+                            await w.WriteAsync($"Error: Content missing for {rec.FileName}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[ZIP-JOB] File error: {ex.Message}");
+                    }
+                }
+            } // Archive Dispose writes CD; BlobStream Dispose commits block list.
+            
+            // Get SAS for the exported zip
+            var sasUrl = await storage.GetReadSasUrlAsync(zipBlobPath, TimeSpan.FromHours(1), CancellationToken.None);
+            
+            // Update Job
+            if (zipJobs.TryGetValue(jobId, out var job))
+            {
+                job.Status = "Completed";
+                job.DownloadUrl = sasUrl;
+                job.Progress = "Ready";
+                            job.BlobPath = zipBlobPath;
+            }
+            Console.WriteLine($"[ZIP-JOB] Job {jobId} completed");
+            
+                    // Schedule auto-cleanup after 2 hours
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(TimeSpan.FromHours(2));
+                        try
+                        {
+                            await storage.DeleteAsync(zipBlobPath, CancellationToken.None);
+                            zipJobs.TryRemove(jobId, out _);
+                            Console.WriteLine($"[ZIP-JOB] Auto-cleaned expired zip {jobId}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[ZIP-JOB] Cleanup error: {ex.Message}");
+                        }
+                    });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ZIP-JOB] Critical error: {ex}");
+            if (zipJobs.TryGetValue(jobId, out var job))
+            {
+                job.Status = "Failed";
+                job.Error = ex.Message;
+            }
+        }
+    });
+
+    return Results.Accepted($"/api/files/download-zip/{jobId}", new { JobId = jobId, Status = "Processing" });
+});
+
+// Check Job Status
+app.MapGet("/api/files/download-zip/{jobId:guid}", (Guid jobId) => 
+{
+    if (zipJobs.TryGetValue(jobId, out var job))
+        return Results.Ok(job);
+    return Results.NotFound(new { Error = "Job not found" });
+
+// Cleanup Job (call after user downloads to save storage costs)
+app.MapDelete("/api/files/download-zip/{jobId:guid}", async (
+    Guid jobId,
+    IFileStorageService storage) =>
+{
+    if (zipJobs.TryRemove(jobId, out var job) && job.BlobPath != null)
+    {
+        try
+        {
+            await storage.DeleteAsync(job.BlobPath, CancellationToken.None);
+            Console.WriteLine($"[ZIP-JOB] Cleaned up zip {jobId} on user request");
+            return Results.NoContent();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ZIP-JOB] Cleanup failed: {ex.Message}");
+            return Results.Problem($"Cleanup failed: {ex.Message}");
+        }
+    }
+    return Results.NotFound();
+});
+});
+
 app.Run();
 
 public class PowerSchoolUserContext
@@ -547,4 +769,22 @@ public class PowerSchoolUserContext
     public string UserId { get; set; } = string.Empty;
     public string Role { get; set; } = "user";
     public bool IsAdmin => Role.Equals("admin", StringComparison.OrdinalIgnoreCase);
+}
+
+public class BeginUploadRequest
+{
+    public string FileName { get; set; } = string.Empty;
+    public string? ContentType { get; set; }
+    public long SizeBytes { get; set; }
+}
+
+public class ZipJobStatus
+{
+    public string Status { get; set; } = "Processing"; 
+    public string? DownloadUrl { get; set; }
+    public string? Error { get; set; }
+    public string? Progress { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset ExpiresAt { get; set; } = DateTimeOffset.UtcNow.AddHours(2);
+    public string? BlobPath { get; set; }
 }

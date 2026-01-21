@@ -14,7 +14,6 @@ AzureFileSys/
 │   └── 📂 FileService.Infrastructure/ # Data & storage implementations
 ├── 📂 scripts/                  # Development automation
 │   ├── 📄 dev-run.ps1          # Start local dev server
-│   ├── 📄 migrate-dev.ps1      # Database migrations
 │   └── 📄 smoke-test.ps1       # End-to-end testing
 └── 📂 tests/                    # Unit tests
     └── 📂 FileService.Tests/
@@ -42,14 +41,14 @@ AzureFileSys/
 - **Clean Architecture**: Zero dependencies on infrastructure concerns
 
 ### 3. **FileService.Infrastructure** (Data & Storage Layer)
-- **Database**: Entity Framework Core with SQLite for development
-- **Storage**: Dual implementation strategy
+- **Metadata Storage**: Azure Table Storage for file metadata persistence
+- **Blob Storage**: Dual implementation strategy
   - `AzureBlobFileStorageService` - Production Azure Blob Storage
   - `StubBlobFileStorageService` - Development local simulation
 - **Repositories**: 
-  - `EfFileMetadataRepository` - Entity Framework implementation
+  - `TableStorageFileMetadataRepository` - Azure Table Storage implementation (Staging/Production)
   - `InMemoryFileMetadataRepository` - Development/testing implementation
-- **Migrations**: Automated database schema management
+- **Table Design**: PartitionKey=OwnerUserId, RowKey=FileId for efficient user-scoped queries
 
 ## 🔄 Development Configurations
 
@@ -62,27 +61,31 @@ AzureFileSys/
     "ContainerName": "userfiles"
   },
   "Persistence": {
-    "UseEf": true,
-    "SqlitePath": "files.db",
-    "AutoMigrate": true
+    "Type": "InMemory"
+  },
+  "TableStorage": {
+    "ConnectionString": "",
+    "TableName": "FileMetadata"
   },
   "EnvironmentMode": "Development"
 }
 ```
 
 ### **Automatic Development Optimizations**
-- 🧠 **In-Memory Repository**: Automatically enabled when `IsDevelopment()` to prevent SQLite hanging issues
+- 🧠 **In-Memory Repository**: Automatically enabled in Development mode for fast startup and easy testing
 - 📁 **Stub Blob Storage**: Local file simulation instead of Azure Blob Storage
-- 🔄 **Auto-Migration**: Database schema updates applied automatically on startup
+- 🔄 **No External Dependencies**: No database or Azure resources required for local development
 - 🐛 **Enhanced Logging**: Detailed console output with request/response logging for debugging
 
-### **SQLite Database Location**
+### **Persistence Storage**
 ```
-# Development database location
-src/FileService.Api/bin/Debug/net9.0/files.db
+# Development: In-Memory (no persistent storage)
+# Data resets on application restart
 
-# Custom database (when using dev-run.ps1 -SqlitePath "custom.db")
-src/FileService.Api/bin/Debug/net9.0/custom.db
+# Staging/Production: Azure Table Storage
+# Table Name: FileMetadata
+# PartitionKey: OwnerUserId (enables efficient user-scoped queries)
+# RowKey: FileId (GUID, ensures uniqueness)
 ```
 
 ## 🚀 Development Workflow
@@ -107,11 +110,10 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 # Start API on default port 5090
 .\scripts\dev-run.ps1
 
-# Start on custom port with fresh database
-.\scripts\dev-run.ps1 -Port 5125 -RecreateDb
+# Start on custom port
+.\scripts\dev-run.ps1 -Port 5125
 
-# Start with specific database file
-.\scripts\dev-run.ps1 -SqlitePath "my-dev.db"
+# Note: Development mode uses in-memory storage (data resets on restart)
 ```
 
 ### **3. Testing & Validation**
@@ -126,16 +128,14 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 .\scripts\smoke-test.ps1 -Port 5125
 ```
 
-### **4. Database Management**
+### **4. Data Management**
 ```powershell
-# Apply pending migrations
-.\scripts\migrate-dev.ps1
+# Development uses in-memory storage (no persistence)
+# Data automatically resets on each application restart
 
-# Start with fresh database
-.\scripts\dev-run.ps1 -RecreateDb
-
-# View current database location
-.\scripts\dev-run.ps1 -SqlitePath "debug.db"
+# For Staging/Production:
+# Table Storage automatically creates tables on first use
+# No manual migration or schema management required
 ```
 
 ## 🎯 Key Development Features
@@ -152,13 +152,15 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 
 ### **Dual Persistence Strategy**  
 - **Development**: 
-  - `InMemoryFileMetadataRepository` prevents database hanging and provides fast startup
-  - Perfect for rapid iteration and testing
+  - `InMemoryFileMetadataRepository` provides fast startup and easy testing
+  - Perfect for rapid iteration and debugging
   - Data resets on each application restart
-- **Production**: 
-  - `EfFileMetadataRepository` with SQLite (dev) or SQL Server (production)
-  - Full ACID compliance and data persistence
-  - Automatic migration management
+  - No external dependencies required
+- **Staging/Production**: 
+  - `TableStorageFileMetadataRepository` with Azure Table Storage
+  - Serverless, scalable NoSQL storage with automatic table creation
+  - PartitionKey (OwnerUserId) + RowKey (FileId) design for efficient queries
+  - No schema migrations needed - table structure is defined in code
 
 ### **PowerSchool Integration**
 - **Development Mode**: 
@@ -177,16 +179,16 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 
 ### **Anti-Hanging Protection**
 - ✅ **5-second timeouts** on all API calls in smoke tests
-- ✅ **In-memory storage** in development mode to avoid SQLite blocking issues
+- ✅ **In-memory storage** in development mode for fast and reliable testing
 - ✅ **Process cleanup** with automatic API process termination on test completion
 - ✅ **Clean exit codes** for proper CI/CD integration (0 = success, 1 = failure)
 - ✅ **Graceful error handling** without infinite loops or blocking operations
 
 ### **Error Handling & Monitoring**
 - 🚨 **Global exception handling** with structured logging and proper HTTP status codes
-- 🔄 **Graceful degradation** - automatic fallback to in-memory storage if EF Core fails
+- 🔄 **Graceful degradation** - automatic fallback to in-memory storage if Azure connectivity fails
 - 📊 **Comprehensive request/response logging** for debugging API interactions
-- ⏱️ **Timeout protection** throughout the entire stack (database, storage, HTTP)
+- ⏱️ **Timeout protection** throughout the entire stack (storage, HTTP)
 - 🏥 **Health checks** via Swagger endpoint availability monitoring
 
 ## 📊 Testing Strategy
@@ -219,11 +221,11 @@ src/FileService.Api/bin/Debug/net9.0/custom.db
 - **Test Execution**: ~10-15 seconds for complete smoke test suite
 - **File Operations**: Near-instant response with stub storage implementation
 - **Memory Usage**: Minimal footprint with in-memory repository (~50MB baseline)
-- **Database**: Zero hanging issues with current architecture optimizations
+- **Persistence**: In-memory storage with zero external dependencies
 
 ### **Production Readiness**
-- **Azure Integration**: Full Azure Blob Storage and Azure SQL Database support
-- **Scalability**: Stateless design supports multiple instance deployment
+- **Azure Integration**: Full Azure Blob Storage and Azure Table Storage support
+- **Scalability**: Stateless design supports multiple instance deployment with serverless NoSQL storage
 - **Security**: PowerSchool authentication with role-based access control
 - **Monitoring**: Structured logging compatible with Application Insights
 - **Deployment**: Docker containerization ready with environment-based configuration
@@ -241,13 +243,13 @@ netstat -an | findstr :5090
 .\scripts\dev-run.ps1 -Port 5091
 ```
 
-#### **Database Issues**
+#### **Persistence Issues**
 ```powershell
-# Reset database completely
-.\scripts\dev-run.ps1 -RecreateDb
+# Development mode uses in-memory storage (resets on restart)
+# Simply restart the application to reset data
 
-# Check database file location
-dir src\FileService.Api\bin\Debug\net9.0\*.db
+# For Staging/Production Table Storage issues:
+# Check Azure Portal for table existence and connection string
 ```
 
 #### **Smoke Test Failures**
@@ -274,7 +276,7 @@ curl http://localhost:5125/swagger/index.html
 
 ## 📚 Additional Resources
 
-- **Entity Framework Migrations**: [Microsoft EF Core Documentation](https://docs.microsoft.com/en-us/ef/core/managing-schemas/migrations/)
+- **Azure Table Storage**: [Azure Table Storage Documentation](https://docs.microsoft.com/en-us/azure/storage/tables/)
 - **Azure Blob Storage**: [Azure Storage Documentation](https://docs.microsoft.com/en-us/azure/storage/)
 - **ASP.NET Core Minimal APIs**: [Microsoft ASP.NET Documentation](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis)
 - **PowerShell Scripting**: [PowerShell Documentation](https://docs.microsoft.com/en-us/powershell/)

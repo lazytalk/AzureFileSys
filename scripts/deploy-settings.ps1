@@ -4,9 +4,7 @@
 param(
     [Parameter(Mandatory=$true)]
     [ValidateSet("Development", "Staging", "Production")]
-    [string]$Environment,
-    
-    [string]$SqlAdminPassword = ""  # Optional - overrides config default if provided
+    [string]$Environment
 )
 
 $ErrorActionPreference = 'Stop'
@@ -23,18 +21,15 @@ $envConfig = switch ($Environment) {
             "Location" = "chinanorth3"
             "SubscriptionId" = ""
             "ResourceGroup" = "KWE-RescourceGroup-ChinaNorth3-Development-FileSystem"
-            "SqlTier" = "Free"
             "AppServiceSku" = "F1"
             "AppServicePlanName" = "filesvc-dev-plan"
             "PowerSchoolBaseUrl" = "https://dev-powerschool.school.edu"
-            "SqlAdminPassword" = "DevPass123!"
             "CertificatePassword" = ""
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Development"
             "BlobStorage__UseLocalStub" = "true"
             "BlobStorage__ContainerName" = "userfiles"
-            "Persistence__UseEf" = "true"
-            "Persistence__UseSqlServer" = "false"
+            "Persistence__Type" = "InMemory"
         }
     }
     "Staging" {
@@ -44,20 +39,19 @@ $envConfig = switch ($Environment) {
             "Location" = "chinanorth3"
             "SubscriptionId" = ""
             "ResourceGroup" = "KWE-RescourceGroup-ChinaNorth3-Staging-FileSystem"
-            "SqlTier" = "Basic"
             "AppServiceSku" = "B1"
             "AppServicePlanName" = "filesvc-staging-plan"
             "PowerSchoolBaseUrl" = "https://test-powerschool.school.edu"
-            "SqlAdminPassword" = "StagingSecurePass123!"
             "CustomDomain" = "filesvc-stg-app.kaiweneducation.com"
             "CertificatePfxFileName" = "filesvc-stg-app.kaiweneducation.com.pfx"
             "CertificatePassword" = "5fuutvuc"
+            "TableName" = "FileMetadata"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Staging"
             "BlobStorage__UseLocalStub" = "false"
             "BlobStorage__ContainerName" = "userfiles-staging"
-            "Persistence__UseEf" = "true"
-            "Persistence__UseSqlServer" = "true"
+            "Persistence__Type" = "TableStorage"
+            "TableStorage__TableName" = "FileMetadata"
         }
     }
     "Production" {
@@ -67,20 +61,19 @@ $envConfig = switch ($Environment) {
             "Location" = "chinanorth3"
             "SubscriptionId" = ""
             "ResourceGroup" = "KWE-RescourceGroup-ChinaNorth3-Production-FileSystem"
-            "SqlTier" = "Standard"
             "AppServiceSku" = "P1v2"
             "AppServicePlanName" = "filesvc-prod-plan"
             "PowerSchoolBaseUrl" = "https://ps.school.edu"
-            "SqlAdminPassword" = "ProductionSecurePass456!"
             "CustomDomain" = "filesvc.kaiweneducation.com"
             "CertificatePfxFileName" = "filesvc.kaiweneducation.com.pfx"
             "CertificatePassword" = ""
+            "TableName" = "FileMetadata"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Production"
             "BlobStorage__UseLocalStub" = "false"
             "BlobStorage__ContainerName" = "userfiles-prod"
-            "Persistence__UseEf" = "true"
-            "Persistence__UseSqlServer" = "true"
+            "Persistence__Type" = "TableStorage"
+            "TableStorage__TableName" = "FileMetadata"
         }
     }
 }
@@ -89,12 +82,7 @@ $envConfig = switch ($Environment) {
 # SECTION 2: APPLY COMMAND-LINE OVERRIDES
 # ============================================================================
 
-# Use provided password from command-line, or fall back to environment default
-if ([string]::IsNullOrWhiteSpace($SqlAdminPassword)) {
-    $SqlAdminPassword = $envConfig["SqlAdminPassword"]
-} else {
-    Write-Host "Using SQL admin password provided via command-line parameter" -ForegroundColor Green
-}
+# (No overrides needed for Table Storage)
 
 # ============================================================================
 # SECTION 3: BUILD RESOURCE NAMES
@@ -110,7 +98,6 @@ $resources = @{
     "Location" = $envConfig["Location"]
     "SubscriptionId" = $envConfig["SubscriptionId"]
     "ResourceGroup" = $envConfig["ResourceGroup"]
-    "SqlTier" = $envConfig["SqlTier"]
     "AppServiceSku" = $envConfig["AppServiceSku"]
     "AppServicePlanName" = $envConfig["AppServicePlanName"] + "-$suffix"
     "PowerSchoolBaseUrl" = $envConfig["PowerSchoolBaseUrl"]
@@ -119,10 +106,7 @@ $resources = @{
     "WebAppName" = "filesvc-$($envConfig["EnvSuffix"])-app"
     "KeyVaultName" = "kv-fsvc-$($envConfig["EnvSuffix"])-$suffix"
     "AppInsightsName" = "filesvc-ai-$($envConfig["EnvLabel"])"
-    "SqlServerName" = "filesvc-sql-$($envConfig["EnvLabel"])-$suffix"
-    "SqlDbName" = "file-service-db"
-    "SqlAdminUser" = "fsadmin"
-    "SqlAdminPassword" = $SqlAdminPassword
+    "TableName" = $envConfig["TableName"]
     "CertificatePfxFileName" = $envConfig["CertificatePfxFileName"]
     "CertificatePassword" = $envConfig["CertificatePassword"]
 }
@@ -136,8 +120,8 @@ $appSettings = @{
     "ASPNETCORE_ENVIRONMENT" = $envConfig["ASPNETCORE_ENVIRONMENT"]
     "BlobStorage__UseLocalStub" = $envConfig["BlobStorage__UseLocalStub"]
     "BlobStorage__ContainerName" = $envConfig["BlobStorage__ContainerName"]
-    "Persistence__UseEf" = $envConfig["Persistence__UseEf"]
-    "Persistence__UseSqlServer" = $envConfig["Persistence__UseSqlServer"]
+    "Persistence__Type" = $envConfig["Persistence__Type"]
+    "TableStorage__TableName" = $envConfig["TableStorage__TableName"]
 }
 
 # ============================================================================

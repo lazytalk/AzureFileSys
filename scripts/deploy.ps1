@@ -2,9 +2,8 @@
 # deploy.ps1 - Unified deployment script for staging and production environments
 #
 # This script handles:
-# - Azure resource creation (Storage, SQL, Key Vault, App Service, etc.)
+# - Azure resource creation (Storage, Key Vault, App Service, etc.)
 # - Application deployment
-# - Database migrations
 # - Custom domain configuration with DNS validation
 # - SSL certificate creation and binding
 #
@@ -15,19 +14,16 @@
 # 2. Deploy application:
 #    .\deploy.ps1 -Environment Staging -DeployApp
 #
-# 3. Run database migrations:
-#    .\deploy.ps1 -Environment Staging -RunMigrations
-#
-# 4. Configure custom domain with SSL (uses domain from deploy-settings.ps1):
+# 3. Configure custom domain with SSL (uses domain from deploy-settings.ps1):
 #    .\deploy.ps1 -Environment Staging -ConfigureCustomDomain
 #
-# 5. Configure custom domain with SSL (override with specific domain):
+# 4. Configure custom domain with SSL (override with specific domain):
 #    .\deploy.ps1 -Environment Staging -ConfigureCustomDomain -CustomDomain "custom.example.com"
 #
-# 6. Full deployment with custom domain:
-#    .\deploy.ps1 -Environment Production -CreateResources -DeployApp -RunMigrations -ConfigureCustomDomain
+# 5. Full deployment with custom domain:
+#    .\deploy.ps1 -Environment Production -CreateResources -DeployApp -ConfigureCustomDomain
 #
-# 7. Promote staging to production:
+# 6. Promote staging to production:
 #    .\deploy.ps1 -Environment Production -PromoteFromStaging
 
 param(
@@ -37,13 +33,11 @@ param(
     
     [switch]$CreateResources,
     [switch]$DeployApp,
-    [switch]$RunMigrations,
     [switch]$PromoteFromStaging,
     [switch]$ConfigureCustomDomain,
     [string]$CustomDomain = "",  # e.g., "filesvc-stg-app.kaiweneducation.com"
     [string]$SubscriptionId = "",
     [string]$Location = "",
-    [string]$SqlAdminPassword = "",
     [string]$CertificatePassword = ""  # Optional: provide .pfx password non-interactively
 )
 
@@ -125,7 +119,7 @@ Write-Host "" # Empty line for readability
 # ============================================================================
 
 # Load unified configuration (resources + app settings)
-$config = & (Join-Path $PSScriptRoot "deploy-settings.ps1") -Environment $Environment -SqlAdminPassword $SqlAdminPassword
+$config = & (Join-Path $PSScriptRoot "deploy-settings.ps1") -Environment $Environment
 $resources = $config.Resources
 $appSettings = $config.AppSettings
 
@@ -177,14 +171,10 @@ if ($CreateResources) {
     $webAppName = $resources["WebAppName"]
     $keyVaultName = $resources["KeyVaultName"]
     $appInsightsName = $resources["AppInsightsName"]
-    $sqlServerName = $resources["SqlServerName"]
-    $sqlDbName = $resources["SqlDbName"]
-    $sqlAdminUser = $resources["SqlAdminUser"]
-    $sqlAdminPassword = $resources["SqlAdminPassword"]
-    $sqlTier = $resources["SqlTier"]
     $appServiceSku = $resources["AppServiceSku"]
     $appServicePlanName = $resources["AppServicePlanName"]
     $envLabel = $resources["EnvLabel"]
+    $tableName = $resources["TableName"]
     
     # Create resource group
     if (Test-ResourceExists "az group show -n $resourceGroup") {
@@ -219,27 +209,8 @@ if ($CreateResources) {
     }
     $storageConnString = az storage account show-connection-string -n $storageAccount -g $resourceGroup -o tsv
     
-    # Create SQL Server and Database
-    if (Test-ResourceExists "az sql server show -n $sqlServerName -g $resourceGroup") {
-        Write-Host "Using existing SQL Server: $sqlServerName" -ForegroundColor Gray
-    } else {
-        Write-Host "Creating Azure SQL Database: $sqlServerName"
-        az sql server create -n $sqlServerName -g $resourceGroup -l $resources["Location"] --admin-user $sqlAdminUser --admin-password $sqlAdminPassword
-        az sql server firewall-rule create -s $sqlServerName -g $resourceGroup -n AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
-    }
-    
-    if (Test-ResourceExists "az sql db show -s $sqlServerName -g $resourceGroup -n $sqlDbName") {
-        Write-Host "Using existing SQL Database: $sqlDbName" -ForegroundColor Gray
-    } else {
-        Write-Host "Creating SQL Database: $sqlDbName"
-        az sql db create -s $sqlServerName -g $resourceGroup -n $sqlDbName --service-objective $sqlTier
-        
-        if ($env.IsProduction) {
-            az sql db update -s $sqlServerName -n $sqlDbName -g $resourceGroup --backup-storage-redundancy Zone
-        }
-    }
-    
-    $sqlConnString = az sql db show-connection-string -s $sqlServerName -n $sqlDbName -c ado.net | ForEach-Object { $_ -replace '<username>', $sqlAdminUser -replace '<password>', $sqlAdminPassword }
+    # Table Storage uses the same connection string as blob storage
+    Write-Host "✓ Table Storage will use storage account connection string" -ForegroundColor Green
     
     # Create Key Vault
     if (Test-ResourceExists "az keyvault show -n $keyVaultName -g $resourceGroup") {
@@ -281,7 +252,7 @@ if ($CreateResources) {
     # Always update secrets in case they changed
     Write-Host "Updating Key Vault secrets..." -ForegroundColor Gray
     az keyvault secret set --vault-name $keyVaultName -n "BlobStorage--ConnectionString" --value $storageConnString > $null
-    az keyvault secret set --vault-name $keyVaultName -n "Sql--ConnectionString" --value $sqlConnString > $null
+    az keyvault secret set --vault-name $keyVaultName -n "TableStorage--ConnectionString" --value $storageConnString > $null
     az keyvault secret set --vault-name $keyVaultName -n "ApplicationInsights--InstrumentationKey" --value $aiKey > $null
     az keyvault secret set --vault-name $keyVaultName -n "PowerSchool--BaseUrl" --value $resources["PowerSchoolBaseUrl"] > $null
     az keyvault secret set --vault-name $keyVaultName -n "PowerSchool--ApiKey" --value "$envLabel-api-key-placeholder" > $null
@@ -323,7 +294,7 @@ if ($CreateResources) {
     # Use JSON format to avoid shell quoting issues with KeyVault references
     $finalSettings = $appSettings.Clone()
     $finalSettings["BlobStorage__ConnectionString"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=BlobStorage--ConnectionString)"
-    $finalSettings["Sql__ConnectionString"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Sql--ConnectionString)"
+    $finalSettings["TableStorage__ConnectionString"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=TableStorage--ConnectionString)"
     $finalSettings["ApplicationInsights__InstrumentationKey"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)"
     $finalSettings["PowerSchool__BaseUrl"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)"
     $finalSettings["PowerSchool__ApiKey"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
@@ -376,12 +347,6 @@ if ($Environment -eq "Production" -and $PromoteFromStaging) {
     # Build and publish
     Write-Host "Building application..."
     dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o $publishDir --verbosity quiet
-    
-    # Run EF Migrations
-    Write-Host "Creating migration bundle..."
-    $env:Persistence__ForceEf="true"
-    dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o "$publishDir/efbundle.exe" --force --verbose
-    $env:Persistence__ForceEf="false"
     
     # Create deployment package
     Write-Host "Creating deployment package..."
@@ -774,61 +739,6 @@ if ($ConfigureCustomDomain) {
     }
     
     Write-Host ""
-    }
-}
-
-# ============================================================================
-# SECTION 7: RUN DATABASE MIGRATIONS (if requested)
-# ============================================================================
-
-if ($RunMigrations) {
-    Write-Host "🗄️ Running database migrations on $Environment..." -ForegroundColor Yellow
-    
-    try {
-        $connectionString = az keyvault secret show --vault-name $resources["KeyVaultName"] --name "Sql--ConnectionString" --query value -o tsv
-        if ($connectionString) {
-            Write-Host "Running EF migrations..."
-            
-            $environmentLabel = $Environment.ToLower()
-            $bundlePath = "publish-$environmentLabel/efbundle.exe"
-
-            if (-not (Test-Path $bundlePath)) {
-                Write-Error "Migration bundle not found. Deploy application first."
-                exit 1
-            }
-
-            $previousAspNetCoreEnv = $env:ASPNETCORE_ENVIRONMENT
-            $previousDotnetEnv = $env:DOTNET_ENVIRONMENT
-            $previousUseEf = $env:Persistence__UseEf
-            $previousUseSql = $env:Persistence__UseSqlServer
-            $previousSqlConn = $env:Sql__ConnectionString
-
-            $env:ASPNETCORE_ENVIRONMENT = $Environment
-            $env:DOTNET_ENVIRONMENT = $Environment
-            $env:Persistence__UseEf = "true"
-            $env:Persistence__UseSqlServer = "true"
-            $env:Sql__ConnectionString = $connectionString
-
-            & $bundlePath --connection $connectionString
-            $bundleExit = $LASTEXITCODE
-
-            $env:ASPNETCORE_ENVIRONMENT = $previousAspNetCoreEnv
-            $env:DOTNET_ENVIRONMENT = $previousDotnetEnv
-            $env:Persistence__UseEf = $previousUseEf
-            $env:Persistence__UseSqlServer = $previousUseSql
-            $env:Sql__ConnectionString = $previousSqlConn
-
-            if ($bundleExit -ne 0) {
-                Write-Error "EF migrations failed with exit code $bundleExit"
-                exit 1
-            }
-            
-            Write-Host "✅ Database migrations completed!" -ForegroundColor Green
-        } else {
-            Write-Warning "Could not retrieve connection string from Key Vault"
-        }
-    } catch {
-        Write-Error "Failed to run migrations: $($_.Exception.Message)"
     }
 }
 

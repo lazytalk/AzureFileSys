@@ -68,8 +68,8 @@ Invoke-RestMethod -Method Delete -Uri 'https://localhost:5001/api/files/{id}' -H
 ```
 
 ## Next Steps (Planned)
-1. Replace stub storage with Azure Blob Storage implementation (configure connection string via Key Vault / app settings).
-2. Add real database (Azure SQL or Cosmos DB) with EF Core migrations.
+1. Replace stub storage with Azure Blob Storage implementation (configure connection string via Key Vault / app settings). ✅ **COMPLETED**
+2. Add Azure Table Storage for metadata persistence (co-located with blob storage). ✅ **COMPLETED**
 3. Implement robust PowerSchool token validation (API call / shared secret signature).
 4. Add file type validation & antivirus scanning hook.
 5. Add structured logging + Application Insights telemetry.
@@ -90,14 +90,17 @@ The service distinguishes between Development and Production via the `Environmen
 | `EnvironmentMode` | Custom environment flag used by code for dev-only features | `Development` | `Production` |
 | `BlobStorage:UseLocalStub` | If true, in-memory stub storage used | true | false |
 | `BlobStorage:ConnectionString` | Azure Storage connection string (required when stub disabled) | (empty) | `DefaultEndpointsProtocol=...` |
-| `Persistence:UseEf` | Enables EF Core repository | true | true |
-| `Persistence:SqlitePath` | SQLite DB file path (local dev) | `files.db` or supplied via script | Typically replaced by Azure SQL provider |
+| `Persistence:Type` | Metadata persistence type: InMemory or TableStorage | `InMemory` | `TableStorage` |
+| `TableStorage:ConnectionString` | Azure Storage connection string (same as blob storage) | (empty) | `DefaultEndpointsProtocol=...` |
+| `TableStorage:TableName` | Table name for file metadata | `FileMetadata` | `FileMetadata` |
 
 Override any value with environment variables (double underscore for nesting):
 ```
 $env:EnvironmentMode='Production'
 $env:BlobStorage__ConnectionString='...'
 $env:BlobStorage__UseLocalStub='false'
+$env:Persistence__Type='TableStorage'
+$env:TableStorage__ConnectionString='...'
 ```
 
 ### Development Conveniences
@@ -106,12 +109,12 @@ Active only when `EnvironmentMode=Development` (or config equals `Development`):
 - Token mimic endpoints:
   - `POST /dev/powerschool/token` (form/body: userId, role, optional secret) → returns mock token.
   - `POST /dev/powerschool/validate` (token, optional secret) → decodes & validates mock token.
-- Stub blob storage keeps file bytes in-memory (lost on restart) while metadata persists in SQLite.
+- Stub blob storage keeps file bytes in-memory (lost on restart) with in-memory metadata.
 
 ### Production Expectations
 - Provide real Azure Blob connection string and set `BlobStorage:UseLocalStub=false`.
+- Set `Persistence:Type=TableStorage` and provide Table Storage connection string.
 - Remove dev query parameter usage; send real `X-PowerSchool-User` (and future auth token header) only.
-- Use Azure SQL / managed database instead of local SQLite (future provider switch via configuration).
 - Harden: disable `/dev/powerschool/*` by ensuring `EnvironmentMode` is not `Development`.
 
 ### Dev Run Script
@@ -136,10 +139,12 @@ Invoke-RestMethod -Method Get -Uri 'http://localhost:5090/api/files?devUser=demo
 ### Switching to Production Locally (Example)
 ```powershell
 $env:EnvironmentMode='Production'
-$env:BlobStorage__ConnectionString='DefaultEndpointsProtocol=...'
-$env:BlobStorage__UseLocalStub='false'
+$env:Persistence__Type='TableStorage'
+$env:TableStorage__ConnectionString='DefaultEndpointsProtocol=...'
 dotnet run --project src/FileService.Api/FileService.Api.csproj
 ```
+
+The service will then use the real Azure Blob and Table Storage backends
 
 The service will then use the real Azure Blob backend (if credentials permit SAS generation).
 

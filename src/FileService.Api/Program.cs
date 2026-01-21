@@ -1,7 +1,8 @@
 using FileService.Core.Interfaces;
 using FileService.Infrastructure.Storage;
+using FileService.Infrastructure.Data;
+using Azure.Data.Tables;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 using System.Net.Http.Headers;
@@ -9,48 +10,36 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Services
-var useEf = builder.Configuration.GetValue("Persistence:UseEf", true);
-var useSqlServer = builder.Configuration.GetValue("Persistence:UseSqlServer", false);
-// Force in-memory for development to avoid database hanging issues, unless explicitly overridden to use EF
+// Services - Configure metadata persistence
+var persistenceType = builder.Configuration.GetValue("Persistence:Type", "InMemory"); // InMemory, TableStorage
 var isDevelopment = builder.Environment.IsDevelopment();
-var forceEf = builder.Configuration.GetValue("Persistence:ForceEf", false);
 
-if (isDevelopment && !forceEf)
+switch (persistenceType)
 {
-    Console.WriteLine("[STARTUP] Using in-memory repository for development mode");
-    builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
-}
-else if (useEf)
-{
-    if (useSqlServer)
-    {
-        // Use SQL Server for staging/production
-        var sqlConnectionString = builder.Configuration.GetValue<string>("Sql:ConnectionString");
-        if (string.IsNullOrWhiteSpace(sqlConnectionString))
+    case "TableStorage":
+        var storageConnString = builder.Configuration.GetValue<string>("TableStorage:ConnectionString");
+        if (string.IsNullOrWhiteSpace(storageConnString))
         {
-            Console.WriteLine("[STARTUP ERROR] SQL Server connection string is missing!");
-            throw new InvalidOperationException("SQL Server connection string (Sql:ConnectionString) is required when UseSqlServer=true");
+            Console.WriteLine("[STARTUP ERROR] Table Storage connection string is missing!");
+            throw new InvalidOperationException("TableStorage:ConnectionString is required when Persistence:Type=TableStorage");
         }
-        Console.WriteLine("[STARTUP] Using SQL Server database");
-        builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
-            opt.UseSqlServer(sqlConnectionString));
-    }
-    else
-    {
-        // Use SQLite for local/dev scenarios
-        var dbPath = builder.Configuration.GetValue<string>("Persistence:SqlitePath") ?? Path.Combine(AppContext.BaseDirectory, "files.db");
-        Console.WriteLine($"[STARTUP] Using SQLite database at: {dbPath}");
-        builder.Services.AddDbContext<FileService.Infrastructure.Data.FileServiceDbContext>(opt =>
-            opt.UseSqlite($"Data Source={dbPath}"));
-    }
-    builder.Services.AddScoped<IFileMetadataRepository, FileService.Infrastructure.Data.EfFileMetadataRepository>();
+        Console.WriteLine("[STARTUP] Using Azure Table Storage for metadata");
+        builder.Services.AddSingleton(new TableServiceClient(storageConnString));
+        builder.Services.AddSingleton<IFileMetadataRepository>(sp =>
+        {
+            var tableService = sp.GetRequiredService<TableServiceClient>();
+            var tableName = builder.Configuration.GetValue("TableStorage:TableName", "FileMetadata");
+            return new TableStorageFileMetadataRepository(tableService, tableName);
+        });
+        break;
+    
+    case "InMemory":
+    default:
+        Console.WriteLine("[STARTUP] Using in-memory repository");
+        builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
+        break;
 }
-else
-{
-    Console.WriteLine("[STARTUP] Using in-memory repository");
-    builder.Services.AddSingleton<IFileMetadataRepository, InMemoryFileMetadataRepository>();
-}
+
 builder.Services.Configure<FileService.Infrastructure.Storage.BlobStorageOptions>(builder.Configuration.GetSection("BlobStorage"));
 // Conditional registration: if BlobStorage:UseLocalStub true OR no connection string, use stub
 builder.Services.AddSingleton<IFileStorageService>(sp =>
@@ -69,14 +58,6 @@ builder.Services.AddScoped<PowerSchoolUserContext>();
 var app = builder.Build();
 
 var isDevMode = builder.Environment.IsDevelopment();
-// Apply pending migrations only if configured (dev convenience). For production you may set AutoMigrate=false and run migrations explicitly.
-if (useEf && !isDevelopment && builder.Configuration.GetValue("Persistence:AutoMigrate", true))
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<FileService.Infrastructure.Data.FileServiceDbContext>();
-    try { db.Database.Migrate(); }
-    catch (Exception ex) { Console.WriteLine($"[DB MIGRATE] Failed: {ex.Message}"); }
-}
 
 app.UseSwagger();
 app.UseSwaggerUI();

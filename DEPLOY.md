@@ -9,22 +9,22 @@ The service supports three deployment environments:
 
 ### **🔧 Development (Local)**
 - **Purpose**: Local development and testing
-- **Database**: SQLite or In-Memory Repository
-- **Storage**: Stub implementation (no Azure dependencies)
+- **Metadata Storage**: In-Memory Repository (data resets on restart)
+- **Blob Storage**: Stub implementation (no Azure dependencies)
 - **Auth**: Development bypass (`?devUser=alice`)
 - **URL**: `http://localhost:5090`
 
 ### **🧪 Staging**
 - **Purpose**: Pre-production testing, integration testing, UAT
-- **Database**: Azure SQL Database (smaller tier)
-- **Storage**: Azure Blob Storage (separate container)
+- **Metadata Storage**: Azure Table Storage (shared with blob storage account)
+- **Blob Storage**: Azure Blob Storage (separate container)
 - **Auth**: Real PowerSchool integration (test instance)
 - **URL**: `https://filesvc-api-staging.azurewebsites.net`
 
 ### **🚀 Production**
 - **Purpose**: Live production workloads
-- **Database**: Azure SQL Database (production tier)
-- **Storage**: Azure Blob Storage (production container)
+- **Metadata Storage**: Azure Table Storage (shared with blob storage account)
+- **Blob Storage**: Azure Blob Storage (production container)
 - **Auth**: Real PowerSchool integration (production instance)
 - **URL**: `https://filesvc-api-prod.azurewebsites.net`
 
@@ -37,10 +37,10 @@ The service supports three deployment environments:
 | `BlobStorage__UseLocalStub` | true | false | false |
 | `BlobStorage__ConnectionString` | (empty) | Key Vault Reference | Key Vault Reference |
 | `BlobStorage__ContainerName` | userfiles | userfiles-staging | userfiles-prod |
-| `Persistence__UseEf` | false (in-memory) | true | true |
-| `Persistence__UseSqlServer` | false | true | true |
-| `Sql__ConnectionString` | (unused) | Key Vault Reference | Key Vault Reference |
-| **Database SKU** | N/A | Basic (5 DTU) | Standard S2 (50 DTU) |
+| `Persistence__Type` | InMemory | TableStorage | TableStorage |
+| `TableStorage__ConnectionString` | (empty) | Key Vault Reference | Key Vault Reference |
+| `TableStorage__TableName` | FileMetadata | FileMetadata | FileMetadata |
+| **Storage Account SKU** | N/A | Standard_LRS | Standard_GRS |
 | **App Service SKU** | N/A | B1 (Basic) | P1v2 (Premium) |
 | **Monitoring Level** | Console only | Basic alerts | Full monitoring |
 | **Backup Retention** | N/A | 7 days | 30 days |
@@ -55,28 +55,28 @@ The unified `deploy.ps1` script handles both staging and production deployments:
 ### **Deploy to Staging**
 ```powershell
 cd scripts
-.\deploy.ps1 -Environment Staging -CreateResources -DeployApp -RunMigrations
+.\deploy.ps1 -Environment Staging -CreateResources -DeployApp
 ```
 
 ### **Deploy to Production** 
 ```powershell
 cd scripts
 # Option 1: Rebuild from source
-.\deploy.ps1 -Environment Production -CreateResources -DeployApp -RunMigrations
+.\deploy.ps1 -Environment Production -CreateResources -DeployApp
 
 # Option 2: Promote tested staging build (recommended)
-.\deploy.ps1 -Environment Production -DeployApp -RunMigrations -PromoteFromStaging
+.\deploy.ps1 -Environment Production -DeployApp -PromoteFromStaging
 ```
 
 ### **Parameters**
 - `-Environment` (required): `Staging` or `Production`
-- `-CreateResources`: Create all Azure resources (resource group, SQL DB, Storage, Key Vault, App Service)
+- `-CreateResources`: Create all Azure resources (resource group, Storage Account, Key Vault, App Service)
 - `-DeployApp`: Build and deploy the application
-- `-RunMigrations`: Run Entity Framework migrations
 - `-PromoteFromStaging` (production only): Use staging build instead of rebuilding
 - `-Location`: Override deployment region (default: from config)
-- `-SqlAdminPassword`: Override SQL admin password (default: from config)
 - `-SubscriptionId`: Set Azure subscription
+
+> **Note**: Table Storage tables are automatically created on first use - no manual schema management required
 
 ---
 ## 4. Multi-Environment Azure Architecture
@@ -85,15 +85,13 @@ cd scripts
 Azure Subscription
 ├── 📂 KWE-RescourceGroup-ChinaNorth3-Staging-FileSystem          # Staging Resource Group
 │   ├── 🌐 filesvc-api-staging      # Staging Web App
-│   ├── 🗄️ filesvc-sql-staging      # Staging SQL Server
-│   ├── 💾 filesvcstgstaging123     # Staging Storage Account
+│   ├── � filesvcstgstaging123     # Staging Storage Account (Blob + Table)
 │   ├── 🔐 filesvc-kv-staging       # Staging Key Vault
 │   └── 📊 filesvc-ai-staging       # Staging App Insights
 │
 └── 📂 KWE-RescourceGroup-ChinaNorth3-Production-FileSystem       # Production Resource Group
     ├── 🌐 filesvc-api-prod         # Production Web App
-    ├── 🗄️ filesvc-sql-prod         # Production SQL Server
-    ├── 💾 filesvcstgprod456        # Production Storage Account
+    ├── 💾 filesvcstgprod456        # Production Storage Account (Blob + Table)
     ├── 🔐 filesvc-kv-prod          # Production Key Vault
     └── 📊 filesvc-ai-prod          # Production App Insights
 ```
@@ -107,9 +105,9 @@ Azure Subscription
 | `BlobStorage__UseLocalStub` | Use in-memory file bytes | true | false | false |
 | `BlobStorage__ConnectionString` | Azure Storage connection | (empty) | Key Vault Ref | Key Vault Ref |
 | `BlobStorage__ContainerName` | Container for user files | userfiles | userfiles-staging | userfiles-prod |
-| `Persistence__UseEf` | EF Core enabled | false | true | true |
-| `Persistence__UseSqlServer` | Use SQL Server instead of SQLite | false | true | true |
-| `Sql__ConnectionString` | SQL Server connection | (unused) | Key Vault Ref | Key Vault Ref |
+| `Persistence__Type` | Persistence implementation | InMemory | TableStorage | TableStorage |
+| `TableStorage__ConnectionString` | Table storage connection | (empty) | Key Vault Ref | Key Vault Ref |
+| `TableStorage__TableName` | Table name for metadata | FileMetadata | FileMetadata | FileMetadata |
 | `ApplicationInsights__InstrumentationKey` | AI monitoring | (unused) | Key Vault Ref | Key Vault Ref |
 | `PowerSchool__BaseUrl` | PowerSchool API endpoint | (bypass) | test-ps.school.edu | ps.school.edu |
 | `PowerSchool__ApiKey` | PowerSchool authentication | (bypass) | Key Vault Ref | Key Vault Ref |
@@ -122,8 +120,10 @@ Azure Subscription
 1. Run dev script (installs .NET 9 SDK if needed):
    ```powershell
    cd scripts
-   ./dev-run.ps1 -Port 5090 -SqlitePath dev-files.db
+   ./dev-run.ps1 -Port 5090
    ```
+   > **Note**: Development mode uses in-memory storage (data resets on restart)
+
 2. Upload test:
    ```powershell
    Invoke-RestMethod -Method Post -Uri 'http://localhost:5090/api/files/upload?devUser=demo1' -Form @{ file=Get-Item ..\README.md }
@@ -143,12 +143,11 @@ Azure Subscription
 # 2. Deploy application
 .\deploy.ps1 -Environment Staging -DeployApp
 
-# 3. Run migrations
-.\deploy.ps1 -Environment Staging -RunMigrations
-
 # OR: Do all at once
-.\deploy.ps1 -Environment Staging -CreateResources -DeployApp -RunMigrations
+.\deploy.ps1 -Environment Staging -CreateResources -DeployApp
 ```
+
+> **Note**: Table Storage tables are automatically created on first API call - no manual schema management required
 
 ---
 ## 8. Production Deployment Workflow
@@ -156,7 +155,7 @@ Azure Subscription
 ### **Option A: Promote Tested Staging Build (Recommended)**
 ```powershell
 # 1. Deploy to staging first
-.\deploy.ps1 -Environment Staging -CreateResources -DeployApp -RunMigrations
+.\deploy.ps1 -Environment Staging -CreateResources -DeployApp
 
 # 2. Test staging thoroughly...
 
@@ -164,7 +163,7 @@ Azure Subscription
 .\deploy.ps1 -Environment Production -CreateResources
 
 # 4. Promote staging build to production
-.\deploy.ps1 -Environment Production -DeployApp -PromoteFromStaging -RunMigrations
+.\deploy.ps1 -Environment Production -DeployApp -PromoteFromStaging
 ```
 
 **Benefits:**
@@ -172,10 +171,11 @@ Azure Subscription
 - ✅ Fast deployment (no rebuild)
 - ✅ Reduces risk of production-specific build issues
 - ✅ Follows industry best practices
+- ✅ No database migrations needed (Table Storage auto-creates tables)
 
 ### **Option B: Fresh Build for Production**
 ```powershell
-.\deploy.ps1 -Environment Production -CreateResources -DeployApp -RunMigrations
+.\deploy.ps1 -Environment Production -CreateResources -DeployApp
 ```
 
 ---
@@ -210,36 +210,45 @@ For automated deployment, use the scripts in `scripts/` folder. The pipeline sho
 
 - Resource creation (using `-CreateResources`)
 - App deployment (using `-DeployApp`)
-- Database migrations (using `-RunMigrations`)
 
-See `scripts/deploy-staging.ps1` and `scripts/deploy-production.ps1` for implementation details.
+See the unified `deploy.ps1` script for implementation details.
+
+> **Note**: Table Storage tables are automatically created on first use - no schema migration needed
 
 ---
 
 
-## 10. Database Migrations for Production
+## 10. Table Storage Setup
 
-### Add SQL Server Support to the Project
-1. **Add SQL Server Package**:
-```powershell
-cd src/FileService.Infrastructure
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-```
+### Table Storage Architecture
+1. **No Schema Management Required**:
+   - Tables are automatically created on first use
+   - No migrations or schema updates needed
+   - Schema is defined in code (FileRecordEntity)
 
-2. **Update Program.cs** to support SQL Server:
-```csharp
-// Add after the existing EF configuration
-if (builder.Configuration.GetValue<bool>("Persistence:UseSqlServer"))
-{
-    var sqlConnection = builder.Configuration.GetConnectionString("Sql");
-    builder.Services.AddDbContext<FileServiceDbContext>(options =>
-        options.UseSqlServer(sqlConnection));
-}
-```
+2. **Table Design**:
+   ```csharp
+   // PartitionKey: OwnerUserId (enables efficient user-scoped queries)
+   // RowKey: FileId (GUID, ensures uniqueness)
+   // Properties: FileName, ContentType, SizeBytes, UploadedAt, BlobPath
+   ```
 
-3. **Create and Apply Migrations**:
+3. **Connection Configuration**:
+   ```json
+   {
+     "TableStorage": {
+       "ConnectionString": "@Microsoft.KeyVault(VaultName=filesvc-kv-prod;SecretName=TableStorage--ConnectionString)",
+       "TableName": "FileMetadata"
+     }
+   }
+   ```
 
-Use the `-RunMigrations` switch in the deploy scripts to apply migrations. See `scripts/deploy-staging.ps1` and `scripts/deploy-production.ps1` for details.
+### Benefits Over SQL Database:
+- ✅ **No schema migrations** - table structure defined in code
+- ✅ **Automatic scaling** - serverless NoSQL storage
+- ✅ **Lower cost** - pay per transaction instead of fixed DTU
+- ✅ **Shared storage account** - uses same account as blob storage
+- ✅ **High availability** - built-in replication and redundancy
 
 ## 11. Infrastructure as Code (Optional Enhancement)
 
@@ -248,21 +257,16 @@ Create `azure-resources.bicep` for reproducible deployments:
 ```bicep
 param location string = resourceGroup().location
 param appName string
-param sqlAdminPassword string
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-04-01' = {
   name: '${appName}stg${uniqueString(resourceGroup().id)}'
   location: location
   sku: { name: 'Standard_LRS' }
   kind: 'StorageV2'
-}
-
-resource sqlServer 'Microsoft.Sql/servers@2021-02-01-preview' = {
-  name: '${appName}-sql-${uniqueString(resourceGroup().id)}'
-  location: location
   properties: {
-    administratorLogin: 'fsadmin'
-    administratorLoginPassword: sqlAdminPassword
+    // Supports both Blob Storage and Table Storage
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
   }
 }
 
@@ -278,17 +282,27 @@ resource webApp 'Microsoft.Web/sites@2021-01-15' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      netFrameworkVersion: 'v8.0'
+      netFrameworkVersion: 'v9.0'
       metadata: [{ name: 'CURRENT_STACK', value: 'dotnet' }]
     }
   }
   identity: { type: 'SystemAssigned' }
 }
+
+resource keyVault 'Microsoft.KeyVault/vaults@2021-06-01-preview' = {
+  name: '${appName}-kv'
+  location: location
+  properties: {
+    sku: { family: 'A', name: 'standard' }
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true
+  }
+}
 ```
 
 Deploy with:
 ```powershell
-az deployment group create -g filesvc-rg --template-file azure-resources.bicep --parameters appName=filesvc-api sqlAdminPassword=YourSecurePassword123!
+az deployment group create -g filesvc-rg --template-file azure-resources.bicep --parameters appName=filesvc-api
 ```
 
 ## 12. Production Deployment Checklist
@@ -302,20 +316,21 @@ az deployment group create -g filesvc-rg --template-file azure-resources.bicep -
 - [ ] Review security settings and access controls
 
 ### Deployment
-- [ ] Create all Azure resources using the script above
+- [ ] Create all Azure resources using the deployment script
 - [ ] Build and deploy application: `dotnet publish` + `az webapp deploy`
-- [ ] Run database migrations: `./efbundle.exe`
-- [ ] Verify managed identity permissions
+- [ ] Verify Table Storage table is auto-created on first API call
+- [ ] Verify managed identity permissions for Storage Account
 - [ ] Test Key Vault secret access
 
 ### Post-Deployment
-- [ ] Verify `/swagger` endpoint is accessible
-- [ ] Test file upload via Swagger UI
+- [ ] Verify `/swagger` endpoint is accessible (Staging only)
+- [ ] Test file upload via Swagger UI or API client
 - [ ] Verify files are stored in Azure Blob Storage
+- [ ] Verify metadata is stored in Azure Table Storage
 - [ ] Test file download and delete operations
 - [ ] Monitor Application Insights for errors
 - [ ] Set up alerts for critical metrics
-- [ ] Configure backup policies for SQL Database
+- [ ] Configure backup policies for Storage Account
 
 ### PowerSchool Integration (Production)
 - [ ] Replace dev authentication bypass with real PowerSchool integration
@@ -340,43 +355,80 @@ customEvents
 | summarize count() by name, bin(timestamp, 1h)
 ```
 
-### Database Monitoring
-```sql
--- Monitor database size
-SELECT 
-    DB_NAME() as DatabaseName,
-    SUM(size) * 8 / 1024 as DatabaseSizeInMB
-FROM sys.database_files;
+### Table Storage Monitoring
+```kusto
+// Monitor table storage operations in Application Insights
+requests
+| where cloud_RoleName == "FileService.Api"
+| where url contains "files"
+| summarize 
+    uploads = countif(name == "POST /api/files/upload"),
+    lists = countif(name == "GET /api/files"),
+    deletes = countif(name == "DELETE /api/files/{id}")
+    by bin(timestamp, 1h)
 
--- Monitor file operations
-SELECT 
-    COUNT(*) as TotalFiles,
-    SUM(FileSizeBytes) / 1024 / 1024 as TotalSizeInMB,
-    CreatedBy,
-    COUNT(CASE WHEN CreatedAt > DATEADD(day, -1, GETDATE()) THEN 1 END) as FilesLast24Hours
-FROM FileRecords
-GROUP BY CreatedBy;
+// Track file metadata by user
+customEvents
+| where name in ("FileUploaded", "FileDeleted")
+| extend userId = tostring(customDimensions.UserId)
+| summarize 
+    fileCount = count(),
+    totalSizeBytes = sum(tolong(customDimensions.FileSizeBytes))
+    by userId
+```
+
+```powershell
+# Query Table Storage directly using Azure CLI
+az storage entity query \
+  --account-name <storage-account> \
+  --table-name FileMetadata \
+  --filter "PartitionKey eq 'user123'"
+
+# Get table statistics
+az storage table stats \
+  --account-name <storage-account> \
+  --table-name FileMetadata
 ```
 
 ## 14. Backup & Disaster Recovery
 
-### Database Backups
-```powershell
-# Configure automated backups (7-day retention)
-az sql db update -s <sql-server-name> -n <db-name> -g filesvc-rg --backup-storage-redundancy Local
-
-# Manual backup
-az sql db export -s <sql-server-name> -n <db-name> -g filesvc-rg --admin-user <admin-user> --admin-password <password> --storage-key-type StorageAccessKey --storage-key <storage-key> --storage-uri "https://<storage-account>.blob.core.windows.net/backups/backup-$(Get-Date -Format 'yyyyMMdd-HHmmss').bacpac"
-```
-
-### Blob Storage Backups
+### Storage Account Backups (Blob + Table)
 ```powershell
 # Enable soft delete for blobs (30-day retention)
-az storage account blob-service-properties update --account-name <storage-account> --enable-delete-retention true --delete-retention-days 30
+az storage account blob-service-properties update \
+  --account-name <storage-account> \
+  --enable-delete-retention true \
+  --delete-retention-days 30
 
-# Enable versioning
-az storage account blob-service-properties update --account-name <storage-account> --enable-versioning true
+# Enable versioning for blobs
+az storage account blob-service-properties update \
+  --account-name <storage-account> \
+  --enable-versioning true
+
+# Enable point-in-time restore for containers
+az storage account blob-service-properties update \
+  --account-name <storage-account> \
+  --enable-restore-policy true \
+  --restore-days 7
 ```
+
+### Table Storage Data Protection
+```powershell
+# Export table data for backup (using Azure Storage Explorer or custom script)
+# Table Storage supports geo-replication with GRS/RA-GRS storage accounts
+
+# Configure geo-redundant storage for production
+az storage account update \
+  --name <storage-account> \
+  --sku Standard_GRS  # or Standard_RAGRS for read-access geo-redundancy
+```
+
+### Disaster Recovery Strategy
+- ✅ **GRS Replication**: Automatically replicates data to secondary region
+- ✅ **Soft Delete**: Protects against accidental blob deletion (30-day retention)
+- ✅ **Versioning**: Maintains historical versions of blobs
+- ✅ **Point-in-Time Restore**: Restore containers to previous state (7-day window)
+- ✅ **Table Backup**: Export critical table data periodically using Azure Storage Explorer
 
 ---
 ## 15. Summary
@@ -385,11 +437,11 @@ The deployment guide now provides:
 
 ✅ **Complete Azure Resource Provisioning** - All necessary services  
 ✅ **Security Best Practices** - Managed Identity, Key Vault, HTTPS  
-✅ **Production Database** - Azure SQL with migrations  
+✅ **Serverless Metadata Storage** - Azure Table Storage (no schema migrations)  
 ✅ **Monitoring & Alerting** - Application Insights with custom metrics  
 ✅ **Infrastructure as Code** - Bicep templates for reproducible deployments  
 ✅ **Comprehensive Checklist** - Pre/post deployment validation  
-✅ **Backup & Recovery** - Database and blob storage protection  
+✅ **Backup & Recovery** - Storage account protection with geo-redundancy  
 
 This guide ensures a production-ready deployment with enterprise-grade security, monitoring, and reliability! 🚀
 
@@ -399,11 +451,11 @@ This guide ensures a production-ready deployment with enterprise-grade security,
 |-------------|---------|----------------|-----|
 | **Staging** | 401 responses | Missing auth headers | Use real PowerSchool headers or check staging credentials |
 | **Staging** | Upload works but download 404 | Wrong container name | Verify `userfiles-staging` container exists |
-| **Staging** | Database connection fails | Key Vault access issue | Check managed identity permissions |
+| **Staging** | Metadata not saving | Table Storage access issue | Check managed identity permissions on Storage Account |
 | **Production** | Swagger disabled | Production config | Expected behavior - use staging for API testing |
 | **Production** | High memory usage | Large file processing | Monitor App Insights and consider scaling up |
-| **Both** | Key Vault secret not found | Wrong secret name format | Use exact format: `BlobStorage--ConnectionString` |
-| **Both** | SQL timeout | Database overloaded | Scale up database tier or optimize queries |
+| **Both** | Key Vault secret not found | Wrong secret name format | Use exact format: `TableStorage--ConnectionString` |
+| **Both** | Table not created | First API call failed | Check Application Insights for initialization errors |
 
 ### Common Resolution Steps:
 
@@ -414,11 +466,23 @@ az webapp identity show -n <webapp-name> -g <resource-group>
 az keyvault show -n <keyvault-name> -g <resource-group> --query properties.accessPolicies
 ```
 
-#### 2. Database Connection Problems
+#### 2. Table Storage Access Problems
 ```powershell
-# Test SQL connection manually
-az sql db show -s <sql-server> -n <db-name> -g <resource-group>
-az sql server firewall-rule list -s <sql-server> -g <resource-group>
+# Test Table Storage connection
+az storage table exists \
+  --account-name <storage-account> \
+  --name FileMetadata
+
+# Check managed identity permissions
+az role assignment list \
+  --assignee <managed-identity-principal-id> \
+  --scope /subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.Storage/storageAccounts/<storage-account>
+
+# Verify table exists and has data
+az storage entity query \
+  --account-name <storage-account> \
+  --table-name FileMetadata \
+  --select RowKey,PartitionKey
 ```
 
 #### 3. Storage Access Issues
@@ -508,17 +572,23 @@ az role assignment list --assignee <managed-identity-principal-id> --scope <stor
 | Service | Staging | Production | Notes |
 |---------|---------|------------|-------|
 | **App Service** | $13 (B1) | $73 (P1v2) | Staging can auto-scale down |
-| **SQL Database** | $5 (Basic) | $30 (S2) | Production may need higher tier |
-| **Storage Account** | $2 | $5 | Includes backup redundancy |
+| **Storage Account** | $3 | $8 | Includes Blob + Table Storage with GRS |
 | **Application Insights** | $0-5 | $10-20 | Based on telemetry volume |
 | **Key Vault** | $1 | $1 | Secret operations |
-| **Total/Month** | **~$21** | **~$119** | Approximate costs |
+| **Total/Month** | **~$17** | **~$102** | Approximate costs |
+
+### Cost Savings vs SQL Server:
+- ✅ **Staging**: Save ~$5/month (no SQL Database)
+- ✅ **Production**: Save ~$30/month (no SQL Database)
+- ✅ **Pay per transaction** instead of fixed DTU costs
+- ✅ **No database tier upgrades** needed for scaling
 
 ### Cost Optimization Tips:
 - 🔄 **Auto-shutdown staging** during non-business hours
 - 🔄 **Scale down staging** App Service to B1 or even F1 (free tier)
-- 🔄 **Use Basic SQL tier** for staging (adequate for testing)
+- 🔄 **Use LRS storage** for staging (lower redundancy)
 - 🔄 **Monitor usage** with Azure Cost Management
+- 🔄 **Table Storage pricing** is transaction-based (~$0.10 per 100K transactions)
 
 ---
 ## 20. Conclusion

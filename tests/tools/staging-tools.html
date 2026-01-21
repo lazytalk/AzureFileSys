@@ -21,7 +21,8 @@
     .progress { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 8px; }
     .bar { height: 100%; background: #28a745; width: 0%; transition: width 0.1s linear; }
     .stats { margin-top: 6px; font-size: 13px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 800px; }
     th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
     th { background: #f7f7f7; }
     .right { text-align: right; }
@@ -30,6 +31,17 @@
     .error { color: #b00020; }
     .hidden { display: none; }
     .small { font-size: 12px; }
+    .small-btn { padding: 6px 10px; font-size: 12px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pager { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 10px; }
+    @media (max-width: 600px) {
+      body { margin: 12px; }
+      input[type="text"] { width: 100%; }
+      table { min-width: 600px; }
+      .actions { flex-direction: row; }
+      .actions button { flex: 1 0 auto; }
+      .row { gap: 8px; }
+    }
   </style>
 </head>
 <body>
@@ -81,6 +93,7 @@
       <button id="btnDeleteSelected" class="danger">Delete Selected</button>
       <button id="btnDownloadSelected" class="secondary" style="border-color: #0078d4; color: #0078d4;">Download Selected (Zip)</button>
     </div>
+    <div class="table-wrap">
     <table id="filesTable">
       <thead>
         <tr>
@@ -96,8 +109,27 @@
       </thead>
       <tbody id="filesBody"></tbody>
     </table>
+    </div>
     <div id="listStatus" class="small"></div>
+    <div id="pager"></div>
   </fieldset>
+
+  <!-- Preview Modal -->
+  <div id="previewOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999;">
+    <div style="background:#fff; width:90%; max-width:1000px; height:80vh; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.2); display:flex; flex-direction:column;">
+      <div style="padding:10px 12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+        <strong id="previewTitle">Preview</strong>
+        <div>
+          <button id="btnOpenInTab" class="secondary">Open in New Tab</button>
+          <button id="btnClosePreview" class="secondary">Close</button>
+        </div>
+      </div>
+      <div id="previewBody" style="flex:1; background:#fafafa; display:flex; align-items:center; justify-content:center; overflow:auto;">
+        <div class="muted">Loading preview...</div>
+      </div>
+      <div id="previewFooter" class="small muted" style="padding:8px 12px; border-top:1px solid #eee;">If the preview fails, try Open in New Tab or Download.</div>
+    </div>
+  </div>
 
   <script>
     const el = id => document.getElementById(id);
@@ -109,6 +141,10 @@
       startTime: 0,
       lastUpdateTime: 0,
       lastUploadedBytes: 0,
+      listItems: [],
+      selectedIds: new Set(),
+      pageSize: 10,
+      currentPage: 1,
     };
 
     function headers() {
@@ -181,6 +217,7 @@
           const xhr = new XMLHttpRequest();
           xhr.open('PUT', uploadUrl);
           xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob'); // Vital for Azure Block Blobs
+          xhr.setRequestHeader('x-ms-blob-content-type', file.type || 'application/octet-stream'); // Ensure correct Content-Type on the blob
           // No auth headers here - SAS token is in the URL
 
           xhr.upload.onprogress = (e) => {
@@ -294,17 +331,29 @@
         const res = await fetch(url, { headers: headers(), mode: 'cors' });
         if (!res.ok) throw new Error(`List failed: ${res.status}`);
         const data = await res.json();
-        renderList(Array.isArray(data) ? data : []);
-        el('listStatus').textContent = `Loaded ${Array.isArray(data) ? data.length : 0} items.`;
+        setList(Array.isArray(data) ? data : []);
       } catch (err) {
         el('listStatus').innerHTML = `<span class="error">${err.message}</span>`;
       }
     }
 
-    function renderList(items) {
+    function setList(items) {
+      state.listItems = items || [];
+      state.selectedIds = new Set();
+      state.currentPage = 1;
+      renderTable();
+    }
+
+    function renderTable() {
+      const total = state.listItems.length;
+      const pages = Math.max(1, Math.ceil(total / state.pageSize));
+      if (state.currentPage > pages) state.currentPage = pages;
+      const start = (state.currentPage - 1) * state.pageSize;
+      const pageItems = state.listItems.slice(start, start + state.pageSize);
+
       const tbody = el('filesBody');
       tbody.innerHTML = '';
-      for (const item of items) {
+      for (const item of pageItems) {
         const tr = document.createElement('tr');
         const size = item.SizeBytes ?? item.sizeBytes ?? item.Size ?? 0;
         const uploadedAt = item.UploadedAt ?? item.uploadedAt ?? item.CreatedAt ?? '';
@@ -313,51 +362,188 @@
         const name = item.FileName ?? item.fileName ?? '';
         const ct = item.ContentType ?? item.contentType ?? '';
 
+        const checkedAttr = state.selectedIds.has(String(id)) ? 'checked' : '';
         tr.innerHTML = `
-          <td><input type="checkbox" class="rowCheck" data-id="${id}" /></td>
+          <td><input type="checkbox" class="rowCheck" data-id="${id}" ${checkedAttr} /></td>
           <td>${name}</td>
           <td>${ct}</td>
           <td class="right">${formatBytes(Number(size) || 0)}</td>
           <td>${owner}</td>
           <td>${uploadedAt ? new Date(uploadedAt).toLocaleString() : ''}</td>
           <td>
-            <button class="small-btn download-btn" data-id="${id}">Download</button>
+            <div class="actions">
+              <button class="small-btn preview-btn" data-id="${id}" data-name="${name}" data-ct="${ct}">Preview</button>
+              <button class="small-btn download-btn" data-id="${id}">Download</button>
+            </div>
           </td>
           <td class="small">${id}</td>
         `;
         tbody.appendChild(tr);
       }
-      
+
       // Wire up row buttons
       document.querySelectorAll('.download-btn').forEach(btn => {
           btn.addEventListener('click', (e) => downloadOne(e.target.getAttribute('data-id')));
       });
+      document.querySelectorAll('.preview-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => previewOne(
+            e.target.getAttribute('data-id'),
+            e.target.getAttribute('data-name'),
+            e.target.getAttribute('data-ct')
+          ));
+      });
+
+      // Wire up checkbox changes to persist selection
+      document.querySelectorAll('.rowCheck').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = e.target.getAttribute('data-id');
+          if (e.target.checked) state.selectedIds.add(String(id));
+          else state.selectedIds.delete(String(id));
+        });
+      });
+
+      renderPager();
+      el('listStatus').textContent = `Loaded ${total} items. Page ${state.currentPage} of ${pages}.`;
+    }
+
+    function renderPager() {
+      const total = state.listItems.length;
+      const pages = Math.max(1, Math.ceil(total / state.pageSize));
+      const pager = el('pager');
+      const disPrev = state.currentPage <= 1 ? 'disabled' : '';
+      const disNext = state.currentPage >= pages ? 'disabled' : '';
+      pager.innerHTML = `
+        <div class="pager">
+          <button id="pagePrev" class="secondary" ${disPrev}>Prev</button>
+          <span class="small">Page ${state.currentPage} of ${pages}</span>
+          <button id="pageNext" class="secondary" ${disNext}>Next</button>
+        </div>
+      `;
+      const prev = document.getElementById('pagePrev');
+      const next = document.getElementById('pageNext');
+      if (prev) prev.addEventListener('click', () => { if (state.currentPage > 1) { state.currentPage--; renderTable(); } });
+      if (next) next.addEventListener('click', () => { const p = Math.max(1, Math.ceil(total / state.pageSize)); if (state.currentPage < p) { state.currentPage++; renderTable(); } });
     }
 
     async function downloadOne(id) {
         const baseUrl = el('baseUrl').value.trim();
-        try {
-            // Get SAS URL
-            const res = await fetch(`${baseUrl}/api/files/${id}`, { headers: headers(), mode: 'cors' });
-            if (!res.ok) throw new Error(`Get failed: ${res.status}`);
-            const data = await res.json();
-            const url = data.downloadUrl || data.DownloadUrl; // Case sensitivity check
-            if (url) {
-                window.open(url, '_blank');
-            } else {
-                alert('No download URL returned');
-            }
-        } catch (err) {
-            alert('Download error: ' + err.message);
+      try {
+        const data = await getReadSas(baseUrl, id);
+        const url = data.downloadUrl || data.DownloadUrl;
+        if (url) {
+          window.open(url, '_blank');
+        } else {
+          alert('No download URL returned');
         }
+      } catch (err) {
+        alert('Download error: ' + err.message);
+      }
+    }
+
+    async function getReadSas(baseUrl, id) {
+      const res = await fetch(`${baseUrl}/api/files/${id}`, { headers: headers(), mode: 'cors' });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Get failed: ${res.status} ${text}`);
+      }
+      return await res.json();
+    }
+
+    async function previewOne(id, nameFromRow, ctFromRow) {
+      const baseUrl = el('baseUrl').value.trim();
+      try {
+        const sas = await getReadSas(baseUrl, id);
+        const url = sas.downloadUrl || sas.DownloadUrl || sas.url || sas.Url;
+        const name = nameFromRow || sas.fileName || sas.FileName || 'File';
+        const ct = ctFromRow || sas.contentType || sas.ContentType || guessContentType(name);
+
+        const overlay = el('previewOverlay');
+        const body = el('previewBody');
+        const title = el('previewTitle');
+        title.textContent = name;
+        body.innerHTML = '<div class="muted">Loading preview...</div>';
+
+        function openInTab() {
+          try { window.open(url, '_blank', 'noopener'); } catch {}
+        }
+        const btnOpen = el('btnOpenInTab');
+        btnOpen.onclick = openInTab;
+
+        let contentEl;
+        if (ct.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = name;
+          img.style.maxWidth = '100%';
+          img.style.maxHeight = '100%';
+          contentEl = img;
+        } else if (ct === 'application/pdf' || name.toLowerCase().endsWith('.pdf')) {
+          const iframe = document.createElement('iframe');
+          iframe.src = url;
+          iframe.style.width = '100%';
+          iframe.style.height = '100%';
+          iframe.setAttribute('title', name);
+          contentEl = iframe;
+        } else if (isOfficeDocument(name)) {
+          const ovUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
+          const iframe = document.createElement('iframe');
+          iframe.src = ovUrl;
+          iframe.style.width = '100%';
+          iframe.style.height = '100%';
+          iframe.setAttribute('title', name);
+          contentEl = iframe;
+        } else {
+          const iframe = document.createElement('iframe');
+          iframe.src = url;
+          iframe.style.width = '100%';
+          iframe.style.height = '100%';
+          iframe.setAttribute('title', name);
+          contentEl = iframe;
+        }
+
+            body.innerHTML = '';
+            body.appendChild(contentEl);
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
+
+      } catch (err) {
+        console.error('Preview error', err);
+        alert('Preview failed. Try Open in New Tab or Download.');
+      }
+    }
+
+    function guessContentType(name) {
+      const n = (name || '').toLowerCase();
+      if (n.endsWith('.png')) return 'image/png';
+      if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg';
+      if (n.endsWith('.gif')) return 'image/gif';
+      if (n.endsWith('.webp')) return 'image/webp';
+      if (n.endsWith('.svg')) return 'image/svg+xml';
+      if (n.endsWith('.pdf')) return 'application/pdf';
+      if (n.endsWith('.txt')) return 'text/plain';
+      if (n.endsWith('.json')) return 'application/json';
+      return 'application/octet-stream';
+    }
+
+    function isOfficeDocument(name) {
+      const n = (name || '').toLowerCase();
+      return n.endsWith('.doc') || n.endsWith('.docx') || n.endsWith('.ppt') || n.endsWith('.pptx') || n.endsWith('.xls') || n.endsWith('.xlsx');
+    }
+
+    function closePreview() {
+      const overlay = el('previewOverlay');
+      const body = el('previewBody');
+      overlay.classList.add('hidden');
+      overlay.style.display = 'none';
+      body.innerHTML = '<div class="muted">Loading preview...</div>';
+      const btnOpen = el('btnOpenInTab');
+      btnOpen.onclick = null;
     }
 
     async function downloadSelectedZip() {
       const baseUrl = el('baseUrl').value.trim();
-      const checks = Array.from(document.querySelectorAll('.rowCheck:checked'));
-      if (checks.length === 0) { el('listStatus').textContent = 'No files selected.'; return; }
-      
-      const ids = checks.map(c => c.getAttribute('data-id'));
+      const ids = Array.from(state.selectedIds);
+      if (ids.length === 0) { el('listStatus').textContent = 'No files selected.'; return; }
       el('listStatus').textContent = `Zipping ${ids.length} files...`;
       
       try {
@@ -462,12 +648,11 @@
 
     async function deleteSelected() {
       const baseUrl = el('baseUrl').value.trim();
-      const checks = Array.from(document.querySelectorAll('.rowCheck:checked'));
-      if (checks.length === 0) { el('listStatus').textContent = 'No files selected.'; return; }
-      el('listStatus').textContent = `Deleting ${checks.length} files...`;
+      const ids = Array.from(state.selectedIds);
+      if (ids.length === 0) { el('listStatus').textContent = 'No files selected.'; return; }
+      el('listStatus').textContent = `Deleting ${ids.length} files...`;
       let ok = 0, fail = 0;
-      for (const c of checks) {
-        const id = c.getAttribute('data-id');
+      for (const id of ids) {
         try {
           const res = await fetch(`${baseUrl}/api/files/${id}`, { method: 'DELETE', headers: headers(), mode: 'cors' });
           if (res.ok) ok++; else fail++;
@@ -480,7 +665,12 @@
     // Check all toggle
     el('checkAll').addEventListener('change', (e) => {
       const checked = e.target.checked;
-      document.querySelectorAll('.rowCheck').forEach(cb => cb.checked = checked);
+      document.querySelectorAll('.rowCheck').forEach(cb => {
+        cb.checked = checked;
+        const id = cb.getAttribute('data-id');
+        if (checked) state.selectedIds.add(String(id));
+        else state.selectedIds.delete(String(id));
+      });
     });
 
     // Wire buttons
@@ -489,6 +679,14 @@
     el('btnRefresh').addEventListener('click', refreshList);
     el('btnDeleteSelected').addEventListener('click', deleteSelected);
     el('btnDownloadSelected').addEventListener('click', downloadSelectedZip);
+    el('btnClosePreview').addEventListener('click', closePreview);
+    el('previewOverlay').addEventListener('click', (e) => { if (e.target === el('previewOverlay')) closePreview(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const overlay = el('previewOverlay');
+        if (!overlay.classList.contains('hidden')) closePreview();
+      }
+    });
 
     // Initial list
     // Optionally auto-load list on page ready

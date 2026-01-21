@@ -43,7 +43,8 @@ param(
     [string]$CustomDomain = "",  # e.g., "filesvc-stg-app.kaiweneducation.com"
     [string]$SubscriptionId = "",
     [string]$Location = "",
-    [string]$SqlAdminPassword = ""
+    [string]$SqlAdminPassword = "",
+    [string]$CertificatePassword = ""  # Optional: provide .pfx password non-interactively
 )
 
 Set-Variable -Name ErrorActionPreference -Value 'Stop' -Scope Script
@@ -133,10 +134,13 @@ if (-not [string]::IsNullOrWhiteSpace($Location)) {
     $resources["Location"] = $Location
 }
 
-# Set subscription if provided
+# Set subscription if provided; otherwise use settings value if present
 if (-not [string]::IsNullOrWhiteSpace($SubscriptionId)) {
     Write-Host "Setting Azure subscription: $SubscriptionId"
     az account set --subscription $SubscriptionId
+} elseif (-not [string]::IsNullOrWhiteSpace($resources["SubscriptionId"])) {
+    Write-Host "Setting Azure subscription from settings: $($resources["SubscriptionId"])"
+    az account set --subscription $resources["SubscriptionId"]
 }
 
 # ============================================================================
@@ -376,7 +380,7 @@ if ($Environment -eq "Production" -and $PromoteFromStaging) {
     # Run EF Migrations
     Write-Host "Creating migration bundle..."
     $env:Persistence__ForceEf="true"
-    dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o "$publishDir/efbundle.exe" --verbose
+    dotnet ef migrations bundle -p src/FileService.Infrastructure/FileService.Infrastructure.csproj -s src/FileService.Api/FileService.Api.csproj -o "$publishDir/efbundle.exe" --force --verbose
     $env:Persistence__ForceEf="false"
     
     # Create deployment package
@@ -565,10 +569,36 @@ if ($ConfigureCustomDomain) {
     # Step 3: Check if SSL certificate exists for the domain
     Write-Host ""
     Write-Host "Step 5: Checking SSL certificate status..." -ForegroundColor Cyan
+    
+    # Check if we have a .pfx file to import
+    $certFolder = Join-Path (Split-Path -Parent $PSScriptRoot) "certificates"
+    $shouldReplaceCert = $false
+    
+    if (Test-Path $certFolder) {
+        $preferredPfxName = $resources["CertificatePfxFileName"]
+        $pfxFile = $null
+
+        if (-not [string]::IsNullOrWhiteSpace($preferredPfxName)) {
+            $candidatePath = Join-Path $certFolder $preferredPfxName
+            if (Test-Path $candidatePath) {
+                $pfxFile = Get-Item $candidatePath
+                $shouldReplaceCert = $true
+            }
+        }
+
+        if (-not $pfxFile) {
+            $pfxFiles = Get-ChildItem -Path $certFolder -Filter "*.pfx" -ErrorAction SilentlyContinue
+            if ($pfxFiles -and $pfxFiles.Count -gt 0) {
+                $pfxFile = $pfxFiles | Select-Object -First 1
+                $shouldReplaceCert = $true
+            }
+        }
+    }
+    
     $certificates = az webapp config ssl list --resource-group $resourceGroup -o json | ConvertFrom-Json
     $existingCert = $certificates | Where-Object { $_.hostNames -contains $CustomDomain }
     
-    if ($existingCert) {
+    if ($existingCert -and -not $shouldReplaceCert) {
         Write-Host "✓ SSL certificate already exists for $CustomDomain" -ForegroundColor Green
         Write-Host "  Thumbprint: $($existingCert.thumbprint)" -ForegroundColor Gray
         
@@ -594,272 +624,129 @@ if ($ConfigureCustomDomain) {
             }
         }
     } else {
-        # Step 4: Create managed SSL certificate
-        Write-Host "No SSL certificate found, creating managed certificate..." -ForegroundColor Yellow
-        Write-Host "This may take 2-3 minutes..." -ForegroundColor Yellow
-        
-        # Suppress warning messages from Azure CLI about preview features
-        $oldErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        
-        $result = az webapp config ssl create `
-            --name $webAppName `
-            --resource-group $resourceGroup `
-            --hostname $CustomDomain `
-            2>&1 | Where-Object { $_ -notmatch 'WARNING:' }
-        
-        $ErrorActionPreference = $oldErrorActionPreference
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "Error creating managed SSL certificate:" -ForegroundColor Red
-            Write-Host $result -ForegroundColor Red
+        # Import/replace certificate from .pfx file
+        if ($existingCert -and $shouldReplaceCert) {
+            Write-Host "Existing certificate found - will replace with new certificate from .pfx file" -ForegroundColor Yellow
+            Write-Host "  Current Thumbprint: $($existingCert.thumbprint)" -ForegroundColor Gray
             
-            # Use smart detection logic to see if it's a validation error vs support error
-            if ($result -match "Hostname not found" -or $result -match "DNS" -or $result -match "validation") {
-                 Write-Host ""
-                 Write-Host "❌ Validation Failed: The managed certificate could not be created because validation failed." -ForegroundColor Red
-                 Write-Host "   This usually means DNS records haven't propagated yet." -ForegroundColor Yellow
-                 Write-Host "   Managed SSL IS supported in this region, but requires correct DNS setup." -ForegroundColor Yellow
-                 Write-Host ""
-                 Write-Host "Options:" -ForegroundColor Cyan
-                 Write-Host "1. Wait 10-15 minutes and try again (Recommended)" -ForegroundColor White
-                 Write-Host "2. Fallback to self-signed certificate (Not secure in browsers)" -ForegroundColor White
-                 
-                 $choice = Read-Host "Enter choice (1/2)"
-                 if ($choice -ne "2") {
-                     Write-Host "Exiting so you can retry later."
-                     exit 1
-                 }
-            } else {
-                 Write-Host ""
-                 Write-Host "⚠️  Unknown error or feature not supported." -ForegroundColor Yellow
-                 Write-Host "Attempting fallback..." -ForegroundColor Yellow
-            }
-            
-            # Fallback: Create self-signed certificate in Key Vault
-            Write-Host "Attempting fallback: Creating self-signed certificate in Key Vault..." -ForegroundColor Cyan
-            Write-Host "This certificate will work for HTTPS but browsers will show warnings." -ForegroundColor Yellow
-            Write-Host ""
-            
-            $keyVaultName = $resources["KeyVaultName"]
-            $certName = $CustomDomain.Replace(".", "-")
-            
-            # Step 4a: Check if certificate already exists in Key Vault
-            Write-Host "Checking for existing certificate in Key Vault ($keyVaultName)..." -ForegroundColor Gray
-            $certExists = $false
-            try {
-                # Temporarily relax error action to handle 'Received 404' cleanly
-                $oldEAP = $ErrorActionPreference
-                $ErrorActionPreference = "Continue"
-                
-                $existingKvCert = az keyvault certificate show --vault-name $keyVaultName --name $certName 2>&1
-                if ($LASTEXITCODE -eq 0) {
-                    $certExists = $true
-                }
-                $ErrorActionPreference = $oldEAP
-            } catch {
-                $ErrorActionPreference = $oldEAP
-                $certExists = $false
-            }
-
-            if ($certExists) {
-                Write-Host "✓ Certificate already exists in Key Vault: $certName" -ForegroundColor Green
-            } else {
-                Write-Host "Creating self-signed certificate in Key Vault..." -ForegroundColor Cyan
-                
-                # Create certificate policy
-                $policy = @{
-                    "issuerParameters" = @{
-                        "name" = "Self"
-                    }
-                    "keyProperties" = @{
-                        "exportable" = $true
-                        "keyType" = "RSA"
-                        "keySize" = 2048
-                        "reuseKey" = $true
-                    }
-                    "lifetimeActions" = @(
-                        @{
-                            "action" = @{
-                                "actionType" = "AutoRenew"
-                            }
-                            "trigger" = @{
-                                "daysBeforeExpiry" = 90
-                            }
-                        }
-                    )
-                    "secretProperties" = @{
-                        "contentType" = "application/x-pkcs12"
-                    }
-                    "x509CertificateProperties" = @{
-                        "subject" = "CN=$CustomDomain"
-                        "subjectAlternativeNames" = @{
-                            "dnsNames" = @($CustomDomain)
-                        }
-                        "keyUsage" = @("digitalSignature", "keyEncipherment")
-                        "validityInMonths" = 12
-                    }
-                } | ConvertTo-Json -Depth 10
-                
-                $policyFile = [System.IO.Path]::GetTempFileName() + ".json"
-                $policy | Out-File -FilePath $policyFile -Encoding UTF8
-                
-                try {
-                    az keyvault certificate create `
-                        --vault-name $keyVaultName `
-                        --name $certName `
-                        --policy "@$policyFile" `
-                        2>&1 | Out-Null
-                    
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Host "✓ Self-signed certificate created in Key Vault" -ForegroundColor Green
-                        
-                        # Wait for certificate to be ready
-                        Write-Host "Waiting for certificate to be ready..." -ForegroundColor Gray
-                        $maxWait = 30
-                        $waited = 0
-                        while ($waited -lt $maxWait) {
-                            Start-Sleep -Seconds 2
-                            $waited += 2
-                            $certStatus = az keyvault certificate show --vault-name $keyVaultName --name $certName --query "attributes.enabled" -o tsv 2>&1
-                            if ($certStatus -eq "true") {
-                                Write-Host "✓ Certificate is ready" -ForegroundColor Green
-                                break
-                            }
-                        }
-                    } else {
-                        Write-Host "Warning: Failed to create certificate in Key Vault" -ForegroundColor Yellow
-                    }
-                } finally {
-                    Remove-Item -Path $policyFile -Force -ErrorAction SilentlyContinue
-                }
-            }
-            
-            # Step 4b: Import certificate from Key Vault to App Service
-            Write-Host ""
-            Write-Host "Step 6: Importing certificate from Key Vault to App Service..." -ForegroundColor Cyan
-            
-            $kvCertId = az keyvault certificate show --vault-name $keyVaultName --name $certName --query "id" -o tsv
-            if ([string]::IsNullOrWhiteSpace($kvCertId)) {
-                Write-Host "Error: Could not get certificate ID from Key Vault" -ForegroundColor Red
-                Write-Host ""
-                Write-Host "Manual steps required:" -ForegroundColor Yellow
-                Write-Host "1. Go to Azure Portal → Key Vault → Certificates" -ForegroundColor White
-                Write-Host "2. Create or upload a certificate for $CustomDomain" -ForegroundColor White
-                Write-Host "3. Go to App Service → Certificates → Import from Key Vault" -ForegroundColor White
-                Write-Host "4. Select the certificate and bind it to the custom domain" -ForegroundColor White
-                exit 0
-            }
-            
-            Write-Host "Certificate ID: $kvCertId" -ForegroundColor Gray
-            
-            # Import certificate to App Service using Key Vault reference
-            try {
-                $oldEAP = $ErrorActionPreference
-                $ErrorActionPreference = "Continue" # Don't stop on warnings
-                
-                $importResult = az webapp config ssl import `
-                    --name $webAppName `
-                    --resource-group $resourceGroup `
-                    --key-vault $keyVaultName `
-                    --key-vault-certificate-name $certName `
-                    2>&1
-                
-                $success = $LASTEXITCODE -eq 0
-                $ErrorActionPreference = $oldEAP
-            } catch {
-                $ErrorActionPreference = $oldEAP
-                $success = $false
-                $importResult = $_
-            }
-            
-            if (-not $success) {
-                # Check if it was just a warning that caused non-zero exit or stderr output
-                if ($importResult -match "WARNING" -and $importResult -match "permissions") {
-                     Write-Host "Received warning about permissions but continuing check..." -ForegroundColor Gray
-                } else {
-                    Write-Host "Warning: Failed to import certificate from Key Vault" -ForegroundColor Yellow
-                    Write-Host $importResult -ForegroundColor Gray
-                    Write-Host ""
-                    Write-Host "This might be due to permissions. Manual import required:" -ForegroundColor Yellow
-                    Write-Host "1. Go to Azure Portal → App Service → Certificates" -ForegroundColor White
-                    Write-Host "2. Click 'Import from Key Vault'" -ForegroundColor White
-                    Write-Host "3. Select Key Vault: $keyVaultName" -ForegroundColor White
-                    Write-Host "4. Select Certificate: $certName" -ForegroundColor White
-                    exit 0
-                }
-            }
-            
-            Write-Host "✓ Certificate imported from Key Vault" -ForegroundColor Green
-            
-            # Step 4c: Get the thumbprint and bind
-            Write-Host ""
-            Write-Host "Step 7: Binding certificate to custom domain..." -ForegroundColor Cyan
-            
-            Start-Sleep -Seconds 2  # Give Azure time to process the import
-            
-            $importedCert = az webapp config ssl list `
-                --resource-group $resourceGroup `
-                -o json | ConvertFrom-Json | Where-Object { $_.name -like "*$certName*" } | Select-Object -First 1
-            
-            if ($null -eq $importedCert) {
-                Write-Host "Warning: Certificate imported but not found in App Service" -ForegroundColor Yellow
-                Write-Host "Please bind manually via Azure Portal" -ForegroundColor Yellow
-                exit 0
-            }
-            
-            $thumbprint = $importedCert.thumbprint
-            Write-Host "Certificate thumbprint: $thumbprint" -ForegroundColor Gray
-            
-            az webapp config ssl bind `
+            # Unbind existing certificate
+            Write-Host "Unbinding existing certificate..." -ForegroundColor Cyan
+            az webapp config ssl unbind `
                 --name $webAppName `
                 --resource-group $resourceGroup `
-                --certificate-thumbprint $thumbprint `
-                --ssl-type SNI `
+                --certificate-thumbprint $($existingCert.thumbprint) `
                 2>&1 | Out-Null
             
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ Self-signed certificate bound successfully!" -ForegroundColor Green
-                Write-Host ""
-                Write-Host "⚠️  NOTE: This is a self-signed certificate" -ForegroundColor Yellow
-                Write-Host "   Browsers will show security warnings" -ForegroundColor Yellow
-                Write-Host "   For production, replace with a CA-signed certificate" -ForegroundColor Yellow
-            } else {
-                Write-Host "Warning: Certificate import succeeded but binding failed" -ForegroundColor Yellow
-                Write-Host "Please bind manually via Azure Portal" -ForegroundColor Yellow
+                Write-Host "✓ Existing certificate unbound" -ForegroundColor Green
             }
-            exit 0
+        } else {
+            Write-Host "No SSL certificate found on App Service." -ForegroundColor Yellow
         }
         
-        Write-Host "✓ Managed SSL certificate created successfully!" -ForegroundColor Green
-        
-        # Step 5: Bind the certificate
-        Write-Host ""
-        Write-Host "Step 5: Binding SSL certificate..." -ForegroundColor Cyan
-        
-        # Get the thumbprint of the newly created certificate
-        $certInfo = az webapp config ssl list `
-            --resource-group $resourceGroup `
-            -o json | ConvertFrom-Json | Where-Object { $_.hostNames -contains $CustomDomain } | Select-Object -First 1
-        
-        if ($null -eq $certInfo) {
-            Write-Host "Warning: Certificate was created but could not be found for binding" -ForegroundColor Yellow
-        } else {
-            $thumbprint = $certInfo.thumbprint
-            Write-Host "  Certificate thumbprint: $thumbprint" -ForegroundColor Gray
-            
-            az webapp config ssl bind `
-                --name $webAppName `
-                --resource-group $resourceGroup `
-                --certificate-thumbprint $thumbprint `
-                --ssl-type SNI `
-                2>&1 | Out-Null
-            
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ SSL certificate bound successfully!" -ForegroundColor Green
-            } else {
-                Write-Host "Warning: Certificate created but binding failed" -ForegroundColor Yellow
+        Write-Host "Locating certificate file..." -ForegroundColor Cyan
+
+        if (-not $pfxFile) {
+            Write-Host "Error: No .pfx certificate file found in certificates folder." -ForegroundColor Red
+            Write-Host "Expected location: $certFolder" -ForegroundColor Yellow
+            if (-not [string]::IsNullOrWhiteSpace($preferredPfxName)) {
+                Write-Host "Looking for file named: $preferredPfxName" -ForegroundColor Yellow
             }
+            exit 1
+        }
+
+        Write-Host "Found certificate: $($pfxFile.Name)" -ForegroundColor Green
+
+        # Determine certificate password: CLI param -> settings -> prompt
+        $certPasswordPlain = $CertificatePassword
+        if ([string]::IsNullOrWhiteSpace($certPasswordPlain)) {
+            $certPasswordPlain = $resources["CertificatePassword"]
+        }
+        if ([string]::IsNullOrWhiteSpace($certPasswordPlain)) {
+            $certPassword = Read-Host "Enter certificate password for $($pfxFile.Name)" -AsSecureString
+            $certPasswordPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($certPassword))
+        }
+
+        # Use a Key Vault-friendly certificate name (no dots)
+        $certName = ($CustomDomain -replace '\.', '-')
+        $keyVaultName = $resources["KeyVaultName"]
+
+        # Always import/replace certificate in Key Vault with current .pfx file
+        Write-Host "Importing certificate into Key Vault ($keyVaultName) as '$certName' (will replace if exists)..." -ForegroundColor Cyan
+        $kvResult = az keyvault certificate import `
+            --vault-name $keyVaultName `
+            --name $certName `
+            --file $pfxFile.FullName `
+            --password $certPasswordPlain `
+            2>&1
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error importing certificate into Key Vault:" -ForegroundColor Red
+            Write-Host $kvResult -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "✓ Certificate stored in Key Vault" -ForegroundColor Green
+
+        Write-Host "Importing certificate from Key Vault to App Service..." -ForegroundColor Cyan
+        
+        # Grant necessary Key Vault permissions for certificate import
+        Write-Host "Configuring Key Vault RBAC permissions..." -ForegroundColor Gray
+        
+        # Get the web app's managed identity principal ID
+        $webAppPrincipalId = az webapp identity show --name $webAppName --resource-group $resourceGroup --query principalId -o tsv
+        
+        # Get the Microsoft Azure App Service service principal object ID
+        $appServiceSpObjectId = az ad sp list --filter "appId eq 'abfa0a7c-a6b6-4736-8310-5855508787cd'" --query "[0].id" -o tsv
+        
+        # Get current subscription ID
+        $subscriptionId = az account show --query id -o tsv
+        $kvResourceId = "/subscriptions/$subscriptionId/resourceGroups/$resourceGroup/providers/Microsoft.KeyVault/vaults/$keyVaultName"
+        
+        # Grant Key Vault Secrets User to web app managed identity
+        Write-Host "  Granting Key Vault Secrets User to web app identity..." -ForegroundColor Gray
+        az role assignment create --assignee $webAppPrincipalId --role "Key Vault Secrets User" --scope $kvResourceId 2>&1 | Out-Null
+        
+        # Grant Key Vault Certificates Officer to web app managed identity
+        Write-Host "  Granting Key Vault Certificates Officer to web app identity..." -ForegroundColor Gray
+        az role assignment create --assignee $webAppPrincipalId --role "Key Vault Certificates Officer" --scope $kvResourceId 2>&1 | Out-Null
+        
+        # Grant Key Vault Secrets User to Microsoft Azure App Service service principal
+        Write-Host "  Granting Key Vault Secrets User to Azure App Service..." -ForegroundColor Gray
+        az role assignment create --assignee $appServiceSpObjectId --role "Key Vault Secrets User" --scope $kvResourceId 2>&1 | Out-Null
+        
+        Write-Host "Waiting 60s for RBAC propagation..." -ForegroundColor Gray
+        Start-Sleep -Seconds 60
+        
+        $thumbprint = az webapp config ssl import `
+            --name $webAppName `
+            --resource-group $resourceGroup `
+            --key-vault $keyVaultName `
+            --key-vault-certificate-name $certName `
+            --query thumbprint `
+            -o tsv `
+            2>&1
+
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($thumbprint)) {
+            Write-Host "Error importing certificate from Key Vault to App Service:" -ForegroundColor Red
+            Write-Host $thumbprint -ForegroundColor Red
+            exit 1
+        }
+        
+        Write-Host "✓ Certificate imported to App Service. Thumbprint: $thumbprint" -ForegroundColor Green
+        
+        # Bind
+        Write-Host "Binding certificate..." -ForegroundColor Cyan
+        az webapp config ssl bind `
+            --name $webAppName `
+            --resource-group $resourceGroup `
+            --certificate-thumbprint $thumbprint `
+            --ssl-type SNI `
+            2>&1 | Out-Null
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ SSL certificate bound successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "Warning: Failed to bind certificate" -ForegroundColor Yellow
         }
     }
     
@@ -898,15 +785,41 @@ if ($RunMigrations) {
     Write-Host "🗄️ Running database migrations on $Environment..." -ForegroundColor Yellow
     
     try {
-        $connectionString = az keyvault secret show --vault-name $resources["KeyVaultName"] --name "Sql__ConnectionString" --query value -o tsv
+        $connectionString = az keyvault secret show --vault-name $resources["KeyVaultName"] --name "Sql--ConnectionString" --query value -o tsv
         if ($connectionString) {
             Write-Host "Running EF migrations..."
             
             $environmentLabel = $Environment.ToLower()
-            if (Test-Path "publish-$environmentLabel/efbundle.exe") {
-                ./publish-$environmentLabel/efbundle.exe --connection $connectionString
-            } else {
+            $bundlePath = "publish-$environmentLabel/efbundle.exe"
+
+            if (-not (Test-Path $bundlePath)) {
                 Write-Error "Migration bundle not found. Deploy application first."
+                exit 1
+            }
+
+            $previousAspNetCoreEnv = $env:ASPNETCORE_ENVIRONMENT
+            $previousDotnetEnv = $env:DOTNET_ENVIRONMENT
+            $previousUseEf = $env:Persistence__UseEf
+            $previousUseSql = $env:Persistence__UseSqlServer
+            $previousSqlConn = $env:Sql__ConnectionString
+
+            $env:ASPNETCORE_ENVIRONMENT = $Environment
+            $env:DOTNET_ENVIRONMENT = $Environment
+            $env:Persistence__UseEf = "true"
+            $env:Persistence__UseSqlServer = "true"
+            $env:Sql__ConnectionString = $connectionString
+
+            & $bundlePath --connection $connectionString
+            $bundleExit = $LASTEXITCODE
+
+            $env:ASPNETCORE_ENVIRONMENT = $previousAspNetCoreEnv
+            $env:DOTNET_ENVIRONMENT = $previousDotnetEnv
+            $env:Persistence__UseEf = $previousUseEf
+            $env:Persistence__UseSqlServer = $previousUseSql
+            $env:Sql__ConnectionString = $previousSqlConn
+
+            if ($bundleExit -ne 0) {
+                Write-Error "EF migrations failed with exit code $bundleExit"
                 exit 1
             }
             

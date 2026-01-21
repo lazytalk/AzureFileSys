@@ -21,12 +21,14 @@ $envConfig = switch ($Environment) {
             "EnvSuffix" = "dev"
             "EnvLabel" = "dev"
             "Location" = "chinanorth3"
+            "SubscriptionId" = ""
             "ResourceGroup" = "KWE-RescourceGroup-ChinaNorth3-Development-FileSystem"
             "SqlTier" = "Free"
             "AppServiceSku" = "F1"
             "AppServicePlanName" = "filesvc-dev-plan"
             "PowerSchoolBaseUrl" = "https://dev-powerschool.school.edu"
             "SqlAdminPassword" = "DevPass123!"
+            "CertificatePassword" = ""
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Development"
             "BlobStorage__UseLocalStub" = "true"
@@ -40,6 +42,7 @@ $envConfig = switch ($Environment) {
             "EnvSuffix" = "stg"
             "EnvLabel" = "staging"
             "Location" = "chinanorth3"
+            "SubscriptionId" = ""
             "ResourceGroup" = "KWE-RescourceGroup-ChinaNorth3-Staging-FileSystem"
             "SqlTier" = "Basic"
             "AppServiceSku" = "B1"
@@ -47,6 +50,8 @@ $envConfig = switch ($Environment) {
             "PowerSchoolBaseUrl" = "https://test-powerschool.school.edu"
             "SqlAdminPassword" = "StagingSecurePass123!"
             "CustomDomain" = "filesvc-stg-app.kaiweneducation.com"
+            "CertificatePfxFileName" = "filesvc-stg-app.kaiweneducation.com.pfx"
+            "CertificatePassword" = "5fuutvuc"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Staging"
             "BlobStorage__UseLocalStub" = "false"
@@ -60,6 +65,7 @@ $envConfig = switch ($Environment) {
             "EnvSuffix" = "prd"
             "EnvLabel" = "prod"
             "Location" = "chinanorth3"
+            "SubscriptionId" = ""
             "ResourceGroup" = "KWE-RescourceGroup-ChinaNorth3-Production-FileSystem"
             "SqlTier" = "Standard"
             "AppServiceSku" = "P1v2"
@@ -67,6 +73,8 @@ $envConfig = switch ($Environment) {
             "PowerSchoolBaseUrl" = "https://ps.school.edu"
             "SqlAdminPassword" = "ProductionSecurePass456!"
             "CustomDomain" = "filesvc.kaiweneducation.com"
+            "CertificatePfxFileName" = "filesvc.kaiweneducation.com.pfx"
+            "CertificatePassword" = ""
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Production"
             "BlobStorage__UseLocalStub" = "false"
@@ -100,6 +108,7 @@ $resources = @{
     "EnvSuffix" = $envConfig["EnvSuffix"]
     "EnvLabel" = $envConfig["EnvLabel"]
     "Location" = $envConfig["Location"]
+    "SubscriptionId" = $envConfig["SubscriptionId"]
     "ResourceGroup" = $envConfig["ResourceGroup"]
     "SqlTier" = $envConfig["SqlTier"]
     "AppServiceSku" = $envConfig["AppServiceSku"]
@@ -114,6 +123,8 @@ $resources = @{
     "SqlDbName" = "file-service-db"
     "SqlAdminUser" = "fsadmin"
     "SqlAdminPassword" = $SqlAdminPassword
+    "CertificatePfxFileName" = $envConfig["CertificatePfxFileName"]
+    "CertificatePassword" = $envConfig["CertificatePassword"]
 }
 
 # ============================================================================

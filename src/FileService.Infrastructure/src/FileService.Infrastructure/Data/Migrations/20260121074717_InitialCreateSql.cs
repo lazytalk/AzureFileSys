@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FileService.Infrastructure.Data.Migrations
+namespace FileService.Infrastructure.src.FileService.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialCreateSql : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,13 +15,13 @@ namespace FileService.Infrastructure.Data.Migrations
                 name: "Files",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    FileName = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
-                    ContentType = table.Column<string>(type: "TEXT", nullable: false),
-                    SizeBytes = table.Column<long>(type: "INTEGER", nullable: false),
-                    OwnerUserId = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
-                    UploadedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    BlobPath = table.Column<string>(type: "TEXT", maxLength: 1024, nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    ContentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SizeBytes = table.Column<long>(type: "bigint", nullable: false),
+                    OwnerUserId = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    UploadedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    BlobPath = table.Column<string>(type: "nvarchar(1024)", maxLength: 1024, nullable: false)
                 },
                 constraints: table =>
                 {

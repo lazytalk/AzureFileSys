@@ -186,6 +186,8 @@
     async function uploadSingle() {
       resetProgress();
       const baseUrl = el('baseUrl').value.trim();
+      const userHdr = el('psUser').value.trim();
+      if (!userHdr) { el('uploadStatus').innerHTML = '<span class="error">Please enter X-PowerSchool-User.</span>'; return; }
       const file = el('singleFile').files[0];
       if (!file) { el('uploadStatus').textContent = 'Please choose a file.'; return; }
 
@@ -205,6 +207,8 @@
     async function uploadMultiple() {
       resetProgress();
       const baseUrl = el('baseUrl').value.trim();
+      const userHdr = el('psUser').value.trim();
+      if (!userHdr) { el('uploadStatus').innerHTML = '<span class="error">Please enter X-PowerSchool-User.</span>'; return; }
       const files = Array.from(el('multiFiles').files || []);
       if (files.length === 0) { el('uploadStatus').textContent = 'Please choose files.'; return; }
 

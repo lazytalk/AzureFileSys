@@ -52,6 +52,18 @@ builder.Services.AddSingleton<IFileStorageService>(sp =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// CORS: allow local test origins for staging tools
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LocalTools", policy =>
+        policy.WithOrigins(
+            "http://localhost:8080",
+            "http://localhost:9000"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 // Simple PowerSchool auth stub middleware registration
 builder.Services.AddScoped<PowerSchoolUserContext>();
 
@@ -63,6 +75,8 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
+app.UseCors("LocalTools");
+
 // Configure default files (serves index.html when accessing root /)
 app.UseDefaultFiles(new DefaultFilesOptions
 {
@@ -72,6 +86,14 @@ app.UseStaticFiles();
 
 app.Use(async (ctx, next) =>
 {
+    // Preflight (CORS) - allow without auth
+    if (string.Equals(ctx.Request.Method, HttpMethods.Options, StringComparison.OrdinalIgnoreCase))
+    {
+        ctx.Response.StatusCode = 200;
+        await ctx.Response.CompleteAsync();
+        return;
+    }
+
     // Skip authentication for Swagger, static files, and health checks
     if (ctx.Request.Path.StartsWithSegments("/swagger") || 
         ctx.Request.Path.StartsWithSegments("/_framework") ||

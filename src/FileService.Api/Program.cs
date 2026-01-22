@@ -1,6 +1,9 @@
 using FileService.Core.Interfaces;
 using FileService.Infrastructure.Storage;
 using FileService.Infrastructure.Data;
+using FileService.Api.Middleware;
+using FileService.Api.Models;
+using FileService.Api.Services;
 using Azure.Data.Tables;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
@@ -9,6 +12,13 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// HMAC shared secret for request signature validation
+var hmacSecret = builder.Configuration.GetValue<string>("Security:HmacSharedSecret");
+if (string.IsNullOrWhiteSpace(hmacSecret))
+{
+    Console.WriteLine("[STARTUP WARNING] HMAC shared secret not configured. API requests will not be validated!");
+}
 
 // Services - Configure metadata persistence
 var persistenceType = builder.Configuration.GetValue("Persistence:Type", "InMemory"); // InMemory, TableStorage
@@ -100,6 +110,9 @@ app.UseHttpsRedirection();
 
 app.UseCors("LocalTools");
 
+// HMAC authentication middleware
+app.UseMiddleware<HmacAuthenticationMiddleware>();
+
 // Configure default files (serves index.html when accessing root /)
 app.UseDefaultFiles(new DefaultFilesOptions
 {
@@ -109,29 +122,8 @@ app.UseStaticFiles();
 
 app.Use(async (ctx, next) =>
 {
-    // Preflight (CORS) - allow without auth
-    if (string.Equals(ctx.Request.Method, HttpMethods.Options, StringComparison.OrdinalIgnoreCase))
-    {
-        ctx.Response.StatusCode = 200;
-        await ctx.Response.CompleteAsync();
-        return;
-    }
-
-    // Skip authentication for Swagger, static files, and health checks
-    if (ctx.Request.Path.StartsWithSegments("/swagger") || 
-        ctx.Request.Path.StartsWithSegments("/_framework") ||
-        ctx.Request.Path.StartsWithSegments("/_vs") ||
-        ctx.Request.Path.StartsWithSegments("/api/health") ||
-        ctx.Request.Path.StartsWithSegments("/dev/powerschool") ||
-        ctx.Request.Path.Value?.EndsWith(".html") == true ||
-        ctx.Request.Path.Value?.EndsWith(".css") == true ||
-        ctx.Request.Path.Value?.EndsWith(".js") == true)
-    {
-        await next();
-        return;
-    }
-
     var userCtx = ctx.RequestServices.GetRequiredService<PowerSchoolUserContext>();
+    
     // Dev shortcut: allow ?devUser=xxx
     if (isDevMode && ctx.Request.Query.TryGetValue("devUser", out var devUser))
     {
@@ -141,6 +133,7 @@ app.Use(async (ctx, next) =>
         return;
     }
 
+    // PowerSchool identity headers
     if (!ctx.Request.Headers.TryGetValue("X-PowerSchool-User", out var userHeader) || string.IsNullOrWhiteSpace(userHeader))
     {
         ctx.Response.StatusCode = 401;
@@ -677,81 +670,3 @@ app.MapDelete("/api/files/download-zip/{jobId:guid}", async (
 });
 
 app.Run();
-
-public class PowerSchoolUserContext
-{
-    public string UserId { get; set; } = string.Empty;
-    public string Role { get; set; } = "user";
-    public bool IsAdmin => Role.Equals("admin", StringComparison.OrdinalIgnoreCase);
-}
-
-public class BeginUploadRequest
-{
-    public string FileName { get; set; } = string.Empty;
-    public string? ContentType { get; set; }
-    public long SizeBytes { get; set; }
-}
-
-// Periodic sweep that deletes exported zip blobs older than 2 hours
-public class ExportCleanupService : Microsoft.Extensions.Hosting.BackgroundService
-{
-    private readonly FileService.Core.Interfaces.IFileStorageService _storage;
-    private readonly Microsoft.Extensions.Logging.ILogger<ExportCleanupService> _logger;
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(10);
-
-    public ExportCleanupService(
-        FileService.Core.Interfaces.IFileStorageService storage,
-        Microsoft.Extensions.Logging.ILogger<ExportCleanupService> logger)
-    {
-        _storage = storage;
-        _logger = logger;
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            var cutoff = DateTimeOffset.UtcNow.AddHours(-2);
-            try
-            {
-                var items = await _storage.ListAsync("exports/", stoppingToken);
-                foreach (var item in items)
-                {
-                    if (item.LastModified.HasValue && item.LastModified.Value < cutoff)
-                    {
-                        try
-                        {
-                            await _storage.DeleteAsync(item.Path, stoppingToken);
-                            _logger.LogInformation("[ExportCleanup] Deleted expired export {Path}", item.Path);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "[ExportCleanup] Failed to delete {Path}", item.Path);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[ExportCleanup] Sweep failed");
-            }
-
-            try
-            {
-                await Task.Delay(_interval, stoppingToken);
-            }
-            catch (TaskCanceledException) { }
-        }
-    }
-}
-
-public class ZipJobStatus
-{
-    public string Status { get; set; } = "Processing"; 
-    public string? DownloadUrl { get; set; }
-    public string? Error { get; set; }
-    public string? Progress { get; set; }
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset ExpiresAt { get; set; } = DateTimeOffset.UtcNow.AddHours(2);
-    public string? BlobPath { get; set; }
-}

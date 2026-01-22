@@ -111,6 +111,7 @@ $resources = @{
     "TableName" = $envConfig["TableName"]
     "CertificatePfxFileName" = $envConfig["CertificatePfxFileName"]
     "CertificatePassword" = $envConfig["CertificatePassword"]
+    "HmacSharedSecret" = "abcdefg"  # Leave empty to auto-generate; or provide a Base64 secret
 }
 
 # ============================================================================

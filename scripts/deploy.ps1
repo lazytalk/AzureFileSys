@@ -271,6 +271,16 @@ if ($CreateResources) {
     az keyvault secret set --vault-name $keyVaultName -n "PowerSchool--BaseUrl" --value $resources["PowerSchoolBaseUrl"] > $null
     az keyvault secret set --vault-name $keyVaultName -n "PowerSchool--ApiKey" --value "$envLabel-api-key-placeholder" > $null
     
+    # Set or update HMAC shared secret for API request signature validation
+    $hmacSecret = $resources["HmacSharedSecret"]
+    if ([string]::IsNullOrWhiteSpace($hmacSecret)) {
+        # Generate a random 32-byte secret if not provided
+        $hmacSecret = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+        Write-Host "Generated new HMAC shared secret" -ForegroundColor Yellow
+    }
+    az keyvault secret set --vault-name $keyVaultName -n "Security--HmacSharedSecret" --value $hmacSecret > $null
+    Write-Host "✓ HMAC shared secret configured" -ForegroundColor Green
+    
     # Create App Service
     if (Test-ResourceExists "az appservice plan show -n $appServicePlanName -g $resourceGroup") {
         Write-Host "Using existing App Service Plan: $appServicePlanName" -ForegroundColor Gray
@@ -312,6 +322,7 @@ if ($CreateResources) {
     $finalSettings["ApplicationInsights__InstrumentationKey"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=ApplicationInsights--InstrumentationKey)"
     $finalSettings["PowerSchool__BaseUrl"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--BaseUrl)"
     $finalSettings["PowerSchool__ApiKey"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=PowerSchool--ApiKey)"
+    $finalSettings["Security__HmacSharedSecret"] = "@Microsoft.KeyVault(VaultName=$keyVaultName;SecretName=Security--HmacSharedSecret)"
 
     $json = $finalSettings | ConvertTo-Json -Compress
     # Escape double quotes for shell compatibility (Windows argument passing)

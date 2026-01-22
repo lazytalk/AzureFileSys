@@ -2,16 +2,17 @@
     "version": "0.2.0",
     "configurations": [
               {
-            "name": "Dev: API + Health",
+            "name": "Build and Launch",
             "type": "coreclr",
             "request": "launch",
+                "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/FileService.Api/bin/Debug/net9.0/FileService.Api.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
             "serverReadyAction": {
                 "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
-                "uriFormat": "%s/swagger?devUser=testuser",
+                    "uriFormat": "%s/index.html",
                 "action": "openExternally"
             },
             "env": {

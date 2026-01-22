@@ -136,104 +136,64 @@
 <body>
     <div class="container">
         <h1>🗂️ File Service API</h1>
-        <p class="subtitle">Azure-backed file storage and management service</p>
-        <span class="status" id="status">⏳ Checking...</span>
-        
-        <div class="links">
-            <a href="/api/health/check" class="link-button" id="healthLink">
+        <p class="subtitle">Lightweight landing page and Quick Start</p>
+        <span class="status">✅ Service is Running</span>
+
+        <div class="links" style="margin-top: 16px;">
+            <a href="/api/health/check" class="link-button">
                 <div>
-                    <div class="link-title">Health Check</div>
-                    <div class="link-desc">View system status and diagnostics</div>
+                    <div class="link-title">Status Page</div>
+                    <div class="link-desc">JSON health diagnostics</div>
                 </div>
                 <span class="arrow">→</span>
             </a>
-            
-            <a href="/swagger" class="link-button" id="swaggerLink">
+
+            <a href="/swagger/index.html" class="link-button">
                 <div>
-                    <div class="link-title">API Documentation</div>
-                    <div class="link-desc">Interactive Swagger/OpenAPI docs</div>
+                    <div class="link-title">Documentation</div>
+                    <div class="link-desc">Swagger/OpenAPI docs</div>
                 </div>
                 <span class="arrow">→</span>
             </a>
-            
-            <a href="/health.html" class="link-button">
+
+            <a href="mailto:support@non-support.com" class="link-button">
                 <div>
-                    <div class="link-title">Health Monitor</div>
-                    <div class="link-desc">Real-time health monitoring dashboard</div>
+                    <div class="link-title">Support</div>
+                    <div class="link-desc">Contact the service team</div>
                 </div>
                 <span class="arrow">→</span>
             </a>
         </div>
-        
-        <div class="info">
-            <h3>📋 Available Endpoints</h3>
-            <div class="endpoints">
-                <div class="endpoint">
-                    <span class="method post">POST</span>
-                    <span class="path">/api/files/begin-upload</span>
-                </div>
-                <div class="endpoint">
-                    <span class="method put">PUT</span>
-                    <span class="path">(Direct to Blob via SAS)</span>
-                </div>
-                <div class="endpoint">
-                    <span class="method post">POST</span>
-                    <span class="path">/api/files/complete-upload/{id}</span>
-                </div>
-                <div class="endpoint">
-                    <span class="method get">GET</span>
-                    <span class="path">/api/files</span>
-                </div>
-                <div class="endpoint">
-                    <span class="method get">GET</span>
-                    <span class="path">/api/files/{id}</span>
-                </div>
-                <div class="endpoint">
-                    <span class="method delete">DELETE</span>
-                    <span class="path">/api/files/{id}</span>
-                </div>
-            </div>
-            <p style="margin-top: 15px;">
-                <strong>Authentication:</strong> All file endpoints require <code>X-PowerSchool-User</code> and <code>X-PowerSchool-Role</code> headers.
+
+        <div class="info" style="margin-top: 20px;">
+            <h3>🔑 Authentication (3 steps)</h3>
+            <p>
+                1) Include <code>X-PowerSchool-User</code> and <code>X-PowerSchool-Role</code> headers<br/>
+                2) Roles: <code>admin</code> can access all; regular users access their own files<br/>
+                3) Dev shortcut: append <code>?devUser=testuser</code> to requests in Development
             </p>
         </div>
+
+        <div class="info" style="margin-top: 20px;">
+            <h3>🚀 Quick cURL Test</h3>
+            <p>Copy-paste to verify your connection:</p>
+            <pre style="white-space: pre-wrap; background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:6px; color:#0f172a;">
+curl -i http://localhost:5090/api/files?all=false \
+  -H "X-PowerSchool-User=testuser" \
+  -H "X-PowerSchool-Role=admin"
+            </pre>
+        </div>
+
+        <div class="info" style="margin-top: 20px;">
+            <h3>📋 Core Endpoints</h3>
+            <div class="endpoints">
+                <div class="endpoint"><span class="method post">POST</span><span class="path">/api/files/begin-upload</span></div>
+                <div class="endpoint"><span class="method post">POST</span><span class="path">/api/files/complete-upload/{id}</span></div>
+                <div class="endpoint"><span class="method get">GET</span><span class="path">/api/files</span></div>
+                <div class="endpoint"><span class="method get">GET</span><span class="path">/api/files/{id}</span></div>
+                <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/api/files/{id}</span></div>
+            </div>
+        </div>
     </div>
-
-    <script>
-        // Check health status on load
-        async function checkHealth() {
-            const statusEl = document.getElementById('status');
-            const healthLink = document.getElementById('healthLink');
-            const swaggerLink = document.getElementById('swaggerLink');
-            
-            try {
-                const response = await fetch('/api/health/check');
-                if (response.ok) {
-                    statusEl.textContent = '✅ Service Online';
-                    statusEl.style.background = '#10b981';
-                } else {
-                    statusEl.textContent = '⚠️ Service Degraded';
-                    statusEl.style.background = '#f59e0b';
-                }
-            } catch (error) {
-                statusEl.textContent = '❌ Service Offline';
-                statusEl.style.background = '#ef4444';
-            }
-
-            // Check if Swagger is available
-            try {
-                const swaggerResponse = await fetch('/swagger/index.html');
-                if (!swaggerResponse.ok) {
-                    swaggerLink.style.opacity = '0.5';
-                    swaggerLink.querySelector('.link-desc').textContent = 'Not available in production';
-                }
-            } catch (error) {
-                swaggerLink.style.opacity = '0.5';
-                swaggerLink.querySelector('.link-desc').textContent = 'Not available in production';
-            }
-        }
-
-        checkHealth();
-    </script>
 </body>
 </html>

@@ -58,45 +58,6 @@
                 "focus": false
             }
         },
-        {
-            "label": "dev-build-and-start",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "build",
-                "${workspaceFolder}/src/FileService.Api/FileService.Api.csproj",
-                "-c",
-                "Debug"
-            ],
-            "problemMatcher": "$msCompile",
-            "runOptions": {
-                "runOn": "folderOpen"
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "clear": true,
-                "showReuseMessage": false,
-                "focus": false
-            }
-        },
-        {
-            "label": "dev-build-and-open-health",
-            "dependsOn": ["dev-build-and-start"],
-            "command": "powershell",
-            "type": "shell",
-            "args": [
-                "-Command",
-                "Start-Process powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-Command','Start-Sleep -Seconds 3; Start-Process http://localhost:5090/health.html'"
-            ],
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "clear": true,
-                "showReuseMessage": false,
-                "focus": false
-            }
-        }
+        
     ]
 }

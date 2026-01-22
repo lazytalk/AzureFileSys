@@ -45,7 +45,7 @@ $envConfig = switch ($Environment) {
             "CustomDomain" = "filesvc-stg-app.kaiweneducation.com"
             "CertificatePfxFileName" = "filesvc-stg-app.kaiweneducation.com.pfx"
             "CertificatePassword" = "5fuutvuc"
-            "CorsAllowedOrigins" = "https://ps1.kaiwenacademy.cn;https://filesvc-stg-app.kaiweneducation.com"
+            "CorsAllowedOrigins" = "https://ps1.kaiwenacademy.cn;https://filesvc-stg-app.kaiweneducation.com;http://localhost:3000;http://localhost:5090;http://localhost:8080;http://localhost:5173"
             "TableName" = "FileMetadata"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Staging"

@@ -80,6 +80,9 @@ builder.Services.AddCors(options =>
 // Simple PowerSchool auth stub middleware registration
 builder.Services.AddScoped<PowerSchoolUserContext>();
 
+// Background cleanup service for exported zip files
+builder.Services.AddHostedService<ExportCleanupService>();
+
 // Simple in-memory job tracker for zip generation
 var zipJobs = new System.Collections.Concurrent.ConcurrentDictionary<Guid, ZipJobStatus>();
 
@@ -347,98 +350,7 @@ app.MapGet("/api/health/check", async (HttpContext ctx, CancellationToken ct) =>
     return Results.Ok(new { checks });
 });
 
-async Task<object> TestEndpoint(string name, string method, string url, HttpContext ctx, CancellationToken ct)
-{
-    var sw = System.Diagnostics.Stopwatch.StartNew();
-    try
-    {
-        using var http = new HttpClient();
-        http.Timeout = TimeSpan.FromSeconds(5);
-        
-        // Add dev user to bypass auth
-        http.DefaultRequestHeaders.Add("X-PowerSchool-User", "healthcheck");
-        http.DefaultRequestHeaders.Add("X-PowerSchool-Role", "admin");
-        
-        HttpResponseMessage response;
-        if (method == "POST" && url.EndsWith("/api/files/upload", StringComparison.OrdinalIgnoreCase))
-        {
-            // Compose multipart/form-data with a small test file from wwwroot
-            var env = ctx.RequestServices.GetRequiredService<IWebHostEnvironment>();
-            var testFilePath = Path.Combine(env.WebRootPath ?? string.Empty, "health-test.txt");
-            byte[] data;
-            string fileName = "health-test.txt";
-            if (!File.Exists(testFilePath))
-            {
-                data = Encoding.UTF8.GetBytes("health upload from server check\n");
-            }
-            else
-            {
-                data = await File.ReadAllBytesAsync(testFilePath, ct);
-            }
-
-            using var form = new MultipartFormDataContent();
-            var fileContent = new ByteArrayContent(data);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-            form.Add(fileContent, "file", fileName);
-            response = await http.PostAsync(url, form, ct);
-        }
-        else if (method == "POST")
-        {
-            // Generic POST probe
-            response = await http.PostAsync(url, new StringContent(string.Empty), ct);
-        }
-        else if (method == "GET")
-        {
-            response = await http.GetAsync(url, ct);
-        }
-        else if (method == "DELETE")
-        {
-            response = await http.DeleteAsync(url, ct);
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unsupported method: {method}");
-        }
-        
-        sw.Stop();
-        
-        // Determine status based on response
-        string status = response.StatusCode switch
-        {
-            System.Net.HttpStatusCode.OK => "healthy",
-            System.Net.HttpStatusCode.Created => "healthy",
-            System.Net.HttpStatusCode.Accepted => "healthy",
-            System.Net.HttpStatusCode.NoContent => "healthy",
-            System.Net.HttpStatusCode.NotFound => "healthy", // 404 is OK for test endpoints
-            System.Net.HttpStatusCode.Forbidden or 
-            System.Net.HttpStatusCode.Unauthorized => "warning", // Auth issues but service is up
-            _ => "unhealthy"
-        };
-        
-        return new 
-        { 
-            name,
-            status,
-            message = $"{response.StatusCode} ({(int)response.StatusCode})",
-            responseTime = sw.ElapsedMilliseconds
-        };
-    }
-    catch (HttpRequestException ex)
-    {
-        sw.Stop();
-        return new { name, status = "unhealthy", message = $"Connection failed: {ex.Message}", responseTime = sw.ElapsedMilliseconds };
-    }
-    catch (OperationCanceledException)
-    {
-        sw.Stop();
-        return new { name, status = "unhealthy", message = "Request timeout (>5s)", responseTime = sw.ElapsedMilliseconds };
-    }
-    catch (Exception ex)
-    {
-        sw.Stop();
-        return new { name, status = "unhealthy", message = $"Error: {ex.Message}", responseTime = sw.ElapsedMilliseconds };
-    }
-}
+// (Removed) Unused local function 'TestEndpoint'
 
 // Map Endpoints (initial version; can be moved to controllers or Minimal APIs kept)
 app.MapPost("/api/files/begin-upload", async (
@@ -738,6 +650,7 @@ app.MapGet("/api/files/download-zip/{jobId:guid}", (Guid jobId) =>
     if (zipJobs.TryGetValue(jobId, out var job))
         return Results.Ok(job);
     return Results.NotFound(new { Error = "Job not found" });
+});
 
 // Cleanup Job (call after user downloads to save storage costs)
 app.MapDelete("/api/files/download-zip/{jobId:guid}", async (
@@ -760,7 +673,6 @@ app.MapDelete("/api/files/download-zip/{jobId:guid}", async (
     }
     return Results.NotFound();
 });
-});
 
 app.Run();
 
@@ -776,6 +688,59 @@ public class BeginUploadRequest
     public string FileName { get; set; } = string.Empty;
     public string? ContentType { get; set; }
     public long SizeBytes { get; set; }
+}
+
+// Periodic sweep that deletes exported zip blobs older than 2 hours
+public class ExportCleanupService : Microsoft.Extensions.Hosting.BackgroundService
+{
+    private readonly FileService.Core.Interfaces.IFileStorageService _storage;
+    private readonly Microsoft.Extensions.Logging.ILogger<ExportCleanupService> _logger;
+    private readonly TimeSpan _interval = TimeSpan.FromMinutes(10);
+
+    public ExportCleanupService(
+        FileService.Core.Interfaces.IFileStorageService storage,
+        Microsoft.Extensions.Logging.ILogger<ExportCleanupService> logger)
+    {
+        _storage = storage;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var cutoff = DateTimeOffset.UtcNow.AddHours(-2);
+            try
+            {
+                var items = await _storage.ListAsync("exports/", stoppingToken);
+                foreach (var item in items)
+                {
+                    if (item.LastModified.HasValue && item.LastModified.Value < cutoff)
+                    {
+                        try
+                        {
+                            await _storage.DeleteAsync(item.Path, stoppingToken);
+                            _logger.LogInformation("[ExportCleanup] Deleted expired export {Path}", item.Path);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "[ExportCleanup] Failed to delete {Path}", item.Path);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[ExportCleanup] Sweep failed");
+            }
+
+            try
+            {
+                await Task.Delay(_interval, stoppingToken);
+            }
+            catch (TaskCanceledException) { }
+        }
+    }
 }
 
 public class ZipJobStatus

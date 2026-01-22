@@ -1,5 +1,7 @@
 namespace FileService.Core.Interfaces;
 
+public record BlobItemInfo(string Path, DateTimeOffset? LastModified);
+
 public interface IFileStorageService
 {
     Task<string> UploadAsync(string blobPath, Stream content, string contentType, CancellationToken ct = default);
@@ -9,4 +11,5 @@ public interface IFileStorageService
     Task<string> GetWriteSasUrlAsync(string blobPath, TimeSpan ttl, CancellationToken ct = default);
     Task<long?> GetBlobSizeAsync(string blobPath, CancellationToken ct = default);
     Task<Stream> OpenWriteAsync(string blobPath, string contentType, CancellationToken ct = default);
+    Task<IReadOnlyList<BlobItemInfo>> ListAsync(string prefix, CancellationToken ct = default);
 }

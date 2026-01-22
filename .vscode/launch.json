@@ -5,7 +5,6 @@
             "name": "Dev: API + Health",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "dev-build-and-open-health",
             "program": "${workspaceFolder}/src/FileService.Api/bin/Debug/net9.0/FileService.Api.dll",
             "args": [],
             "cwd": "${workspaceFolder}",

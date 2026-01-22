@@ -3,6 +3,7 @@ using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
 using FileService.Core.Interfaces;
 using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 
 namespace FileService.Infrastructure.Storage;
 
@@ -95,5 +96,15 @@ public class AzureBlobFileStorageService : IFileStorageService
         { 
             HttpHeaders = new BlobHttpHeaders { ContentType = contentType } 
         }, cancellationToken: ct);
+    }
+
+    public async Task<IReadOnlyList<BlobItemInfo>> ListAsync(string prefix, CancellationToken ct = default)
+    {
+        var list = new List<BlobItemInfo>();
+        await foreach (var item in _container.GetBlobsAsync(BlobTraits.None, BlobStates.None, prefix, ct))
+        {
+            list.Add(new BlobItemInfo(item.Name, item.Properties.LastModified));
+        }
+        return list;
     }
 }

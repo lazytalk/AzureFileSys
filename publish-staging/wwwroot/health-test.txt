@@ -1,0 +1,2 @@
+Health test file
+This is a small text file used by the health check to verify the upload endpoint works.

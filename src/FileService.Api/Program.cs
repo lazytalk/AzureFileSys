@@ -1,7 +1,6 @@
 using FileService.Core.Interfaces;
 using FileService.Infrastructure.Storage;
 using FileService.Infrastructure.Data;
-using FileService.Api.Middleware;
 using FileService.Api.Models;
 using FileService.Api.Services;
 using Azure.Data.Tables;
@@ -12,13 +11,6 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// HMAC shared secret for request signature validation
-var hmacSecret = builder.Configuration.GetValue<string>("Security:HmacSharedSecret");
-if (string.IsNullOrWhiteSpace(hmacSecret))
-{
-    Console.WriteLine("[STARTUP WARNING] HMAC shared secret not configured. API requests will not be validated!");
-}
 
 // Services - Configure metadata persistence
 var persistenceType = builder.Configuration.GetValue("Persistence:Type", "InMemory"); // InMemory, TableStorage
@@ -97,6 +89,32 @@ builder.Services.AddScoped<PowerSchoolUserContext>();
 // Background cleanup service for exported zip files
 builder.Services.AddHostedService<ExportCleanupService>();
 
+// OpenID Relying Party configuration for PowerSchool authentication
+// Enable by default unless explicitly disabled
+var enableOpenId = builder.Configuration.GetValue<bool>("OpenId:Enabled", true);
+FileService.Api.Services.OpenIdRelyingPartyService? openIdService = null;
+if (enableOpenId)
+{
+    var ipHostname = builder.Configuration.GetValue<string>("OpenId:Hostname") ?? 
+                     builder.Configuration.GetValue<string>("OpenId:IpHostname") ?? 
+                     "localhost";
+    var port = builder.Configuration.GetValue<int>("OpenId:Port", 443);
+
+    if (!string.IsNullOrEmpty(ipHostname))
+    {
+        openIdService = new FileService.Api.Services.OpenIdRelyingPartyService(ipHostname, port);
+        Console.WriteLine($"[STARTUP] OpenID Relying Party enabled at https://{ipHostname}:{port}");
+    }
+    else
+    {
+        Console.WriteLine("[STARTUP WARNING] OpenID enabled but Hostname is not configured");
+    }
+}
+else
+{
+    Console.WriteLine("[STARTUP] OpenID Relying Party disabled");
+}
+
 // Simple in-memory job tracker for zip generation
 var zipJobs = new System.Collections.Concurrent.ConcurrentDictionary<Guid, ZipJobStatus>();
 
@@ -110,9 +128,6 @@ app.UseHttpsRedirection();
 
 app.UseCors("LocalTools");
 
-// HMAC authentication middleware
-app.UseMiddleware<HmacAuthenticationMiddleware>();
-
 // Configure default files (serves index.html when accessing root /)
 app.UseDefaultFiles(new DefaultFilesOptions
 {
@@ -120,10 +135,24 @@ app.UseDefaultFiles(new DefaultFilesOptions
 });
 app.UseStaticFiles();
 
+// OpenID Relying Party endpoints (MUST be before terminal middleware)
+if (openIdService != null)
+{
+    FileService.Api.Services.OpenIdRelyingPartyExtensions.MapOpenIdAuthentication(app, openIdService);
+}
+
+// Terminal middleware for PowerSchool authentication (MUST be after endpoint registration)
 app.Use(async (ctx, next) =>
 {
     var userCtx = ctx.RequestServices.GetRequiredService<PowerSchoolUserContext>();
     
+    // Skip authentication for public OpenID endpoints
+    if (ctx.Request.Path.StartsWithSegments("/authenticate") || ctx.Request.Path.StartsWithSegments("/verify"))
+    {
+        await next();
+        return;
+    }
+
     // Dev shortcut: allow ?devUser=xxx
     if (isDevMode && ctx.Request.Query.TryGetValue("devUser", out var devUser))
     {

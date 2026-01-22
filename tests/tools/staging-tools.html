@@ -43,7 +43,7 @@
       .row { gap: 8px; }
     }
   </style>
-</head>
+</head>"HmacSharedSecret" = ""  # Leave empty to auto-generate; or provide a Base64 secret"HmacSharedSecret" = ""  # Leave empty to auto-generate; or provide a Base64 secret"HmacSharedSecret" = ""  # Leave empty to auto-generate; or provide a Base64 secret
 <body>
   <h1>Staging Tools</h1>
   <p class="muted small">Calls the staging environment APIs directly. Provide PowerSchool user & role headers to authenticate.</p>
@@ -62,6 +62,10 @@
       <label>
         X-PowerSchool-Role
         <input id="psRole" type="text" value="admin" />
+      </label>
+      <label>
+        HMAC Shared Secret
+        <input id="hmacSecretInput" type="password" value="abcdefg" placeholder="Enter secret from Key Vault" />
       </label>
       <label>
         <input id="includeAll" type="checkbox" checked /> Include all users (admin only)
@@ -134,6 +138,24 @@
   <script>
     const el = id => document.getElementById(id);
 
+    // HMAC-SHA256 signature generation (requires Web Crypto API)
+    async function computeHmacSignature(message, secret) {
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(secret);
+      const messageData = encoder.encode(message);
+      
+      const key = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      
+      const signature = await crypto.subtle.sign('HMAC', key, messageData);
+      return btoa(String.fromCharCode(...new Uint8Array(signature)));
+    }
+
     const state = {
       abortController: null,
       totalBytes: 0,
@@ -147,12 +169,32 @@
       currentPage: 1,
     };
 
-    function headers() {
+    function getHmacSecret() {
+      return el('hmacSecretInput').value.trim();
+    }
+
+    async function headers(method = 'GET', path = '') {
       const h = new Headers();
       const user = el('psUser').value.trim();
       const role = el('psRole').value.trim();
       if (user) h.set('X-PowerSchool-User', user);
       if (role) h.set('X-PowerSchool-Role', role);
+      
+      // Add HMAC signature if secret is configured
+      const secret = getHmacSecret();
+      if (secret) {
+        const timestamp = Math.floor(Date.now() / 1000);
+        const message = `${timestamp}${method}${path}${user}${role}`;
+        const signature = await computeHmacSignature(message, secret);
+        console.log(`[HMAC] Method: ${method}, Path: ${path}, User: ${user}, Role: ${role}`);
+        console.log(`[HMAC] Message: ${message}`);
+        console.log(`[HMAC] Signature: ${signature}`);
+        h.set('X-Timestamp', timestamp.toString());
+        h.set('X-Signature', signature);
+      } else {
+        console.warn('[HMAC] No secret configured - request will not be signed');
+      }
+      
       return h;
     }
 
@@ -192,11 +234,12 @@
           };
           
           el('uploadStatus').innerHTML = 'Requesting upload slot...';
+          const h1 = await headers('POST', '/api/files/begin-upload');
           const beginRes = await fetch(`${baseUrl}/api/files/begin-upload`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              ...Object.fromEntries(headers())
+              ...Object.fromEntries(h1)
             },
             body: JSON.stringify(beginPayload)
           });
@@ -250,9 +293,10 @@
                  // Step 3: Complete Upload
                  try {
                      el('uploadStatus').innerHTML = 'Finalizing upload...';
+                     const h2 = await headers('POST', `/api/files/complete-upload/${fileId}`);
                      const completeRes = await fetch(`${baseUrl}/api/files/complete-upload/${fileId}`, {
                          method: 'POST',
-                         headers: Object.fromEntries(headers())
+                         headers: Object.fromEntries(h2)
                      });
                      if (!completeRes.ok) {
                          const errText = await completeRes.text();
@@ -325,10 +369,12 @@
     async function refreshList() {
       const baseUrl = el('baseUrl').value.trim();
       const includeAll = el('includeAll').checked;
-      const url = `${baseUrl}/api/files${includeAll ? '?all=true' : ''}`;
+      const path = `/api/files`;
+      const url = `${baseUrl}${path}${includeAll ? '?all=true' : ''}`;
       el('listStatus').textContent = 'Loading...';
       try {
-        const res = await fetch(url, { headers: headers(), mode: 'cors' });
+        const h = await headers('GET', path);
+        const res = await fetch(url, { headers: h, mode: 'cors' });
         if (!res.ok) throw new Error(`List failed: ${res.status}`);
         const data = await res.json();
         setList(Array.isArray(data) ? data : []);
@@ -441,7 +487,8 @@
     }
 
     async function getReadSas(baseUrl, id) {
-      const res = await fetch(`${baseUrl}/api/files/${id}`, { headers: headers(), mode: 'cors' });
+      const h = await headers('GET', `/api/files/${id}`);
+      const res = await fetch(`${baseUrl}/api/files/${id}`, { headers: h, mode: 'cors' });
       if (!res.ok) {
         const text = await res.text().catch(() => '');
         throw new Error(`Get failed: ${res.status} ${text}`);
@@ -549,11 +596,12 @@
       try {
           // 1. Start Job
           el('listStatus').textContent = `Requesting zip for ${ids.length} files...`;
+          const h3 = await headers('POST', '/api/files/download-zip');
           const res = await fetch(`${baseUrl}/api/files/download-zip`, {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
-                  ...Object.fromEntries(headers())
+                  ...Object.fromEntries(h3)
               },
               body: JSON.stringify(ids)
           });
@@ -587,7 +635,8 @@
         const interval = setInterval(async () => {
             attempts++;
             try {
-                const res = await fetch(`${baseUrl}/api/files/download-zip/${jobId}`, { headers: headers() });
+                const h4 = await headers('GET', `/api/files/download-zip/${jobId}`);
+                const res = await fetch(`${baseUrl}/api/files/download-zip/${jobId}`, { headers: h4 });
                 if (!res.ok) throw new Error("Poll failed");
                 const job = await res.json();
                 
@@ -603,13 +652,13 @@
                     const linkHtml = `<a href="${url}" target="_blank">Download zip</a>`;
                     el('listStatus').innerHTML = `<span class="success">Zip ready! ${linkHtml}</span>`;
                     window.location.href = url;
-
                     // Delay cleanup to allow download to start; still frees storage automatically
                     setTimeout(async () => {
                         try {
+                            const h5 = await headers('DELETE', `/api/files/download-zip/${jobId}`);
                             await fetch(`${baseUrl}/api/files/download-zip/${jobId}`, { 
                                 method: 'DELETE', 
-                                headers: headers() 
+                                headers: h5
                             });
                             console.log('Zip file cleaned up from storage');
                         } catch (err) {
@@ -654,7 +703,8 @@
       let ok = 0, fail = 0;
       for (const id of ids) {
         try {
-          const res = await fetch(`${baseUrl}/api/files/${id}`, { method: 'DELETE', headers: headers(), mode: 'cors' });
+          const h = await headers('DELETE', `/api/files/${id}`);
+          const res = await fetch(`${baseUrl}/api/files/${id}`, { method: 'DELETE', headers: h, mode: 'cors' });
           if (res.ok) ok++; else fail++;
         } catch { fail++; }
       }

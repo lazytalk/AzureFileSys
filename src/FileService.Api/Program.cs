@@ -69,7 +69,8 @@ builder.Services.AddCors(options =>
             policy.WithOrigins(
                 "http://localhost:8080",
                 "http://localhost:9000",
-                "https://filesvc-stg-app.kaiweneducation.com"
+                "https://filesvc-stg-app.kaiweneducation.com",
+                "https://ps1.kaiwenacademy.cn"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();

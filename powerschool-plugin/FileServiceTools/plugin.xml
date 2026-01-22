@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin name="FileServiceTools" 
+        version="1.0.0" 
+        description="File Service staging tools for PowerSchool. Allows authenticated users to upload, manage, and download files."
+        xmlns="http://plugin.powerschool.pearson.com">
+    
+    <!-- Publisher information (required) -->
+    <publisher name="File Service Admin">
+        <contact email="support@non-support.com" />
+    </publisher>
+    
+    <!-- Web links for PowerSchool UI integration -->
+    <links>
+        <link display-text="File Service Tools" 
+              title="File Service Tools" 
+              path="/admin/FileServiceTools.psp">
+            <ui_contexts>
+                <ui_context id="admin.left_nav" />
+            </ui_contexts>
+        </link>
+    </links>
+    
+</plugin>

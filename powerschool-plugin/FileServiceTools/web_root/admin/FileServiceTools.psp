@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Service Tools - PowerSchool</title>
+    <!-- PowerSchool user context (server-rendered PS-HTML tags) -->
+    <meta name="ps-username" content="~[x:username]">
+    <meta name="ps-userid" content="~[x:userid]">
+    <meta name="ps-usersroles" content="~[x:usersroles]">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            margin: 24px;
+            color: #222;
+        }
+        h1 { margin: 0 0 12px; }
+        .user-context {
+            background: #f0f0f0;
+            border-left: 4px solid #0078d4;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .user-context strong { color: #0078d4; }
+        fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+        legend { font-weight: 600; }
+        label { display: inline-block; margin-right: 12px; }
+        input[type="text"] { width: 360px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
+        input[type="file"] { padding: 6px 0; }
+        button { padding: 8px 12px; border: 1px solid #0078d4; background: #0078d4; color: #fff; border-radius: 6px; cursor: pointer; }
+        button.secondary { border-color: #555; background: #fff; color: #222; }
+        button + button { margin-left: 8px; }
+        .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .muted { color: #666; }
+        .progress { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+        .bar { height: 100%; background: #28a745; width: 0%; transition: width 0.1s linear; }
+        .stats { margin-top: 6px; font-size: 13px; }
+        .table-wrap { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 800px; }
+        th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+        th { background: #f7f7f7; }
+        .right { text-align: right; }
+        .danger { background: #c62828; border-color: #c62828; }
+        .success { color: #1b5e20; }
+        .error { color: #b00020; }
+        .hidden { display: none; }
+        .small { font-size: 12px; }
+        .small-btn { padding: 6px 10px; font-size: 12px; }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .pager { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 10px; }
+        @media (max-width: 600px) {
+            body { margin: 12px; }
+            input[type="text"] { width: 100%; }
+            table { min-width: 600px; }
+            .actions { flex-direction: row; }
+            .actions button { flex: 1 0 auto; }
+            .row { gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>📁 File Service Tools</h1>
+    <p class="muted small">Manage files via the File Service API. Your PowerSchool account is used for authentication.</p>
+    
+    <div class="user-context">
+        <strong>Authenticated as:</strong> ~[x:username] <strong>| Role:</strong> admin
+    </div>
+
+    <fieldset>
+        <legend>Upload Files</legend>
+        <div class="row">
+            <input id="singleFile" type="file" />
+            <button id="btnUploadSingle">Upload One</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+            <input id="multiFiles" type="file" multiple />
+            <button id="btnUploadMulti">Upload Multiple</button>
+            <button id="btnCancelUploads" class="secondary">Cancel</button>
+        </div>
+        <div class="progress"><div id="progressBar" class="bar"></div></div>
+        <div id="progressStats" class="stats muted">Idle</div>
+        <div id="uploadStatus" class="small"></div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Files</legend>
+        <div class="row">
+            <button id="btnRefresh">Refresh List</button>
+            <button id="btnDeleteSelected" class="danger">Delete Selected</button>
+            <button id="btnDownloadSelected" class="secondary" style="border-color: #0078d4; color: #0078d4;">Download Selected (Zip)</button>
+        </div>
+        <div class="table-wrap">
+            <table id="filesTable">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="checkAll" /></th>
+                        <th>File Name</th>
+                        <th>Content Type</th>
+                        <th class="right">Size</th>
+                        <th>Owner</th>
+                        <th>Uploaded At</th>
+                        <th>Actions</th>
+                        <th>Id</th>
+                    </tr>
+                </thead>
+                <tbody id="filesBody"></tbody>
+            </table>
+        </div>
+        <div id="listStatus" class="small"></div>
+        <div id="pager"></div>
+    </fieldset>
+
+    <!-- Preview Modal -->
+    <div id="previewOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999;">
+        <div style="background:#fff; width:90%; max-width:1000px; height:80vh; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.2); display:flex; flex-direction:column;">
+            <div style="padding:10px 12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                <strong id="previewTitle">Preview</strong>
+                <div>
+                    <button id="btnOpenInTab" class="secondary">Open in New Tab</button>
+                    <button id="btnClosePreview" class="secondary">Close</button>
+                </div>
+            </div>
+            <div id="previewBody" style="flex:1; background:#fafafa; display:flex; align-items:center; justify-content:center; overflow:auto;">
+                <div class="muted">Loading preview...</div>
+            </div>
+            <div id="previewFooter" class="small muted" style="padding:8px 12px; border-top:1px solid #eee;">If the preview fails, try Open in New Tab or Download.</div>
+        </div>
+    </div>
+
+    <script>
+        // PowerSchool-integrated File Service Tools
+        // PowerSchool user context via PS-HTML meta tags
+        const getMeta = (name) => (document.querySelector(`meta[name="${name}"]`)?.content || '').trim();
+        const psUser = getMeta('ps-username') || 'unknown';
+        const psUserId = getMeta('ps-userid') || '';
+        const psRoles = getMeta('ps-usersroles') || '';
+        const psRole = 'admin'; // Default role for API calls
+        const apiBaseUrl = 'https://filesvc-stg-app.kaiweneducation.com';
+        
+        // Debug
+        console.log('[FileServiceTools] psUser:', psUser, 'psUserId:', psUserId, 'psRoles:', psRoles);
+        
+        const el = id => document.getElementById(id);
+
+        const state = {
+            abortController: null,
+            totalBytes: 0,
+            uploadedBytes: 0,
+            startTime: 0,
+            lastUpdateTime: 0,
+            lastUploadedBytes: 0,
+            listItems: [],
+            selectedIds: new Set(),
+            pageSize: 10,
+            currentPage: 1,
+        };
+
+        function headers() {
+            const h = new Headers();
+            h.set('X-PowerSchool-User', psUser);
+            h.set('X-PowerSchool-Role', psRole);
+            return h;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes = ['B','KB','MB','GB','TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        }
+
+        function setProgress(percent, speedBps) {
+            const pct = Math.max(0, Math.min(100, percent));
+            el('progressBar').style.width = pct + '%';
+            const speed = speedBps ? formatBytes(speedBps) + '/s' : '—';
+            const stats = 'Progress: ' + pct.toFixed(1) + '% • Speed: ' + speed + ' • ' + formatBytes(state.uploadedBytes) + ' / ' + formatBytes(state.totalBytes);
+            el('progressStats').textContent = stats;
+        }
+
+        function resetProgress() {
+            state.totalBytes = 0;
+            state.uploadedBytes = 0;
+            state.startTime = 0;
+            state.lastUpdateTime = 0;
+            state.lastUploadedBytes = 0;
+            setProgress(0, 0);
+            el('uploadStatus').textContent = '';
+        }
+
+        function xhrUpload(file) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const beginPayload = {
+                        fileName: file.name,
+                        sizeBytes: file.size,
+                        contentType: file.type || 'application/octet-stream'
+                    };
+                    
+                    el('uploadStatus').innerHTML = 'Requesting upload slot...';
+                    const beginRes = await fetch(apiBaseUrl + '/api/files/begin-upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Object.fromEntries(headers())
+                        },
+                        body: JSON.stringify(beginPayload)
+                    });
+
+                    if (!beginRes.ok) {
+                        const errText = await beginRes.text();
+                        throw new Error('Begin-upload failed: ' + beginRes.status + ' - ' + errText);
+                    }
+                    const beginJson = await beginRes.json();
+                    const fileId = beginJson.fileId || beginJson.FileId;
+                    const uploadUrl = beginJson.uploadUrl || beginJson.UploadUrl;
+
+                    if (!fileId || !uploadUrl) throw new Error('Invalid server response');
+
+                    el('uploadStatus').innerHTML = 'Uploading to blob storage...';
+                    
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', uploadUrl);
+                    xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+                    xhr.setRequestHeader('x-ms-blob-content-type', file.type || 'application/octet-stream');
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const now = performance.now();
+                            const delta = e.loaded - (xhr.lastLoaded || 0);
+                            xhr.lastLoaded = e.loaded;
+                            state.uploadedBytes += delta;
+                            const elapsedMs = now - state.startTime;
+                            const speed = elapsedMs > 0 ? (state.uploadedBytes / (elapsedMs / 1000)) : 0;
+                            const percent = state.totalBytes > 0 ? (state.uploadedBytes / state.totalBytes) * 100 : 0;
+                            setProgress(percent, speed);
+                        }
+                    };
+
+                    xhr.onreadystatechange = async () => {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    el('uploadStatus').innerHTML = 'Finalizing upload...';
+                                    const completeRes = await fetch(apiBaseUrl + '/api/files/complete-upload/' + fileId, {
+                                        method: 'POST',
+                                        headers: Object.fromEntries(headers())
+                                    });
+                                    if (!completeRes.ok) {
+                                        const errText = await completeRes.text();
+                                        throw new Error('Complete-upload failed: ' + completeRes.status);
+                                    }
+                                    resolve('OK');
+                                } catch (err) {
+                                    reject(err);
+                                }
+                            } else {
+                                reject(new Error('Blob upload failed: ' + xhr.status));
+                            }
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error('Network error during blob upload'));
+                    xhr.onabort = () => reject(new Error('Upload aborted'));
+                    xhr.send(file);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        async function uploadSingle() {
+            resetProgress();
+            const file = el('singleFile').files[0];
+            if (!file) { el('uploadStatus').textContent = 'Please choose a file.'; return; }
+            state.totalBytes = file.size;
+            state.startTime = performance.now();
+            try {
+                await xhrUpload(file);
+                setProgress(100, 0);
+                el('uploadStatus').innerHTML = '<span class="success">Upload complete.</span>';
+                await refreshList();
+            } catch (err) {
+                el('uploadStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+            }
+        }
+
+        async function uploadMultiple() {
+            resetProgress();
+            const files = Array.from(el('multiFiles').files || []);
+            if (files.length === 0) { el('uploadStatus').textContent = 'Please choose files.'; return; }
+            state.totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+            state.startTime = performance.now();
+            try {
+                for (const file of files) {
+                    await xhrUpload(file);
+                }
+                setProgress(100, 0);
+                el('uploadStatus').innerHTML = '<span class="success">Uploaded ' + files.length + ' files.</span>';
+                await refreshList();
+            } catch (err) {
+                el('uploadStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+            }
+        }
+
+        async function refreshList() {
+            const url = apiBaseUrl + '/api/files';
+            el('listStatus').textContent = 'Loading...';
+            try {
+                const res = await fetch(url, { headers: headers(), mode: 'cors' });
+                if (!res.ok) throw new Error('List failed: ' + res.status);
+                const data = await res.json();
+                setList(Array.isArray(data) ? data : []);
+            } catch (err) {
+                el('listStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+            }
+        }
+
+        function setList(items) {
+            state.listItems = items || [];
+            state.selectedIds = new Set();
+            state.currentPage = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            const total = state.listItems.length;
+            const pages = Math.max(1, Math.ceil(total / state.pageSize));
+            if (state.currentPage > pages) state.currentPage = pages;
+            const start = (state.currentPage - 1) * state.pageSize;
+            const pageItems = state.listItems.slice(start, start + state.pageSize);
+
+            const tbody = el('filesBody');
+            tbody.innerHTML = '';
+            for (const item of pageItems) {
+                const tr = document.createElement('tr');
+                const size = item.SizeBytes || item.sizeBytes || 0;
+                const uploadedAt = item.UploadedAt || item.uploadedAt || '';
+                const owner = item.OwnerUserId || item.ownerUserId || '';
+                const id = item.Id || item.id || '';
+                const name = item.FileName || item.fileName || '';
+                const ct = item.ContentType || item.contentType || '';
+
+                const checkedAttr = state.selectedIds.has(String(id)) ? 'checked' : '';
+                tr.innerHTML = '<td><input type="checkbox" class="rowCheck" data-id="' + id + '" ' + checkedAttr + ' /></td>' +
+                    '<td>' + name + '</td>' +
+                    '<td>' + ct + '</td>' +
+                    '<td class="right">' + formatBytes(Number(size) || 0) + '</td>' +
+                    '<td>' + owner + '</td>' +
+                    '<td>' + (uploadedAt ? new Date(uploadedAt).toLocaleString() : '') + '</td>' +
+                    '<td><div class="actions">' +
+                    '<button class="small-btn download-btn" data-id="' + id + '">Download</button>' +
+                    '</div></td>' +
+                    '<td class="small">' + id + '</td>';
+                tbody.appendChild(tr);
+            }
+
+            document.querySelectorAll('.download-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => downloadOne(e.target.getAttribute('data-id')));
+            });
+
+            document.querySelectorAll('.rowCheck').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    if (e.target.checked) state.selectedIds.add(String(id));
+                    else state.selectedIds.delete(String(id));
+                });
+            });
+
+            el('checkAll').addEventListener('change', (e) => {
+                document.querySelectorAll('.rowCheck').forEach(cb => {
+                    cb.checked = e.target.checked;
+                    const id = cb.getAttribute('data-id');
+                    if (e.target.checked) state.selectedIds.add(String(id));
+                    else state.selectedIds.delete(String(id));
+                });
+            });
+
+            renderPager();
+        }
+
+        function renderPager() {
+            const total = state.listItems.length;
+            const pages = Math.max(1, Math.ceil(total / state.pageSize));
+            const pagerDiv = el('pager');
+            pagerDiv.innerHTML = '';
+
+            if (pages <= 1) return;
+
+            const prev = document.createElement('button');
+            prev.className = 'secondary';
+            prev.textContent = '← Previous';
+            prev.disabled = state.currentPage === 1;
+            prev.addEventListener('click', () => {
+                if (state.currentPage > 1) { state.currentPage--; renderTable(); }
+            });
+            pagerDiv.appendChild(prev);
+
+            const span = document.createElement('span');
+            span.textContent = 'Page ' + state.currentPage + ' of ' + pages;
+            pagerDiv.appendChild(span);
+
+            const next = document.createElement('button');
+            next.className = 'secondary';
+            next.textContent = 'Next →';
+            next.disabled = state.currentPage === pages;
+            next.addEventListener('click', () => {
+                if (state.currentPage < pages) { state.currentPage++; renderTable(); }
+            });
+            pagerDiv.appendChild(next);
+        }
+
+        async function downloadOne(fileId) {
+            try {
+                const res = await fetch(apiBaseUrl + '/api/files/' + fileId, { headers: headers() });
+                if (!res.ok) throw new Error('Get file failed: ' + res.status);
+                const data = await res.json();
+                const downloadUrl = data.DownloadUrl || data.downloadUrl;
+                if (downloadUrl) {
+                    window.open(downloadUrl, '_blank');
+                }
+            } catch (err) {
+                alert('Download failed: ' + err.message);
+            }
+        }
+
+        async function deleteSelected() {
+            if (state.selectedIds.size === 0) { alert('No files selected.'); return; }
+            if (!confirm('Delete ' + state.selectedIds.size + ' file(s)?')) return;
+            let deleted = 0;
+            for (const id of state.selectedIds) {
+                try {
+                    const res = await fetch(apiBaseUrl + '/api/files/' + id, { method: 'DELETE', headers: headers() });
+                    if (res.ok) deleted++;
+                } catch (err) {}
+            }
+            alert('Deleted ' + deleted + ' file(s).');
+            await refreshList();
+        }
+
+        // Event listeners
+        el('btnUploadSingle').addEventListener('click', uploadSingle);
+        el('btnUploadMulti').addEventListener('click', uploadMultiple);
+        el('btnRefresh').addEventListener('click', refreshList);
+        el('btnDeleteSelected').addEventListener('click', deleteSelected);
+        el('btnCancelUploads').addEventListener('click', () => {
+            if (state.abortController) state.abortController.abort();
+            resetProgress();
+        });
+
+        // Initial load
+        refreshList();
+    </script>
+</body>
+</html>

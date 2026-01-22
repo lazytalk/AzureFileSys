@@ -7,85 +7,96 @@
     <!-- PowerSchool user context (server-rendered by PowerSchool) -->
     <meta name="ps-userid" content="~[x:userid]">
     <meta name="ps-usersroles" content="~[x:usersroles]">
+    ~[wc:commonscripts] 
+    <link href="/images/css/screen.css" rel="stylesheet" media="screen">
+    <link href="/images/css/print.css" rel="stylesheet" media="print">
     <style>
-        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #222; }
-        h1 { margin: 0 0 12px; }
-        .user-context { background: #f0f0f0; border-left: 4px solid #0078d4; padding: 12px; margin-bottom: 16px; border-radius: 4px; font-size: 13px; }
-        .user-context strong { color: #0078d4; }
-        fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
-        legend { font-weight: 600; }
-        label { display: inline-block; margin-right: 12px; }
-        input[type="text"] { width: 360px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
-        input[type="file"] { padding: 6px 0; }
-        button { padding: 8px 12px; border: 1px solid #0078d4; background: #0078d4; color: #fff; border-radius: 6px; cursor: pointer; }
-        button.secondary { border-color: #555; background: #fff; color: #222; }
-        button + button { margin-left: 8px; }
-        .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        .muted { color: #666; }
-        .progress { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 8px; }
-        .bar { height: 100%; background: #28a745; width: 0%; transition: width 0.1s linear; }
-        .stats { margin-top: 6px; font-size: 13px; }
-        .table-wrap { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 800px; }
-        th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
-        th { background: #f7f7f7; }
-        .right { text-align: right; }
-        .danger { background: #c62828; border-color: #c62828; }
-        .success { color: #1b5e20; }
-        .error { color: #b00020; }
-        .hidden { display: none; }
-        .small { font-size: 12px; }
-        .small-btn { padding: 6px 10px; font-size: 12px; }
-        .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        /* Scope all styles under our wrapper to avoid conflicts */
+        #fs-root, #fs-root * { box-sizing: border-box; }
+        #fs-root input, #fs-root button, #fs-root select, #fs-root textarea { font: inherit; }
+        #fs-root button { appearance: none; -webkit-appearance: none; line-height: 1.2; }
+        #fs-root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #222; }
+        #fs-root h1 { margin: 0 0 12px; }
+        #fs-root .fs-user-context { background: #f0f0f0; border-left: 4px solid #0078d4; padding: 12px; margin-bottom: 16px; border-radius: 4px; font-size: 13px; }
+        #fs-root .fs-user-context strong { color: #0078d4; }
+        #fs-root fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+        #fs-root legend { font-weight: 600; }
+        #fs-root label { display: inline-block; margin-right: 12px; }
+        #fs-root input[type="text"] { width: 360px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
+        #fs-root input[type="file"] { padding: 6px 0; }
+        #fs-root button { padding: 8px 12px; border: 1px solid #0078d4; background: #0078d4; color: #fff; border-radius: 6px; cursor: pointer; }
+        #fs-root button.fs-secondary { border-color: #555; background: #fff; color: #222; }
+        #fs-root button + button { margin-left: 8px; }
+        #fs-root .fs-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        #fs-root .fs-muted { color: #666; }
+        #fs-root .fs-progress { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+        #fs-root .fs-bar { height: 100%; background: #28a745; width: 0%; transition: width 0.1s linear; }
+        #fs-root .fs-stats { margin-top: 6px; font-size: 13px; }
+        #fs-root .fs-table-wrap { width: 100%; overflow-x: auto; }
+        #fs-root table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 800px; }
+        #fs-root th, #fs-root td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+        #fs-root th { background: #f7f7f7; }
+        #fs-root .fs-right { text-align: right; }
+        #fs-root .fs-danger { background: #c62828; border-color: #c62828; }
+        #fs-root .fs-success { color: #1b5e20; }
+        #fs-root .fs-error { color: #b00020; }
+        #fs-root .fs-hidden { display: none; }
+        #fs-root .fs-small { font-size: 12px; }
+        #fs-root .fs-small-btn { padding: 6px 10px; font-size: 12px; }
+        #fs-root .fs-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         @media (max-width: 600px) {
-            body { margin: 12px; }
-            input[type="text"] { width: 100%; }
-            table { min-width: 600px; }
-            .actions { flex-direction: row; }
-            .actions button { flex: 1 0 auto; }
-            .row { gap: 8px; }
+            #fs-root { margin: 12px; }
+            #fs-root input[type="text"] { width: 100%; }
+            #fs-root table { min-width: 600px; }
+            #fs-root .fs-actions { flex-direction: row; }
+            #fs-root .fs-actions button { flex: 1 0 auto; }
+            #fs-root .fs-row { gap: 8px; }
         }
     </style>
 </head>
 <body>
+    ~[wc:admin_header_css] 
+    <a href=" " target="_top">Start Page</a > &gt; File Service Tools
+    ~[wc:admin_navigation_css]
+    <div id="fs-root">
     <h1>File Service Tools</h1>
-    <p class="muted small">Manage files via the File Service API. Your PowerSchool account is used for authentication.</p>
+    <p class="fs-muted fs-small">Manage files via the File Service API. Your PowerSchool account is used for authentication.</p>
     
-    <div class="user-context">
+    <div class="fs-user-context">
         <strong>Authenticated as:</strong> <span id="displayUsername">~[x:username]</span> <strong>| Role:</strong> <span id="displayRole">admin</span>
     </div>
 
     <fieldset>
         <legend>Upload Files</legend>
-        <div class="row">
+        <div class="fs-row">
             <input id="singleFile" type="file" />
             <button id="btnUploadSingle">Upload One</button>
         </div>
-        <div class="row" style="margin-top:8px;">
+        <div class="fs-row" style="margin-top:8px;">
             <input id="multiFiles" type="file" multiple />
             <button id="btnUploadMulti">Upload Multiple</button>
-            <button id="btnCancelUploads" class="secondary">Cancel</button>
+            <button id="btnCancelUploads" class="fs-secondary">Cancel</button>
         </div>
-        <div class="progress"><div id="progressBar" class="bar"></div></div>
-        <div id="progressStats" class="stats muted">Idle</div>
-        <div id="uploadStatus" class="small"></div>
+        <div class="fs-progress"><div id="progressBar" class="fs-bar"></div></div>
+        <div id="progressStats" class="fs-stats fs-muted">Idle</div>
+        <div id="uploadStatus" class="fs-small"></div>
     </fieldset>
 
     <fieldset>
         <legend>Files</legend>
-        <div class="row">
+        <div class="fs-row">
             <button id="btnRefresh">Refresh List</button>
-            <button id="btnDeleteSelected" class="danger">Delete Selected</button>
-            <button id="btnDownloadSelected" class="secondary" style="border-color: #0078d4; color: #0078d4;">Download Selected (Zip)</button>
+            <button id="btnDeleteSelected" class="fs-danger">Delete Selected</button>
+            <button id="btnDownloadSelected" class="fs-secondary" style="border-color: #0078d4; color: #0078d4;">Download Selected (Zip)</button>
         </div>
-        <div class="table-wrap">
+        <div class="fs-table-wrap">
             <table id="filesTable">
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="checkAll" /></th>
                         <th>File Name</th>
                         <th>Content Type</th>
-                        <th class="right">Size</th>
+                        <th class="fs-right">Size</th>
                         <th>Owner</th>
                         <th>Uploaded At</th>
                         <th>Actions</th>
@@ -95,24 +106,24 @@
                 <tbody id="filesBody"></tbody>
             </table>
         </div>
-        <div id="listStatus" class="small"></div>
+        <div id="listStatus" class="fs-small"></div>
         <div id="pager"></div>
     </fieldset>
 
     <!-- Preview Modal -->
-    <div id="previewOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999; display:none;">
+    <div id="previewOverlay" class="fs-hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999; display:none;">
         <div style="background:#fff; width:90%; max-width:1000px; height:80vh; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.2); display:flex; flex-direction:column;">
             <div style="padding:10px 12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
                 <strong id="previewTitle">Preview</strong>
                 <div>
-                    <button id="btnOpenInTab" class="secondary" style="margin-right: 8px;">Open in New Tab</button>
-                    <button id="btnClosePreview" class="secondary">Close</button>
+                    <button id="btnOpenInTab" class="fs-secondary" style="margin-right: 8px;">Open in New Tab</button>
+                    <button id="btnClosePreview" class="fs-secondary">Close</button>
                 </div>
             </div>
             <div id="previewBody" style="flex:1; background:#fafafa; display:flex; align-items:center; justify-content:center; overflow:auto;">
-                <div class="muted">Loading preview...</div>
+                <div class="fs-muted">Loading preview...</div>
             </div>
-            <div id="previewFooter" class="small muted" style="padding:8px 12px; border-top:1px solid #eee;">If the preview fails, try Open in New Tab or Download.</div>
+            <div id="previewFooter" class="fs-small fs-muted" style="padding:8px 12px; border-top:1px solid #eee;">If the preview fails, try Open in New Tab or Download.</div>
         </div>
     </div>
 
@@ -139,11 +150,40 @@
 
         function headers() {
             const h = new Headers();
-            // PowerSchool replaces ~[x:username] server-side before serving the page
-            // Fallback to query param for local testing
+            // PowerSchool replaces these server-side before serving the page
             const user = '~[x:username]' || new URLSearchParams(window.location.search).get('user') || 'testuser';
-            h.set('X-PowerSchool-User', user);
+            const userIdMeta = document.querySelector('meta[name="ps-userid"]');
+            const userId = (userIdMeta && userIdMeta.content) ? userIdMeta.content : '';
+
+            // Always include stable ASCII-safe identifiers
+            if (userId) h.set('X-PowerSchool-UserId', String(userId));
             h.set('X-PowerSchool-Role', 'admin');
+
+            // Helper to test Latin-1 safety
+            const isLatin1 = (s) => {
+                for (let i = 0; i < s.length; i++) { if (s.charCodeAt(i) > 255) return false; }
+                return true;
+            };
+
+            // Try to set the real username first; on strict browsers catch and fall back
+            try {
+                if (user) h.set('X-PowerSchool-User', user);
+            } catch (err) {
+                console.warn('[FileServiceTools] Header set failed for username, falling back to safe value', err);
+            }
+
+            // If strict browser rejected or user was non-Latin1, ensure required header is present with safe value
+            if (!h.has('X-PowerSchool-User')) {
+                const safeUser = (userId && isLatin1(userId)) ? String(userId) : 'unknown';
+                h.set('X-PowerSchool-User', safeUser);
+            }
+
+            // Provide full-fidelity username for servers that can decode it
+            if (user && !isLatin1(user)) {
+                const b64 = btoa(unescape(encodeURIComponent(user)));
+                h.set('X-PowerSchool-User-B64', b64);
+            }
+
             return h;
         }
 
@@ -262,10 +302,10 @@
             try {
                 await xhrUpload(file);
                 setProgress(100, 0);
-                el('uploadStatus').innerHTML = '<span class="success">Upload complete.</span>';
+                el('uploadStatus').innerHTML = '<span class="fs-success">Upload complete.</span>';
                 await refreshList();
             } catch (err) {
-                el('uploadStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+                el('uploadStatus').innerHTML = '<span class="fs-error">' + err.message + '</span>';
             }
         }
 
@@ -280,10 +320,10 @@
                     await xhrUpload(file);
                 }
                 setProgress(100, 0);
-                el('uploadStatus').innerHTML = '<span class="success">Uploaded ' + files.length + ' files.</span>';
+                el('uploadStatus').innerHTML = '<span class="fs-success">Uploaded ' + files.length + ' files.</span>';
                 await refreshList();
             } catch (err) {
-                el('uploadStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+                el('uploadStatus').innerHTML = '<span class="fs-error">' + err.message + '</span>';
             }
         }
 
@@ -297,7 +337,7 @@
                 setList(Array.isArray(data) ? data : []);
                 el('listStatus').textContent = '';
             } catch (err) {
-                el('listStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+                el('listStatus').innerHTML = '<span class="fs-error">' + err.message + '</span>';
             }
         }
 
@@ -330,14 +370,14 @@
                 tr.innerHTML = '<td><input type="checkbox" class="rowCheck" data-id="' + id + '" ' + checkedAttr + ' /></td>' +
                     '<td>' + name + '</td>' +
                     '<td>' + ct + '</td>' +
-                    '<td class="right">' + formatBytes(Number(size) || 0) + '</td>' +
+                    '<td class="fs-right">' + formatBytes(Number(size) || 0) + '</td>' +
                     '<td>' + owner + '</td>' +
                     '<td>' + (uploadedAt ? new Date(uploadedAt).toLocaleString() : '') + '</td>' +
-                    '<td><div class="actions">' +
-                    '<button class="small-btn preview-btn" data-id="' + id + '">Preview</button>' +
-                    '<button class="small-btn download-btn" data-id="' + id + '">Download</button>' +
+                    '<td><div class="fs-actions">' +
+                    '<button class="fs-small-btn preview-btn" data-id="' + id + '">Preview</button>' +
+                    '<button class="fs-small-btn download-btn" data-id="' + id + '">Download</button>' +
                     '</div></td>' +
-                    '<td class="small">' + id + '</td>';
+                    '<td class="fs-small">' + id + '</td>';
                 tbody.appendChild(tr);
             }
 
@@ -378,7 +418,7 @@
             if (pages <= 1) return;
 
             const prev = document.createElement('button');
-            prev.className = 'secondary';
+            prev.className = 'fs-secondary';
             prev.textContent = 'Previous';
             prev.disabled = state.currentPage === 1;
             prev.addEventListener('click', () => {
@@ -391,7 +431,7 @@
             pagerDiv.appendChild(span);
 
             const next = document.createElement('button');
-            next.className = 'secondary';
+            next.className = 'fs-secondary';
             next.textContent = 'Next';
             next.disabled = state.currentPage === pages;
             next.addEventListener('click', () => {
@@ -436,7 +476,7 @@
                     if (blob.size === 0) throw new Error('Received empty zip');
                     const url = URL.createObjectURL(blob);
                     window.open(url, '_blank');
-                    el('listStatus').innerHTML = '<span class="success">Zip ready.</span>';
+                    el('listStatus').innerHTML = '<span class="fs-success">Zip ready.</span>';
                     return;
                 }
 
@@ -447,7 +487,7 @@
 
                 await pollZipJob(jobId);
             } catch (err) {
-                el('listStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+                el('listStatus').innerHTML = '<span class="fs-error">' + err.message + '</span>';
             }
         }
 
@@ -467,10 +507,10 @@
                     if (st === 'Completed') {
                         clearInterval(interval);
                         if (!url) {
-                            el('listStatus').innerHTML = '<span class="error">Zip ready but no download URL returned.</span>';
+                            el('listStatus').innerHTML = '<span class="fs-error">Zip ready but no download URL returned.</span>';
                             return;
                         }
-                        el('listStatus').innerHTML = '<span class="success">Zip ready! <a href="' + url + '" target="_blank">Download zip</a></span>';
+                        el('listStatus').innerHTML = '<span class="fs-success">Zip ready! <a href="' + url + '" target="_blank">Download zip</a></span>';
                         window.location.href = url;
                         // optional cleanup after 30s
                         setTimeout(() => {
@@ -478,18 +518,18 @@
                         }, 30000);
                     } else if (st === 'Failed') {
                         clearInterval(interval);
-                        el('listStatus').innerHTML = '<span class="error">Zip job failed.</span>';
+                        el('listStatus').innerHTML = '<span class="fs-error">Zip job failed.</span>';
                     } else {
                         el('listStatus').textContent = 'Zipping... attempt ' + attempts + '/' + maxAttempts + ' Status: ' + st;
                     }
                 } catch (err) {
                     clearInterval(interval);
-                    el('listStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+                    el('listStatus').innerHTML = '<span class="fs-error">' + err.message + '</span>';
                 }
 
                 if (attempts >= maxAttempts) {
                     clearInterval(interval);
-                    el('listStatus').innerHTML = '<span class="error">Zip did not complete after ' + maxAttempts + ' attempts.</span>';
+                    el('listStatus').innerHTML = '<span class="fs-error">Zip did not complete after ' + maxAttempts + ' attempts.</span>';
                 }
             }, 1000);
         }
@@ -547,7 +587,7 @@
                 el('btnOpenInTab').onclick = () => window.open(downloadUrl, '_blank');
             } catch (err) {
                 console.error('[FileServiceTools] Preview error:', err);
-                el('previewBody').innerHTML = '<div class="error">Preview failed: ' + err.message + '</div>';
+                el('previewBody').innerHTML = '<div class="fs-error">Preview failed: ' + err.message + '</div>';
                 el('previewOverlay').style.display = 'flex';
             }
         }

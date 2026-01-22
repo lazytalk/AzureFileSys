@@ -13,7 +13,7 @@
     <links>
         <link display-text="File Service Tools" 
               title="File Service Tools" 
-              path="/admin/FileServiceTools.psp">
+              path="/admin/FileServiceTools.html">
             <ui_contexts>
                 <ui_context id="admin.left_nav" />
             </ui_contexts>

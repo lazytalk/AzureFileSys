@@ -4,25 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Service Tools - PowerSchool</title>
-    <!-- PowerSchool user context (server-rendered PS-HTML tags) -->
-    <meta name="ps-username" content="~[x:username]">
+    <!-- PowerSchool user context (server-rendered by PowerSchool) -->
     <meta name="ps-userid" content="~[x:userid]">
     <meta name="ps-usersroles" content="~[x:usersroles]">
     <style>
-        body {
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-            margin: 24px;
-            color: #222;
-        }
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #222; }
         h1 { margin: 0 0 12px; }
-        .user-context {
-            background: #f0f0f0;
-            border-left: 4px solid #0078d4;
-            padding: 12px;
-            margin-bottom: 16px;
-            border-radius: 4px;
-            font-size: 13px;
-        }
+        .user-context { background: #f0f0f0; border-left: 4px solid #0078d4; padding: 12px; margin-bottom: 16px; border-radius: 4px; font-size: 13px; }
         .user-context strong { color: #0078d4; }
         fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
         legend { font-weight: 600; }
@@ -49,7 +37,6 @@
         .small { font-size: 12px; }
         .small-btn { padding: 6px 10px; font-size: 12px; }
         .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .pager { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 10px; }
         @media (max-width: 600px) {
             body { margin: 12px; }
             input[type="text"] { width: 100%; }
@@ -61,11 +48,11 @@
     </style>
 </head>
 <body>
-    <h1>📁 File Service Tools</h1>
+    <h1>File Service Tools</h1>
     <p class="muted small">Manage files via the File Service API. Your PowerSchool account is used for authentication.</p>
     
     <div class="user-context">
-        <strong>Authenticated as:</strong> ~[x:username] <strong>| Role:</strong> admin
+        <strong>Authenticated as:</strong> <span id="displayUsername">~[x:username]</span> <strong>| Role:</strong> <span id="displayRole">admin</span>
     </div>
 
     <fieldset>
@@ -113,12 +100,12 @@
     </fieldset>
 
     <!-- Preview Modal -->
-    <div id="previewOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999;">
+    <div id="previewOverlay" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999; display:none;">
         <div style="background:#fff; width:90%; max-width:1000px; height:80vh; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.2); display:flex; flex-direction:column;">
             <div style="padding:10px 12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
                 <strong id="previewTitle">Preview</strong>
                 <div>
-                    <button id="btnOpenInTab" class="secondary">Open in New Tab</button>
+                    <button id="btnOpenInTab" class="secondary" style="margin-right: 8px;">Open in New Tab</button>
                     <button id="btnClosePreview" class="secondary">Close</button>
                 </div>
             </div>
@@ -130,17 +117,10 @@
     </div>
 
     <script>
-        // PowerSchool-integrated File Service Tools
-        // PowerSchool user context via PS-HTML meta tags
-        const getMeta = (name) => (document.querySelector(`meta[name="${name}"]`)?.content || '').trim();
-        const psUser = getMeta('ps-username') || 'unknown';
-        const psUserId = getMeta('ps-userid') || '';
-        const psRoles = getMeta('ps-usersroles') || '';
-        const psRole = 'admin'; // Default role for API calls
-        const apiBaseUrl = 'https://filesvc-stg-app.kaiweneducation.com';
+        // File Service Tools - Plain HTML version
+        // Works with PowerSchool authentication via headers
         
-        // Debug
-        console.log('[FileServiceTools] psUser:', psUser, 'psUserId:', psUserId, 'psRoles:', psRoles);
+        const apiBaseUrl = 'https://filesvc-stg-app.kaiweneducation.com';
         
         const el = id => document.getElementById(id);
 
@@ -159,8 +139,11 @@
 
         function headers() {
             const h = new Headers();
-            h.set('X-PowerSchool-User', psUser);
-            h.set('X-PowerSchool-Role', psRole);
+            // PowerSchool replaces ~[x:username] server-side before serving the page
+            // Fallback to query param for local testing
+            const user = '~[x:username]' || new URLSearchParams(window.location.search).get('user') || 'testuser';
+            h.set('X-PowerSchool-User', user);
+            h.set('X-PowerSchool-Role', 'admin');
             return h;
         }
 
@@ -174,8 +157,8 @@
         function setProgress(percent, speedBps) {
             const pct = Math.max(0, Math.min(100, percent));
             el('progressBar').style.width = pct + '%';
-            const speed = speedBps ? formatBytes(speedBps) + '/s' : '—';
-            const stats = 'Progress: ' + pct.toFixed(1) + '% • Speed: ' + speed + ' • ' + formatBytes(state.uploadedBytes) + ' / ' + formatBytes(state.totalBytes);
+            const speed = speedBps ? formatBytes(speedBps) + '/s' : '-';
+            const stats = 'Progress: ' + pct.toFixed(1) + '% - Speed: ' + speed + ' - ' + formatBytes(state.uploadedBytes) + ' / ' + formatBytes(state.totalBytes);
             el('progressStats').textContent = stats;
         }
 
@@ -312,6 +295,7 @@
                 if (!res.ok) throw new Error('List failed: ' + res.status);
                 const data = await res.json();
                 setList(Array.isArray(data) ? data : []);
+                el('listStatus').textContent = '';
             } catch (err) {
                 el('listStatus').innerHTML = '<span class="error">' + err.message + '</span>';
             }
@@ -350,6 +334,7 @@
                     '<td>' + owner + '</td>' +
                     '<td>' + (uploadedAt ? new Date(uploadedAt).toLocaleString() : '') + '</td>' +
                     '<td><div class="actions">' +
+                    '<button class="small-btn preview-btn" data-id="' + id + '">Preview</button>' +
                     '<button class="small-btn download-btn" data-id="' + id + '">Download</button>' +
                     '</div></td>' +
                     '<td class="small">' + id + '</td>';
@@ -358,6 +343,10 @@
 
             document.querySelectorAll('.download-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => downloadOne(e.target.getAttribute('data-id')));
+            });
+
+            document.querySelectorAll('.preview-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => previewFile(e.target.getAttribute('data-id')));
             });
 
             document.querySelectorAll('.rowCheck').forEach(cb => {
@@ -390,7 +379,7 @@
 
             const prev = document.createElement('button');
             prev.className = 'secondary';
-            prev.textContent = '← Previous';
+            prev.textContent = 'Previous';
             prev.disabled = state.currentPage === 1;
             prev.addEventListener('click', () => {
                 if (state.currentPage > 1) { state.currentPage--; renderTable(); }
@@ -403,7 +392,7 @@
 
             const next = document.createElement('button');
             next.className = 'secondary';
-            next.textContent = 'Next →';
+            next.textContent = 'Next';
             next.disabled = state.currentPage === pages;
             next.addEventListener('click', () => {
                 if (state.currentPage < pages) { state.currentPage++; renderTable(); }
@@ -425,6 +414,144 @@
             }
         }
 
+        async function downloadSelected() {
+            const ids = Array.from(state.selectedIds);
+            if (ids.length === 0) { alert('No files selected.'); return; }
+            el('listStatus').textContent = 'Requesting zip for ' + ids.length + ' files...';
+            
+            try {
+                const res = await fetch(apiBaseUrl + '/api/files/download-zip', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Object.fromEntries(headers())
+                    },
+                    body: JSON.stringify(ids)
+                });
+
+                // New behavior: 202 + job polling; fallback to direct download if not 202
+                if (res.status !== 202) {
+                    if (!res.ok) throw new Error('Zip request failed: ' + res.status);
+                    const blob = await res.blob();
+                    if (blob.size === 0) throw new Error('Received empty zip');
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                    el('listStatus').innerHTML = '<span class="success">Zip ready.</span>';
+                    return;
+                }
+
+                const job = await res.json();
+                const jobId = job.JobId || job.jobId;
+                if (!jobId) throw new Error('No job ID returned');
+                el('listStatus').textContent = 'Zip job started (' + jobId + '). Processing...';
+
+                await pollZipJob(jobId);
+            } catch (err) {
+                el('listStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+            }
+        }
+
+        async function pollZipJob(jobId) {
+            let attempts = 0;
+            const maxAttempts = 60;
+            const interval = setInterval(async () => {
+                attempts++;
+                try {
+                    const res = await fetch(apiBaseUrl + '/api/files/download-zip/' + jobId, { headers: headers() });
+                    if (!res.ok) throw new Error('Poll failed: ' + res.status);
+                    const status = await res.json();
+
+                    const st = status.status || status.Status;
+                    const url = status.downloadUrl || status.DownloadUrl;
+
+                    if (st === 'Completed') {
+                        clearInterval(interval);
+                        if (!url) {
+                            el('listStatus').innerHTML = '<span class="error">Zip ready but no download URL returned.</span>';
+                            return;
+                        }
+                        el('listStatus').innerHTML = '<span class="success">Zip ready! <a href="' + url + '" target="_blank">Download zip</a></span>';
+                        window.location.href = url;
+                        // optional cleanup after 30s
+                        setTimeout(() => {
+                            fetch(apiBaseUrl + '/api/files/download-zip/' + jobId, { method: 'DELETE', headers: headers() }).catch(() => {});
+                        }, 30000);
+                    } else if (st === 'Failed') {
+                        clearInterval(interval);
+                        el('listStatus').innerHTML = '<span class="error">Zip job failed.</span>';
+                    } else {
+                        el('listStatus').textContent = 'Zipping... attempt ' + attempts + '/' + maxAttempts + ' Status: ' + st;
+                    }
+                } catch (err) {
+                    clearInterval(interval);
+                    el('listStatus').innerHTML = '<span class="error">' + err.message + '</span>';
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    el('listStatus').innerHTML = '<span class="error">Zip did not complete after ' + maxAttempts + ' attempts.</span>';
+                }
+            }, 1000);
+        }
+
+        async function previewFile(fileId) {
+            try {
+                const res = await fetch(apiBaseUrl + '/api/files/' + fileId, { headers: headers() });
+                if (!res.ok) throw new Error('Get file failed: ' + res.status);
+                const data = await res.json();
+                const downloadUrl = data.DownloadUrl || data.downloadUrl;
+                const fileName = data.FileName || data.fileName || 'file';
+                if (!downloadUrl) throw new Error('No download URL');
+                
+                el('previewTitle').textContent = 'Preview: ' + fileName;
+                const contentType = (data.ContentType || data.contentType || '').toLowerCase();
+                
+                const previewBody = el('previewBody');
+                previewBody.innerHTML = '';
+                
+                if (contentType.includes('image') || contentType.includes('pdf')) {
+                    // Use iframe for images and PDFs
+                    const iframe = document.createElement('iframe');
+                    iframe.src = downloadUrl;
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.border = 'none';
+                    previewBody.appendChild(iframe);
+                } else if (contentType.includes('text') || contentType.includes('json') || contentType.includes('xml')) {
+                    // For text, try to fetch and display
+                    try {
+                        const textRes = await fetch(downloadUrl, { mode: 'no-cors' });
+                        const text = await textRes.text();
+                        const pre = document.createElement('pre');
+                        pre.style.padding = '12px';
+                        pre.style.overflow = 'auto';
+                        pre.style.fontSize = '12px';
+                        pre.textContent = text.length > 50000 ? text.substring(0, 50000) + '\n... (truncated)' : text;
+                        previewBody.appendChild(pre);
+                    } catch (err) {
+                        // If fetch fails, just show link
+                        const msg = document.createElement('div');
+                        msg.className = 'muted';
+                        msg.innerHTML = 'Text preview unavailable due to browser restrictions.<br><a href="' + downloadUrl + '" target="_blank">Open in New Tab</a>';
+                        previewBody.appendChild(msg);
+                    }
+                } else {
+                    // For other types, show message and link
+                    const msg = document.createElement('div');
+                    msg.className = 'muted';
+                    msg.innerHTML = 'Preview not available for file type: ' + contentType + '<br><a href="' + downloadUrl + '" target="_blank">Open in New Tab</a>';
+                    previewBody.appendChild(msg);
+                }
+                
+                el('previewOverlay').style.display = 'flex';
+                el('btnOpenInTab').onclick = () => window.open(downloadUrl, '_blank');
+            } catch (err) {
+                console.error('[FileServiceTools] Preview error:', err);
+                el('previewBody').innerHTML = '<div class="error">Preview failed: ' + err.message + '</div>';
+                el('previewOverlay').style.display = 'flex';
+            }
+        }
+
         async function deleteSelected() {
             if (state.selectedIds.size === 0) { alert('No files selected.'); return; }
             if (!confirm('Delete ' + state.selectedIds.size + ' file(s)?')) return;
@@ -439,18 +566,40 @@
             await refreshList();
         }
 
-        // Event listeners
-        el('btnUploadSingle').addEventListener('click', uploadSingle);
-        el('btnUploadMulti').addEventListener('click', uploadMultiple);
-        el('btnRefresh').addEventListener('click', refreshList);
-        el('btnDeleteSelected').addEventListener('click', deleteSelected);
-        el('btnCancelUploads').addEventListener('click', () => {
-            if (state.abortController) state.abortController.abort();
-            resetProgress();
-        });
+        function setupEventListeners() {
+            console.log('[FileServiceTools] Setting up event listeners...');
+            
+            // Upload buttons
+            el('btnUploadSingle').addEventListener('click', uploadSingle);
+            el('btnUploadMulti').addEventListener('click', uploadMultiple);
+            el('btnRefresh').addEventListener('click', refreshList);
+            el('btnDeleteSelected').addEventListener('click', deleteSelected);
+            el('btnDownloadSelected').addEventListener('click', downloadSelected);
+            el('btnCancelUploads').addEventListener('click', () => {
+                if (state.abortController) state.abortController.abort();
+                resetProgress();
+            });
 
-        // Initial load
-        refreshList();
+            el('btnClosePreview').addEventListener('click', () => {
+                el('previewOverlay').style.display = 'none';
+            });
+            
+            console.log('[FileServiceTools] Event listeners attached');
+        }
+
+        // Initialize on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[FileServiceTools] DOM loaded, initializing...');
+                setupEventListeners();
+                refreshList();
+            });
+        } else {
+            // DOM already loaded
+            console.log('[FileServiceTools] DOM already loaded, initializing immediately...');
+            setupEventListeners();
+            refreshList();
+        }
     </script>
 </body>
 </html>

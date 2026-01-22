@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<!-- saved from url=(0059)https://support.powerschool.com/developer/#/page/plugin-xml -->
+<html lang="en" data-ng-app="developerSiteApp" class="ng-scope"><head data-ng-controller="headController" class="ng-scope"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style type="text/css">@charset "UTF-8";[ng\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide{display:none !important;}ng\:form{display:block;}.ng-animate-block-transitions{transition:0s all!important;-webkit-transition:0s all!important;}.ng-hide-add-active,.ng-hide-remove{display:block!important;}</style>
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Developer Admin</title>
+    <link href="./plugincontent_files/css" rel="stylesheet">
+    <!-- For IE 9 and below -->
+    <!--[if IE]><link rel="shortcut icon" href="/favicon/favicon.ico"><![endif]-->
+    <!-- Touch Icons - iOS and Android 2.1+ 180x180 pixels in size. -->
+    <link rel="apple-touch-icon-precomposed" href="https://support.powerschool.com/favicon/apple-touch-icon-precomposed.png">
+    <!-- Firefox, Chrome, Safari, IE 11+ and Opera. 196x196 pixels in size. -->
+    <link rel="icon" href="https://support.powerschool.com/favicon/favicon.png">
+    <meta name="msapplication-TileColor" content="#042d40">
+    <meta name="msapplication-TileImage" content="/favicon/powerschool-tile.png">
+    <link rel="stylesheet" type="text/css" href="./plugincontent_files/site.css">
+    <!--[if lte IE 9]>
+    <script type="text/javascript" src="/scripts/html5shiv.min.js"></script>
+    <script type="text/javascript" src="/scripts/respond.min.js"></script>
+    <link href="css/ie9.css" rel="stylesheet">
+    <![endif]-->
+    <style type="text/css" data-ng-bind-html="trustedCSS()" class="ng-binding"></style>
+</head>
+<body data-spy="scroll" data-target=".nav-scrollspy" data-offset="70">
+	<!-- Navigation -->
+	<div data-ng-controller="navigationController" class="ng-scope">
+		<header class="navbar navbar-default navbar-fixed-top">
+    		<div class="container" role="navigation">
+		        <div class="navbar-header">
+		            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+		                <span class="sr-only">Toggle navigation</span>
+		                <span class="icon-bar"></span>
+		                <span class="icon-bar"></span>
+		                <span class="icon-bar"></span>
+		            </button>
+		            <a class="brand-powerschool" href="https://support.powerschool.com/" aria-label="home">PowerSource</a>
+		        </div><!--/.navbar-header -->
+        		<nav class="navbar-collapse collapse">
+            		<ul class="nav navbar-nav" id="menu">
+            			<!-- ngRepeat: menuItem in menu.menuItems --><li data-ng-repeat="menuItem in menu.menuItems" class="ng-scope">
+							<!-- ngIf: menuItem.children.length > 0 --><a data-ng-if="menuItem.children.length &gt; 0" data-nav-drawer-id="#main-navigation-drawer" data-ng-attr-id="{{&#39;drawer-menu-&#39; + menuItem.id}}" onclick="return false;" class="drawer-menu ng-binding ng-scope" id="drawer-menu-76">PS SIS API</a><!-- end ngIf: menuItem.children.length > 0 -->
+							<!-- ngIf: menuItem.children.length == 0 && menuItem.type == 'LINK' -->
+							<!-- ngIf: menuItem.children.length == 0 && menuItem.type == 'PAGE' -->
+						</li><!-- end ngRepeat: menuItem in menu.menuItems --><li data-ng-repeat="menuItem in menu.menuItems" class="ng-scope active">
+							<!-- ngIf: menuItem.children.length > 0 --><a data-ng-if="menuItem.children.length &gt; 0" data-nav-drawer-id="#main-navigation-drawer" data-ng-attr-id="{{&#39;drawer-menu-&#39; + menuItem.id}}" onclick="return false;" class="drawer-menu ng-binding ng-scope" id="drawer-menu-29">PS SIS Customization</a><!-- end ngIf: menuItem.children.length > 0 -->
+							<!-- ngIf: menuItem.children.length == 0 && menuItem.type == 'LINK' -->
+							<!-- ngIf: menuItem.children.length == 0 && menuItem.type == 'PAGE' -->
+						</li><!-- end ngRepeat: menuItem in menu.menuItems --><li data-ng-repeat="menuItem in menu.menuItems" class="ng-scope">
+							<!-- ngIf: menuItem.children.length > 0 --><a data-ng-if="menuItem.children.length &gt; 0" data-nav-drawer-id="#main-navigation-drawer" data-ng-attr-id="{{&#39;drawer-menu-&#39; + menuItem.id}}" onclick="return false;" class="drawer-menu ng-binding ng-scope" id="drawer-menu-22">Community</a><!-- end ngIf: menuItem.children.length > 0 -->
+							<!-- ngIf: menuItem.children.length == 0 && menuItem.type == 'LINK' -->
+							<!-- ngIf: menuItem.children.length == 0 && menuItem.type == 'PAGE' -->
+						</li><!-- end ngRepeat: menuItem in menu.menuItems -->
+					</ul>
+				</nav>
+			</div>
+		</header>
+		<nav class="navdrawer">
+		    <div class="drawer" id="main-navigation-drawer" style="height: 0px;">
+               <!-- ngRepeat: menuItem in menu.menuItems --><nav class="drawer-content ng-scope" data-ng-attr-id="{{&#39;drawer-content-&#39; + menuItem.id}}" data-ng-repeat="menuItem in menu.menuItems" id="drawer-content-76">
+                   <ul class="nav nav-pills">
+                       <!-- ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/security" class="ng-binding ng-scope">Security</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/data-access" class="ng-binding ng-scope">Data Access</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/resources" class="ng-binding ng-scope">Resources</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/events" class="ng-binding ng-scope">Events</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/single-sign-on-2" class="ng-binding ng-scope">Single Sign On</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/examples" class="ng-binding ng-scope">Examples</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children -->
+                   </ul>
+               </nav><!-- end ngRepeat: menuItem in menu.menuItems --><nav class="drawer-content ng-scope" data-ng-attr-id="{{&#39;drawer-content-&#39; + menuItem.id}}" data-ng-repeat="menuItem in menu.menuItems" id="drawer-content-29">
+                   <ul class="nav nav-pills">
+                       <!-- ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/page-customization-and-database-extensions" class="ng-binding ng-scope">Page Customization and Database Extensions</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/powerquery-dat" class="ng-binding ng-scope">PowerQuery DAT</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/powerteacher-pro-customization" class="ng-binding ng-scope">PowerTeacher Pro Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/ps-html-tags" class="ng-binding ng-scope">PS-HTML tags</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/plugins" class="ng-binding ng-scope">Plugins</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/student-contacts-customization" class="ng-binding ng-scope">Student Contacts Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/new-experience-start-page-customization" class="ng-binding ng-scope">New Experience Start Page Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/powerschool-sis-attendance-in-schoology-customizations" class="ng-binding ng-scope">PowerSchool SIS Attendance in Schoology Customizations</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/user-interface-customization" class="ng-binding ng-scope">Enhanced Navigation Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children -->
+                   </ul>
+               </nav><!-- end ngRepeat: menuItem in menu.menuItems --><nav class="drawer-content ng-scope" data-ng-attr-id="{{&#39;drawer-content-&#39; + menuItem.id}}" data-ng-repeat="menuItem in menu.menuItems" id="drawer-content-22">
+                   <ul class="nav nav-pills">
+                       <!-- ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/blog" class="ng-binding ng-scope">Blog</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' --><a data-ng-if="child.type == &#39;LINK&#39;" href="https://support.powerschool.com/forum/319" target="_blank" class="ng-binding ng-scope">Developer Forums</a><!-- end ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children --><li data-ng-repeat="child in menuItem.children" class="ng-scope">
+                           <!-- ngIf: child.type == 'LINK' -->
+                           <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/video-library" class="ng-binding ng-scope">Video Library</a><!-- end ngIf: child.type == 'PAGE' -->
+                       </li><!-- end ngRepeat: child in menuItem.children -->
+                   </ul>
+               </nav><!-- end ngRepeat: menuItem in menu.menuItems -->
+		    </div>
+		</nav>
+	</div>
+	<!-- /Navigation -->
+	<!-- ngView:  --><div data-ng-view="" class="ng-scope"><div ng-bind-html="trustedContent()" class="ng-binding ng-scope"><div id="container-main">
+    <div class="container">
+    	<div class="row">
+    		<div class="col-md-12">
+    			<h1>Plugin XML</h1>
+    		</div>
+    	</div>
+        <div class="row">
+            <div class="col-md-9">
+                 <style>
+   ul.tree, ul.tree ul {
+     list-style-type: none;
+}
+</style>
+
+
+                <div class="col-md-9">
+                    
+                    <div class="row">
+                        <div class="col-md-12 header">
+                            <h2 id="introduction">Introduction</h2>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <p>Plugin XML is a file for third-party application developers to use to declare and configure PowerSchool API services
+                                used by your application. Plugins have a number of other functions not related to PowerSchool API
+                                services such as the ability to create extended schema and include custom pages and page fragments.
+                                For more information on these capabilities, see the
+                                <a href="https://support.powerschool.com/article/74828">PowerSchool Database Extension and Page Customization Developer Guide</a>.</p>
+                            <p>
+                        </p></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 header">
+                            <h2 id="available_services">Available Services</h2>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <p>The following services can be defined in the plugin XML.</p>
+                            <dl>
+                                <dt>
+                                    <a href="https://support.powerschool.com/developer/#/page/data-access">Data Access</a></dt>
+                                <dd>
+                                    Third-party application can request generation of OAuth client
+                                    credential for provisioning data by declaring an <code>&lt;oauth&gt;</code>
+                                    element.</dd>
+                                <dt>
+                                    <a href="https://support.powerschool.com/developer/#tag_links">Linking</a>
+                                </dt><dd>
+                                    Plugin can create general links to internal pages in PowerSchool or to external pages that
+                                do not require authentication by adding a
+                                    <code>&lt;links&gt;</code> element.</dd>
+                                <dt>
+                                    <a href="https://support.powerschool.com/developer/#/page/powerschool-as-openid-identity-provider">OpenID Single Sign-On</a></dt>
+                                <dd>
+                                    Plugin can create OpenID single sign-on links
+                                    to third-party applications by adding an <code>&lt;openid&gt;</code> element.</dd>
+                                <dt>
+                                    <a href="https://support.powerschool.com/developer/#/page/powerschool-as-saml-identity-provider">SAML Single Sign-On</a></dt>
+                                <dd>
+                                    Plugin can create SAML single sign-on links
+                                    to third-party applications by adding a <code>&lt;saml&gt;</code>
+                                    element.</dd>
+                                <dt>
+                                    <a href="https://support.powerschool.com/developer/#/page/automatic-registration">Registration</a></dt>
+                                <dd>
+                                    Plugin can ask PowerSchool to register itself by adding a
+                                    <code>&lt;registration&gt;</code> element.</dd>
+                            </dl>
+
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 header">
+                            <h2 id="xml_elements">XML Elements</h2>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <p>The following illustrates the plugin elements hiearchy. Click a plugin element to view detailed information about the element.</p>
+                             <ul class="tree">
+                                <li><a href="https://support.powerschool.com/developer/#tag_plugin">&lt;plugin&gt;</a></li>
+                                <li>
+                                    <ul style="list-style: none;">
+                                        <li><a href="https://support.powerschool.com/developer/#tag_registration">&lt;registration&gt;</a></li>
+                                        <li>
+                                            <ul>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_callback-data">&lt;callback-data&gt;</a></li>
+                                            </ul>
+                                        </li>
+
+                                        <li><a href="https://support.powerschool.com/developer/#tag_oauth">&lt;oauth&gt;</a></li>
+
+                                        <li><a href="https://support.powerschool.com/developer/#tag_access_request">&lt;access_request&gt;</a></li>
+                                        <li>
+                                            <ul>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_field_request">&lt;field&gt;</a></li>
+                                            </ul>
+                                            <ul>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_cdn_request_request">&lt;cdn_request&gt;</a></li>
+                                                <li>
+                                                    <ul>
+                                                        <li><a href="https://support.powerschool.com/developer/#tag_cdn_request">&lt;cdn&gt;</a></li>
+                                                    </ul> 
+                                                </li>
+                                            </ul>
+                                        </li>
+
+                                        <li><a href="https://support.powerschool.com/developer/#tag_links">&lt;links&gt;</a></li>
+                                        <li>
+                                            <ul>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_link">&lt;link&gt;</a></li>
+                                                <li>
+                                                    <ul>
+                                                        <li><a href="https://support.powerschool.com/developer/#tag_ui_contexts">&lt;ui_contexts&gt;</a></li>
+                                                        <li>
+                                                            <ul>
+                                                                <li><a href="https://support.powerschool.com/developer/#tag_ui_context">&lt;ui_context&gt;</a></li>
+                                                            </ul>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+
+                                        <li><a href="https://support.powerschool.com/developer/#tag_openid">&lt;openid&gt;&gt;</a></li>
+                                        <li>
+                                            <ul>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_openid_links">&lt;&lt;links&gt;</a></li>
+                                                <li>
+                                                    <ul>
+                                                        <li><a href="https://support.powerschool.com/developer/#tag_openid_link">&lt;link&gt;</a></li>
+                                                        <li>
+                                                            <ul>
+                                                                <li><a href="https://support.powerschool.com/developer/#tag_ui_contexts">&lt;ui_contexts&gt;</a></li>
+                                                                <li>
+                                                                    <ul>
+                                                                        <li><a href="https://support.powerschool.com/developer/#tag_ui_context">&lt;ui_context&gt;</a></li>
+                                                                    </ul>
+                                                                </li>
+                                                            </ul>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+
+
+                                        <li><a href="https://support.powerschool.com/developer/#tag_saml">&lt;saml&gt;</a></li>
+                                        <li>
+                                            <ul>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_saml_links">&lt;links&gt;</a></li>
+                                                <li>
+                                                    <ul>
+                                                        <li><a href="https://support.powerschool.com/developer/#tag_saml_link">&lt;link&gt;</a></li>
+                                                        <li>
+                                                            <ul>
+                                                                <li><a href="https://support.powerschool.com/developer/#tag_ui_contexts">&lt;ui_contexts&gt;</a></li>
+                                                                <li>
+                                                                    <ul>
+                                                                        <li><a href="https://support.powerschool.com/developer/#tag_ui_context">&lt;ui_context&gt;</a></li>
+                                                                    </ul>
+                                                                </li>
+                                                            </ul>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_saml_attributes">&lt;attributes&gt;</a></li>
+                                                <li>
+                                                    <ul>
+                                                        <li><a href="https://support.powerschool.com/developer/#tag_saml_user">&lt;user&gt;</a></li>
+                                                        <li>
+                                                            <ul>
+                                                                <li><a href="https://support.powerschool.com/developer/#tag_saml_attribute">&lt;attribute&gt;</a></li>
+                                                            </ul>
+                                                        </li>
+                                                    </ul>
+                                                </li>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_saml_permissions">&lt;permissions&gt;</a></li>
+                                                <li>
+                                                    <ul>
+                                                        <li><a href="https://support.powerschool.com/developer/#tag_saml_permission">&lt;permission&gt;</a></li>
+                                                    </ul>
+                                                </li>
+                                            </ul>
+                                        </li>
+
+                                        <li><a href="https://support.powerschool.com/developer/#tag_publisher">&lt;publisher&gt;</a></li>
+                                        <li>
+                                            <ul>
+                                                <li><a href="https://support.powerschool.com/developer/#tag_contact">&lt;contact&gt;</a></li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+
+                            <h3 id="tag_plugin">plugin</h3>
+                            
+                                <p>The outermost, or root element.Only one &lt;plugin&gt; element per XML configuration file is permitted.</p>
+                                 <table class="table table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Attribute</th>
+                                        <th>Description</th>
+                                        <th>Required?</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td>xmlns</td>
+                                        <td>This attribute specifies that the XML document is using
+                                            tags that exist in the http://plugin.powerschool.pearson.com
+                                            namespace.<br>Example: http://plugin.powerschool.pearson.com</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>xmlns:xsi</td>
+                                        <td>This attribute instructs the XML parser that this XML
+                                            document is to be validated against a schema adhering to the W3C
+                                            schema standards.
+                                            This attribute defines the xsi namespace and schemaLocation
+                                            attribute used for the next attribute.<br>Example: http://www.w3.org/2001/XMLSchema-instance</td>
+                                        <td>No</td>
+                                    </tr>
+                                    <tr>
+                                        <td>xsi:schemaLocation</td>
+                                        <td>This attribute shows the location of the schema document,
+                                            plugin.xsd, against which to validate the XML document for
+                                            the target namespace http://plugin.powerschool.pearson.com.
+                                            The location of the file can be any valid Uniform
+                                            Resource Identifier (URI).<br>Example: http://plugin.powerschool.pearson.com
+                                            plugin.xsd</td>
+                                        <td>No</td>
+                                    </tr>
+                                   <tr>
+                                        <td>name</td>
+                                        <td>The name of the PowerSchool third-party plugin as it will
+                                            appear in Plugin Management Configuration in PowerSchool. The name must be
+                                            unique from already installed plugins. A maximum of 40 characters may be entered.</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>version</td>
+                                        <td>The version of the third-party plugin. A maximum of 20 characters may be entered.</td>
+                                        <td>No</td>
+                                    </tr>
+                                    <tr>
+                                        <td>description</td>
+                                        <td>The description of the third-party plugin as it will appear in
+                                            Plugin Management Configuration in PowerSchool. A maximum of 256 characters may be entered.</td>
+                                        <td>No</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                
+                                <p><b>Optional Sub-elements:</b></p>
+                                <ul>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_registration">&lt;registration&gt;</a></li>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_oauth">&lt;oauth&gt;</a></li>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_access_request">&lt;access_request&gt;</a></li>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_links">&lt;links&gt;</a></li>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_openid">&lt;openid&gt;</a></li>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_saml">&lt;saml&gt;</a></li>
+                                </ul>
+                
+                                <p><b>Mandatory Sub-element:</b></p>
+                                <ul>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_publisher">&lt;publisher&gt;</a></li>
+                                </ul>
+
+                            <h3 id="tag_registration">registration</h3>
+                                <p>This element triggers PowerSchool to
+                                   <a href="https://support.powerschool.com/developer/#/page/automatic-registration">register</a> itself to a third-party application. This is an optional element.</p>
+                                 <table class="table table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Attribute</th>
+                                        <th>Description</th>
+                                        <th>Required?</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td>url</td>
+                                        <td>The URL of the registration web service provided by third-party application. the URL must be prefixed with "https://".
+                                        A maximum of 1000 characters may be entered.</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                                <p><b>Sub-elements:</b></p>
+                                <ul>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_callback-data">&lt;callback-data&gt;</a></li>
+                                </ul>
+
+                            <h3 id="tag_callback-data">callback-data</h3>
+                                <p>A node containing arbitrary data that will be included in
+                                <a href="https://support.powerschool.com/developer/#/page/automatic-registration">Registration Request</a>. It can contain the license key associated 
+                                    with a particular instance of plugin. This is an optional element.</p>
+                                <p><b>Attributes:</b> None</p>
+                                <p><b>Sub-elements:</b> None</p>
+
+                            <h3 id="tag_oauth">oauth</h3>
+                                <p>This element triggers PowerSchool to generate data access credentials for the plugin. This is an optional element.
+                                For more details, see <a href="https://support.powerschool.com/developer/#/page/oauth">OAuth</a>.</p>
+                                <p><b>Attributes:</b></p>
+                                    <ul>
+                                        <li><a href="https://support.powerschool.com/developer/#tag_accessLevelV1Api">accessLevelV1Api</a></li>
+                                    </ul>
+                                <p><b>Sub-elements:</b> None</p>
+                            <p><b>Example:</b></p>
+                            <pre>&lt;oauth accessLevelV1Api="READ"/&gt;</pre>
+
+
+                        <h3 id="tag_accessLevelV1Api">accessLevelV1Api</h3>
+                        <p>PowerSchool SIS 25.2.0.0+. This optional attribute defines the access level request to the v1 APIs. If not present then access to the v1 APIs will be denied. Available values are NONE (default is not present), READ, FULL.<br><br>The FULL access level allows for updating Students (Student Fees/Test Scores) using the v1 API.<br><br><b>Note:</b> End users can change this value after plugin install from the <b>Data Provider Configuration</b> page.</p>
+                        
+                        <h3 id="tag_access_request">access_request</h3>
+                            <p>This element is used to define access request fields for the plugin.<br><br>
+                            This is an optional element.</p>
+                            <p><b>Attributes:</b> None</p>
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_field_request">&lt;field&gt;</a></li>
+                                <li><a href="https://support.powerschool.com/developer/#tag_cdn_request">&lt;cdn_request&gt;</a></li>
+                            </ul>
+
+                            <p><b>Example:</b></p>
+<pre>&lt;access_request&gt;
+    &lt;cdn_request&gt;
+        &lt;cdn name="https://code.jquery.com"/&gt;
+    &lt;/cdn_request&gt;
+    
+    &lt;field table="STUDENTS" field="DCID" access="ViewOnly" /&gt;
+    &lt;field table="STUDENTS" field="SSN" access="ViewOnly" /&gt;
+    &lt;field table="STUDENTS" field="LAST_NAME" access="FullAccess" /&gt;
+    &lt;field table="STUDENTS" field="FIRST_NAME" access="FullAccess" /&gt;
+    &lt;field table="STUDENTCOREFIELDS" field="ACT_DATE" access="FullAccess" /&gt;
+    &lt;field table="STUDENTCOREFIELDS" field="ACT_COMPOSITE" access="FullAccess" /&gt;
+    
+&lt;/access_request&gt;</pre>
+
+
+                        <h3 id="tag_field_request">field</h3>
+                        <p>This element defines individual fields in the access request. This is an optional element. There is no limit on maximum occurrences.<br><br> <b>NOTE:</b> The access_request feature does not apply to the /ws/v1/xxxx or PTG endpoints with the exception of the Students.SSN and Students.lunch_status fields unless otherwise noted. The access_request feature was not backported to existing API's in maintain backwards compatibility of v1 endpoints.</p>
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>table</td>
+                                    <td>The name of a valid PowerSchool table. A maximum of 30 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>field</td>
+                                    <td>The name of a valid field in the PowerSchool table. A maximum of 30 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>access</td>
+                                    <td>The requested access for the field in the PowerSchool table. The value must be either ViewOnly or FullAccess.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        <h3 id="tag_cdn_request_request">cdn_request - PowerSchool SIS 21.11.0.0+</h3>
+                        <p>Element for defining external content servers as part of the PowerSchool SIS Content Security Policy (CSP) response headers. This is an optional element in the plugin.xml.
+                        <br><br>
+                        CSP response headers tell the browser, among other things, what external resources it's allowed to load content from. CSP is an essential security feature to help protect against cross-site scripting (XSS), clickjacking, and other code injection attacks.
+                        <br><br>
+                        For example, if your PowerSchool SIS instance is https://somesite.mydomain.org and you link to an external site that is not https://somesite.mydomain.org for content, such as for a JavaScript or image file, the browser will <b>not</b> trust the resource unless the host name is included in the CSP response header. The cdn_request attribute allows for adding trusted hosts to the CSP header.
+                        <br><br><strong>Note: Content Security Policy (CSP) headers are enabled as of PowerSchool SIS 22.7.0.0+.</strong><br><br>
+                        <strong>Note:</strong> The CSP values defined in a plugin are global to the system, they do not currently apply to only the files included in the plugin.</p>
+        
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_cdn_request">&lt;cdn&gt;</a></li>
+                            </ul>
+                            
+                        <h3 id="tag_cdn_request">cdn</h3>
+                        <p>Element for defining an individual external content server. This is a mandatory element when a cdn_request is defined. There is no limit on maximum occurrence.</p>
+                            <p><b>Attributes:</b></p>
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>name</td>
+                                    <td>The host name where the external content resides. A maximum of 50 characters may be entered. Starting with PowerSchool SIS 23.1 this has been increased to 300 characters.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            
+                            <h3 id="tag_links">links</h3>
+                            <p>Element for adding navigational link. It is the container for individual &lt;link&gt; elements. This is
+                            an optional element.</p>
+                            <p><b>Attributes:</b> None</p>
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_link">&lt;link&gt;</a></li>
+                            </ul>
+
+                            <h3 id="tag_link">link</h3>
+                            <p>This element defines the metadata for a single third-party navigation link in PowerSchool. This is a mandatory element.
+                            </p>
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>display-text</td>
+                                    <td>The text of the physical link to the third-party
+                                        application, as it appears in PowerSchool. A maximum of 100 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>path</td>
+                                    <td>URI of the link to third-party application. Clicking
+                                        the link within PowerSchool will locate the URI. A maximum of 1000 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>title</td>
+                                    <td>Information about the link. For example, the text to display on a tooltip. A maximum of 256 characters may be entered.</td>
+                                    <td>No</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_ui_contexts">&lt;ui_contexts&gt;</a></li>
+                            </ul>
+
+                            <h3 id="tag_ui_contexts">ui_contexts</h3>
+                            <p>Element for adding user interface location contexts to links. It is the container for individual &lt;ui_context&gt; 
+                                elements. This is a mandatory element.</p>
+                            <p><b>Attributes:</b> None</p>
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_ui_context">&lt;ui_context&gt;</a></li>
+                            </ul>
+
+                        <h3 id="tag_ui_context">ui_context</h3>
+                            <p>This element defines the user interface location for a single third-party navigation link in PowerSchool.
+                                This is a mandatory element.</p>
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>id</td>
+                                    <td>The user interface location of the physical link to the third-party
+                                        application. It must be one of the available <a href="https://support.powerschool.com/developer/#tag_ui_contexts">UI Contexts</a></td>
+                                    <td>Yes</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                
+                                <p>
+                                For example, <code>&lt;ui_context id="admin.left_nav"/&gt;</code> specifies
+                                    that the link is to appear in the main menu (left navigation) of the PowerSchool admin portal.
+                                Duplicate &lt;ui_context&gt; tags will validate during the
+                                installation of the plugin, but the duplicates will be ignored. The possible ui_context ids are:</p>
+                             <table class="table table-condensed table-bordered">
+                                <thead>
+                                <tr>
+                                    <th>id Value</th>
+                                    <th>Description</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>admin.left_nav</td>
+                                    <td>This is the list of links under Applications headings in the main menu of the PowerSchool admin portal.</td>
+                                </tr>
+                                <tr>
+                                    <td>admin.header</td>
+                                    <td>This is the list of links in the dialog triggered by clicking the <code>Applications</code> icon in the navigation toolbar
+                                        (header bar) of the PowerSchool admin portal.</td>
+                                </tr>
+                                <tr>
+                                    <td>teacher.header</td>
+                                    <td>This is the list of links in the dialog triggered by clicking the <code>Applications</code> icon in the navigation toolbar
+                                        (header bar) of the PowerSchool teacher portal.</td>
+                                </tr>
+                                <tr>
+                                    <td>teacher.pro.apps</td>
+                                    <td>This is the list of links in the menu opened by clicking the <code>Apps</code> icon in the side navigation toolbar
+                                        (charms bar) of the PowerTeacher Pro application.</td>
+                                </tr>
+                                <tr>
+                                    <td>guardian.header</td>
+                                    <td>This is the list of links in the dialog triggered by clicking the <code>Applications</code> icon in the navigation toolbar
+                                        (header bar) of the PowerSchool guardian portal.
+                                        <br><br><strong>Note: </strong>Links defined using this ui_context will also show under the <code>Custom Links</code> section of Unified Classroom's <code>Quick Links</code> screen.</td>
+                                </tr>   
+                                <tr>
+                                    <td>student.header</td>
+                                    <td>This is the list of links in the dialog triggered by clicking the <code>Applications</code> icon in the navigation toolbar
+                                        (header bar) of the PowerSchool student portal.
+                                        <br><br><strong>Note: </strong>Links defined using this ui_context will also show under the <code>Custom Links</code> section of Unified Classroom's <code>Quick Links</code> screen.</td>
+                                </tr>  
+                                 </tbody>
+                            </table>               
+
+                            <p><b>Sub-elements:</b> None</p>
+                            
+                            <h3 id="tag_openid">openid</h3>
+                            <p>Element for adding <a href="https://support.powerschool.com/developer/#/page/powerschool-as-openid-identity-provider">OpenID</a>
+                                relying party host and port and configuring single sign-on links. This is an optional elements.</p>
+
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>host</td>
+                                    <td>This is the host name of the OpenID relying party. Specify only the host name, without any protocol or scheme, such as https. A maximum of 256 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>port</td>
+                                    <td>This is the port number of the OpenID relying party. The default value is 443.</td>
+                                    <td>No</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_openid_links">&lt;links&gt;</a></li>
+                            </ul>
+
+                            <h3 id="tag_openid_links">links (OpenID)</h3>
+                            <p>Container element for single sign-on &lt;link&gt; elements. This is a mandatory element.</p>
+
+                            <p><b>Sub-elements:</b></p>
+                            <ul class="subElementList">
+                                <li><a href="https://support.powerschool.com/developer/#tag_openid_link">&lt;link&gt;</a></li>
+                            </ul>
+
+
+                            <h3 id="tag_openid_link">link (OpenID)</h3>
+                            <p>This element defines the metadata for a single OpenID single sign-on link in PowerSchool. This is a mandatory element.</p>
+
+                        <table class="table table-condensed">
+                            <thead>
+                            <tr>
+                                <th>Attribute</th>
+                                <th>Description</th>
+                                <th>Required?</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>display-text</td>
+                                <td>The text of the OpenID single sign-on link to the
+                                    third-party application, as it appears in PowerSchool. A maximum of 100 characters may be entered.</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td>path</td>
+                                <td>The path to a resource in the third-party
+                                    application. This is the part of URL without host. A maximum of 1000 characters may be entered.
+                                    The default value is <code>/</code>.</td>
+                                <td>Yes</td>
+                            </tr>
+                            <tr>
+                                <td>title</td>
+                                <td>Information about the link. For example, the text
+                                    to display on a tooltip. Max 256 characters. </td>
+                                <td>No</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <p><b>Sub-elements:</b></p>
+                        <ul>
+                            <li><a href="https://support.powerschool.com/developer/#tag_ui_contexts">&lt;ui_contexts&gt;</a></li>
+                        </ul>
+
+<h3 id="tag_saml">saml</h3>
+<p>Element for adding a <a href="http://saml.xml.org/" target="_blank">SAML</a> service provider or identity provider. This is an optional element.</p>
+    <p><b>Attributes for PowerSchool as Identity Provider:</b></p>
+    <table class="table table-condensed">
+        <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Description</th>
+            <th>Required?</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>name</td>
+            <td>The name of the service provider. A maximum of 256 characters may be entered.
+                The name must be unique; there can be no other service provider configured with the same name in the same PowerSchool installation.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>entity-id</td>
+            <td>The entity-ID of the service provider. A maximum of 256 characters may be entered.<br>
+                This value must be supplied by the service provider and must match the service provider value exactly.
+                It will be used to identify the service provider when the service provider initiates a single sign-on.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>base-url</td>
+            <td>The root-URL of the service provider application. A maximum of 256 characters may be entered.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>metadata-url</td>
+            <td>The URL from which the PowerSchool SAML identity provider<br>
+                can obtain a copy of the service provider metadata. A maximum of 256 characters may be entered. </td>
+            <td>No</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p><b>Attributes for PowerSchool as Service Provider:</b></p>
+    <table class="table table-condensed">
+        <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Description</th>
+            <th>Required?</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>name</td>
+            <td>The name of the service provider. In this case, the service provider is the local PowerSchool instance.
+                You must provide a short name that will become part of the addresses used during SAML communication. A maximum of 256 characters may be entered.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>idp-name</td>
+            <td>The name of the identity provider. This name would be provided by the organization that is setting up the identity provider.
+            After plugin installation, this can be modified using the Plugin Detail page. A maximum of 40 characters may be entered.
+            The name must be unique; there can be no other identity provider configured with the same name in the same PowerSchool installation.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>idp-entity-id</td>
+            <td>The entity-ID of the identity provider. This would be provided by the organization that is setting up the identity provider.
+            This is normally defined in the form of a URI.
+            After plugin installation, this can be modified using the Plugin Detail page.
+            A maximum of 256 characters may be entered. This value must be supplied by the identity provider and must match the identity provider value exactly.</td>
+            <td>Yes</td>
+        </tr>
+        <tr>
+            <td>idp-metadata-url</td>
+            <td>The URL from which the PowerSchool can obtain a copy of the identity provider metadata. A maximum of 1000 characters may be entered.
+                After plugin installation, this can be modified using the Plugin Detail page.</td>
+            <td>Yes</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p><b>Sub-elements:</b></p>
+    <ul>
+        <li><a href="https://support.powerschool.com/developer/#tag_saml_links">&lt;links&gt;</a></li>
+    </ul>
+
+
+                        <h3 id="tag_saml_links">links (SAML)</h3>
+                        <p>Container element for single sign-on &lt;link&gt; elements. This is a mandatory element.</p>
+
+                        <p><b>Sub-elements:</b></p>
+                        <ul>
+                            <li><a href="https://support.powerschool.com/developer/#tag_saml_link">&lt;link&gt;</a></li>
+                        </ul>
+
+                        <h3 id="tag_saml_link">link (SAML)</h3>
+                        <p>This element defines the metadata for a single SAML single sign-on link in PowerSchool. This is a mandatory element.</p>
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>display-text</td>
+                                    <td>The text of the SAML single sign-on link to the
+                                        third-party application, as it appears in PowerSchool. A maximum of 100 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>path</td>
+                                    <td>The path to a resource in the third-party
+                                        application. The complete URL is constructed by prepending the <a href="https://support.powerschool.com/developer/#tag_saml">&lt;saml&gt;</a>
+                                        base-URL value to the path. A maximum of 1000 characters may be entered. The default value is <code>/</code>.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                <tr>
+                                    <td>title</td>
+                                    <td>Information about the link. For example, the text
+                                        to display on a tooltip. Max 256 characters.</td>
+                                    <td>No</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_ui_contexts">&lt;ui_contexts&gt;</a></li>
+                            </ul>
+
+                            <h3 id="tag_saml_attributes">attributes</h3>
+                            <p>Container element for single sign-on &lt;user&gt; elements. This is an optional element. For the list of
+                                supported attributes, see <a href="https://support.powerschool.com/developer/#/page/powerschool-as-saml-identity-provider">PowerSchool as SAML Identity Provider</a>.</p>
+                                <p><b>Attributes:</b> None</p>
+                                <p><b>Sub-elements:</b></p>
+                                <ul class="subElementList">
+                                    <li><a href="https://support.powerschool.com/developer/#tag_saml_user">&lt;user&gt;</a></li>
+                                </ul>
+
+                            <h3 id="tag_saml_user">user</h3>
+                            <p>This element defines the type of users in PowerSchool. This is a mandatory element.</p>
+                                <table class="table table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Attribute</th>
+                                        <th>Description</th>
+                                        <th>Required?</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td>type</td>
+                                        <td>The type of users in PowerSchool. The possible values are:
+                                        <ul>
+                                            <li>admin</li>
+                                            <li>teacher</li>
+                                            <li>student</li>
+                                            <li>guardian</li>
+                                        </ul></td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                                <p><b>Sub-elements:</b></p>
+                                <ul>
+                                    <li><a href="https://support.powerschool.com/developer/#tag_saml_attribute">&lt;attribute&gt;</a></li>
+                                </ul>
+
+                            <h3 id="tag_saml_attribute">attribute</h3>
+                            <p>Container element for attributes. This is a mandatory element.</p>
+
+                                <table class="table table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Attribute</th>
+                                        <th>Description</th>
+                                        <th>Required?</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td>name</td>
+                                        <td>This element defines the name of the attribute in PowerSchool. A maximum of 256 characters may be entered.</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>attribute-name</td>
+                                        <td>An alias used in the SAML response being sent back to the service provider. A maximum of 256 characters may be entered.</td>
+                                        <td>No</td>
+                                    </tr>
+                                    <tr>
+                                        <td>attribute-value</td>
+                                        <td>A custom value, to be used by the SAML SSO services to pass through a constant value for this<br>
+                                            attribute or provide a custom parameter to be used to fetch dynamic values for this attribute from<br>
+                                            the database, to be delivered in the SAML response. A maximum of 256 characters may be entered.</td>
+                                        <td>No</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                                <p><b>Sub-elements:</b> None</p>
+
+                            <h3 id="tag_saml_permissions">permissions</h3>
+                            <p>Container element for single sign-on &lt;permission&gt; elements. This is an optional element.</p>
+                                <p><b>Attributes:</b> None</p>
+
+                                <p><b>Sub-elements:</b></p>
+                                <ul class="subElementList">
+                                    <li><a href="https://support.powerschool.com/developer/#tag_saml_permission">&lt;permission&gt;</a></li>
+                                </ul>
+
+
+                            <h3 id="tag_saml_permission">permission</h3>
+                            <p>Defines the metadata for a single SAML single sign-on link in PowerSchool. This is a mandatory element.</p>
+
+                                <table class="table table-condensed">
+                                    <thead>
+                                    <tr>
+                                        <th>Attribute</th>
+                                        <th>Description</th>
+                                        <th>Required?</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td>name</td>
+                                        <td>The name of the permission to be returned to the Service Provider (SP) with the SAML response. A maximum of 100 characters may be entered.</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>description</td>
+                                        <td>A user-friendly description of the permission, which shows up in the roles configuration page. A maximum of 1000 characters may be entered.</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    <tr>
+                                        <td>value</td>
+                                        <td>The value to be returned with this permission.  This value will be returned with the name attribute
+                                            as a name-value pair. A maximum of 100 characters may be entered.</td>
+                                        <td>Yes</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                                <p><b>Sub-elements:</b> None</p>
+
+                        <h3 id="tag_publisher">publisher</h3>
+                        <p>Element for adding publisher information. This is a mandatory element.</p>
+                            <p><b>Attributes:</b></p>
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>name</td>
+                                    <td>The PowerSchool third-party plugin publisher name. A maximum of 100 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <p><b>Sub-elements:</b></p>
+                            <ul>
+                                <li><a href="https://support.powerschool.com/developer/#tag_contact">&lt;contact&gt;</a></li>
+                            </ul>
+
+
+                        <h3 id="tag_contact">contact</h3>
+                        <p>Element to add publisher contact details. This is a mandatory element.</p>
+                            <table class="table table-condensed">
+                                <thead>
+                                <tr>
+                                    <th>Attribute</th>
+                                    <th>Description</th>
+                                    <th>Required?</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>phone</td>
+                                    <td>The phone number of the publisher. A maximum of 20 characters may be entered.</td>
+                                    <td>No</td>
+                                </tr>
+                                <tr>
+                                    <td>email</td>
+                                    <td>The email address of the publisher. A maximum of 40 characters may be entered.</td>
+                                    <td>Yes</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <p><b>Sub-elements:</b> None</p>
+
+                        </div>
+                    </div>
+                             
+                </div>
+ 
+            </div>
+            <div class="col-md-3">
+                <div class="nav-scrollspy hidden-print hidden-xs hidden-sm affix" role="complementary"><ul class="nav"><li class=""><a href="https://support.powerschool.com/developer/#introduction">Introduction</a></li><li class=""><a href="https://support.powerschool.com/developer/#available_services">Available Services</a></li><li class=""><a href="https://support.powerschool.com/developer/#xml_elements">XML Elements</a><ul class="nav"><li class=""><a href="https://support.powerschool.com/developer/#tag_plugin">plugin</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_registration">registration</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_callback-data">callback-data</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_oauth">oauth</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_accessLevelV1Api">accessLevelV1Api</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_access_request">access_request</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_field_request">field</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_cdn_request_request">cdn_request - PowerSchool SIS 21.11.0.0+</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_cdn_request">cdn</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_links">links</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_link">link</a></li><li class=""><a href="https://support.powerschool.com/developer/#tag_ui_contexts">ui_contexts</a></li><li><a href="https://support.powerschool.com/developer/#tag_ui_context">ui_context</a></li><li><a href="https://support.powerschool.com/developer/#tag_openid">openid</a></li><li><a href="https://support.powerschool.com/developer/#tag_openid_links">links (OpenID)</a></li><li><a href="https://support.powerschool.com/developer/#tag_openid_link">link (OpenID)</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml">saml</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml_links">links (SAML)</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml_link">link (SAML)</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml_attributes">attributes</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml_user">user</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml_attribute">attribute</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml_permissions">permissions</a></li><li><a href="https://support.powerschool.com/developer/#tag_saml_permission">permission</a></li><li><a href="https://support.powerschool.com/developer/#tag_publisher">publisher</a></li><li><a href="https://support.powerschool.com/developer/#tag_contact">contact</a></li></ul></li></ul></div>
+            </div>
+        </div>
+    </div>
+</div></div></div>
+    <footer data-ng-controller="footerController" class="ng-scope">
+	    <div class="container">
+	        <h2 class="sr-only">Site Map</h2>
+	        <div class="row site-map" role="navigation">
+	            <!-- ngRepeat: menuItem in menu.menuItems | limitTo:5 --><div class="col-md-2 col-sm-2 ng-scope col-md-offset-1 col-sm-offset-1" data-ng-class="{&#39;col-md-offset-1 col-sm-offset-1&#39;:$index == 0}" data-ng-repeat="menuItem in menu.menuItems | limitTo:5">
+	                <h3 class="ng-binding">PS SIS API</h3>
+	                <!-- ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/security" class="ng-binding ng-scope">Security</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/data-access" class="ng-binding ng-scope">Data Access</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/resources" class="ng-binding ng-scope">Resources</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/events" class="ng-binding ng-scope">Events</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/single-sign-on-2" class="ng-binding ng-scope">Single Sign On</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/examples" class="ng-binding ng-scope">Examples</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children -->
+	            </div><!-- end ngRepeat: menuItem in menu.menuItems | limitTo:5 --><div class="col-md-2 col-sm-2 ng-scope" data-ng-class="{&#39;col-md-offset-1 col-sm-offset-1&#39;:$index == 0}" data-ng-repeat="menuItem in menu.menuItems | limitTo:5">
+	                <h3 class="ng-binding">PS SIS Customization</h3>
+	                <!-- ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/page-customization-and-database-extensions" class="ng-binding ng-scope">Page Customization and Database Extensions</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/powerquery-dat" class="ng-binding ng-scope">PowerQuery DAT</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/powerteacher-pro-customization" class="ng-binding ng-scope">PowerTeacher Pro Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/ps-html-tags" class="ng-binding ng-scope">PS-HTML tags</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/plugins" class="ng-binding ng-scope">Plugins</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/student-contacts-customization" class="ng-binding ng-scope">Student Contacts Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/new-experience-start-page-customization" class="ng-binding ng-scope">New Experience Start Page Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/powerschool-sis-attendance-in-schoology-customizations" class="ng-binding ng-scope">PowerSchool SIS Attendance in Schoology Customizations</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/user-interface-customization" class="ng-binding ng-scope">Enhanced Navigation Customization</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children -->
+	            </div><!-- end ngRepeat: menuItem in menu.menuItems | limitTo:5 --><div class="col-md-2 col-sm-2 ng-scope" data-ng-class="{&#39;col-md-offset-1 col-sm-offset-1&#39;:$index == 0}" data-ng-repeat="menuItem in menu.menuItems | limitTo:5">
+	                <h3 class="ng-binding">Community</h3>
+	                <!-- ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/blog" class="ng-binding ng-scope">Blog</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' --><a data-ng-if="child.type == &#39;LINK&#39;" href="https://support.powerschool.com/forum/319" target="_blank" class="ng-binding ng-scope">Developer Forums</a><!-- end ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children --><div class="nav-item ng-scope" data-ng-repeat="child in menuItem.children">
+	                    <!-- ngIf: child.type == 'LINK' -->
+	                    <!-- ngIf: child.type == 'PAGE' --><a data-ng-if="child.type == &#39;PAGE&#39;" href="https://support.powerschool.com/developer/#/page/video-library" class="ng-binding ng-scope">Video Library</a><!-- end ngIf: child.type == 'PAGE' -->
+	                </div><!-- end ngRepeat: child in menuItem.children -->
+	            </div><!-- end ngRepeat: menuItem in menu.menuItems | limitTo:5 -->
+	        </div>
+	        <div class="social">
+	            <a class="facebook" href="https://www.facebook.com/powerschool" name="external" title="Facebook">Like us on Facebook</a>
+	            <a class="twitter" href="https://twitter.com/MyPowerSchool" name="external" title="Twitter">Follow us on Twitter</a>
+	            <a class="instagram" href="https://instagram.com/mypowerschool/" name="external" title="Instagram">Follow us on Instagram</a>
+	            <a class="youtube" href="https://www.youtube.com/channel/UCyx2EEeONitePOJww0mpCbA" name="external" title="YouTube">Subscribe to us on YouTube</a>
+	        </div>
+	        <div class="privacy-terms">
+	            <p>
+	                <a href="https://www.powerschool.com/privacy/">Privacy Policy</a><a href="https://support.powerschool.com/terms">Terms of Use</a>
+	            </p>
+	        </div>
+	    </div>
+	    <div class="sosumi-block">
+	        <div class="container">
+	            <p class="sosumi">Copyright © 2000-2025, PowerSchool Group LLC. All rights reserved. 150 Parkshore Dr, Folsom, CA 95630</p>
+	        </div>
+	    </div>
+	</footer>
+
+	<script src="./plugincontent_files/jquery.min.js.download"></script>
+	<script src="./plugincontent_files/angular.js.download"></script>
+	<script src="./plugincontent_files/angular-route.js.download"></script>
+	<script src="./plugincontent_files/angular-translate.min.js.download"></script>
+	<script src="./plugincontent_files/angular-cookies.min.js.download"></script>
+	<script src="./plugincontent_files/angular-sanitize.js.download"></script>
+	<script src="./plugincontent_files/dirPagination.js.download"></script>
+	<script src="./plugincontent_files/app.js.download"></script>
+	<script src="./plugincontent_files/services.js.download"></script>
+	<script src="./plugincontent_files/controllers.js.download"></script>
+	<script src="./plugincontent_files/directives.js.download"></script>
+	<script src="./plugincontent_files/site.min.js.download"></script>
+
+<div id="mobile-slide-menu" style="left:-260px; right:auto;"><ul id="mobile-slide-menu-list" class="nav navbar-nav"></ul></div><div id="mobile-slide-menu" style="left:-260px; right:auto;"><ul id="mobile-slide-menu-list" class="nav navbar-nav"><li class="dropdown"><a href="https://support.powerschool.com/developer/" class="dropdown-toggle" data-toggle="dropdown">PS SIS API<i class="icon-caret-right rotate"></i></a><ul class="dropdown-menu"><li><a href="https://support.powerschool.com/developer/#/page/security">Security</a></li><li><a href="https://support.powerschool.com/developer/#/page/data-access">Data Access</a></li><li><a href="https://support.powerschool.com/developer/#/page/resources">Resources</a></li><li><a href="https://support.powerschool.com/developer/#/page/events">Events</a></li><li><a href="https://support.powerschool.com/developer/#/page/single-sign-on-2">Single Sign On</a></li><li><a href="https://support.powerschool.com/developer/#/page/examples">Examples</a></li></ul></li><li class="dropdown"><a href="https://support.powerschool.com/developer/" class="dropdown-toggle" data-toggle="dropdown">PS SIS Customization<i class="icon-caret-right rotate"></i></a><ul class="dropdown-menu"><li><a href="https://support.powerschool.com/developer/#/page/page-customization-and-database-extensions">Page Customization and Database Extensions</a></li><li><a href="https://support.powerschool.com/developer/#/page/powerquery-dat">PowerQuery DAT</a></li><li><a href="https://support.powerschool.com/developer/#/page/powerteacher-pro-customization">PowerTeacher Pro Customization</a></li><li><a href="https://support.powerschool.com/developer/#/page/ps-html-tags">PS-HTML tags</a></li><li><a href="https://support.powerschool.com/developer/#/page/plugins">Plugins</a></li><li><a href="https://support.powerschool.com/developer/#/page/student-contacts-customization">Student Contacts Customization</a></li><li><a href="https://support.powerschool.com/developer/#/page/new-experience-start-page-customization">New Experience Start Page Customization</a></li><li><a href="https://support.powerschool.com/developer/#/page/powerschool-sis-attendance-in-schoology-customizations">PowerSchool SIS Attendance in Schoology Customizations</a></li><li><a href="https://support.powerschool.com/developer/#/page/user-interface-customization">Enhanced Navigation Customization</a></li></ul></li><li class="dropdown"><a href="https://support.powerschool.com/developer/" class="dropdown-toggle" data-toggle="dropdown">Community<i class="icon-caret-right rotate"></i></a><ul class="dropdown-menu"><li><a href="https://support.powerschool.com/developer/#/page/blog">Blog</a></li><li><a href="https://support.powerschool.com/forum/319">Developer Forums</a></li><li><a href="https://support.powerschool.com/developer/#/page/video-library">Video Library</a></li></ul></li></ul></div><protonpass-root-71f5 data-protonpass-role="root" data-protonpass-theme="os"><template shadowrootmode="closed"></template></protonpass-root-71f5></body><div id="aiFabShadowRoot" data-fab-type="react" style="opacity: 1;"><template shadowrootmode="open"><div id="fab-react-root"><div class="fab-root"><div class="acrobat-button-container " style="top: 71.3359px; bottom: auto;"><div class="acrobat-button " role="button" aria-label="Get summaries and key insights using AI Assistant"><button class="close-btn  "><svg class="close-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="mask0_8552_7892" maskUnits="userSpaceOnUse" x="0" y="0" width="14" height="14" style="mask-type: alpha;"><path d="M7.82482 7.00034L10.6374 4.18778C10.7893 4.03592 10.7893 3.78969 10.6374 3.63783L10.3625 3.36292C10.2106 3.21106 9.96446 3.21106 9.81255 3.36292L6.99995 6.17548L4.18734 3.36292C4.03543 3.21106 3.78933 3.21106 3.63743 3.36292L3.36247 3.63783C3.21056 3.78969 3.21056 4.03592 3.36247 4.18778L6.17507 7.00034L3.36247 9.81295C3.21056 9.96481 3.21056 10.2111 3.36247 10.3629L3.63743 10.6378C3.78933 10.7897 4.03543 10.7897 4.18734 10.6378L6.99995 7.82526L9.81255 10.6378C9.96446 10.7897 10.2106 10.7897 10.3625 10.6378L10.6374 10.3629C10.7893 10.2111 10.7893 9.96481 10.6374 9.81295L7.82482 7.00034Z" fill="#222222"></path></mask><g mask="url(#mask0_8552_7892)"><rect width="14" height="14"></rect></g></svg><svg class="burger-icon" width="21" height="17" viewBox="0 0 21 17" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="mask0_12188_28876" maskUnits="userSpaceOnUse" x="3" y="3" width="15" height="14" style="mask-type: alpha;"><path d="M15.1285 12.8008H6.37852C6.08867 12.8008 5.85352 13.0359 5.85352 13.3258C5.85352 13.6156 6.08867 13.8508 6.37852 13.8508H15.1285C15.4184 13.8508 15.6535 13.6156 15.6535 13.3258C15.6535 13.0359 15.4184 12.8008 15.1285 12.8008Z" fill="#292929"></path><path d="M6.37852 6.85078H15.1285C15.4184 6.85078 15.6535 6.61562 15.6535 6.32578C15.6535 6.03594 15.4184 5.80078 15.1285 5.80078H6.37852C6.08867 5.80078 5.85352 6.03594 5.85352 6.32578C5.85352 6.61562 6.08867 6.85078 6.37852 6.85078Z" fill="#292929"></path><path d="M15.1285 9.30078H6.37852C6.08867 9.30078 5.85352 9.53594 5.85352 9.82578C5.85352 10.1156 6.08867 10.3508 6.37852 10.3508H15.1285C15.4184 10.3508 15.6535 10.1156 15.6535 9.82578C15.6535 9.53594 15.4184 9.30078 15.1285 9.30078Z" fill="#292929"></path></mask><g mask="url(#mask0_12188_28876)"><rect x="3.75391" y="3" width="14" height="14" fill="#464646"></rect></g></svg></button><div class="icon-container" role="button" tabindex="0" aria-label="Open AI Assistant"><svg id="ImportedIcons" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" class="fab-svg-icon"><path d="m6.21661,16.39534c-1.35034,2.23499-2.67933,3.64758-3.45616,3.64758-.12795.00539-.25276-.04056-.34667-.12762-.14818-.12483-.21629-.32065-.17758-.5105.14764-.80079,1.68628-1.95576,3.98041-3.00946Zm6.49075-3.19656c-.57993.12528-1.1792.27056-1.78689.43544-.4366.11893-.87951.24862-1.32255.38729.23541-.4949.4515-.98554.6398-1.452.24831-.6159.48156-1.232.69564-1.83456.18831.30354.38304.59839.58195.88207.39375.56092.81787,1.09736,1.19205,1.58176Zm-2.99822-10.63684c.08814-.18001.26644-.29855.46653-.31016.51149,0,.62276.63358.62276,1.1638-.06787,1.25011-.29293,2.48669-.66988,3.68055-.85816-2.33642-.73831-3.97319-.41942-4.53419h.00001Zm9.60883,12.20974c-.13359.4402-.56725.71808-1.023.6555-.15594-.00061-.3112-.02054-.46224-.05933-1.07834-.28263-2.07953-.80363-2.92976-1.5246.71719-.11267,1.44198-.17001,2.16797-.17149.48402-.00813.96771.03017,1.44442.11438.43447.09244.92449.33873.80261.98554Zm1.45515-1.0537c-1.01837-.83309-2.33117-1.21735-3.63802-1.06487-.98482.00983-1.96732.09739-2.93836.26187-.62354-.62512-1.19003-1.30467-1.69272-2.03054-.38314-.54455-.73672-1.10931-1.05923-1.69182.54287-1.57384.85986-3.2167.94151-4.87953,0-1.49369-.57564-3.09087-2.19132-3.09087-.56296.01952-1.07528.33036-1.35261.82066-.68906,1.2165-.41298,3.72002.68705,6.26756-.38306,1.17041-.80046,2.31007-1.31196,3.57265-.43687,1.08123-.93191,2.13803-1.48293,3.16579-1.64775.68213-5.15115,2.33642-5.48494,4.16456-.10306.53569.0783,1.08658.47942,1.45629.39145.35044.90217.53779,1.42737.5236,2.10998,0,4.21366-3.003,5.63044-5.58789.80461-.2816,1.62641-.53671,2.44391-.759.8967-.24407,1.76345-.44427,2.58082-.594,1.39014,1.39224,3.25004,2.21523,5.21531,2.30773,1.36751,0,1.87887-.60942,2.06516-1.122.20733-.5893.08589-1.24438-.3189-1.72019Z" fill="var(--iconRed, #d31510)" fill-rule="evenodd"></path></svg></div></div><div class="draggable-handle "><svg width="14" height="15" viewBox="0 0 14 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.60039 13.0699C5.26313 13.0699 5.80039 12.5327 5.80039 11.8699C5.80039 11.2072 5.26313 10.6699 4.60039 10.6699C3.93765 10.6699 3.40039 11.2072 3.40039 11.8699C3.40039 12.5327 3.93765 13.0699 4.60039 13.0699Z" fill="#292929"></path><path d="M4.60039 8.27109C5.26313 8.27109 5.80039 7.73384 5.80039 7.07109C5.80039 6.40835 5.26313 5.87109 4.60039 5.87109C3.93765 5.87109 3.40039 6.40835 3.40039 7.07109C3.40039 7.73384 3.93765 8.27109 4.60039 8.27109Z" fill="#292929"></path><path d="M4.60039 3.47031C5.26313 3.47031 5.80039 2.93305 5.80039 2.27031C5.80039 1.60757 5.26313 1.07031 4.60039 1.07031C3.93765 1.07031 3.40039 1.60757 3.40039 2.27031C3.40039 2.93305 3.93765 3.47031 4.60039 3.47031Z" fill="#292929"></path><path d="M9.4002 13.0699C10.0629 13.0699 10.6002 12.5327 10.6002 11.8699C10.6002 11.2072 10.0629 10.6699 9.4002 10.6699C8.73745 10.6699 8.2002 11.2072 8.2002 11.8699C8.2002 12.5327 8.73745 13.0699 9.4002 13.0699Z" fill="#292929"></path><path d="M9.4002 8.27109C10.0629 8.27109 10.6002 7.73384 10.6002 7.07109C10.6002 6.40835 10.0629 5.87109 9.4002 5.87109C8.73745 5.87109 8.2002 6.40835 8.2002 7.07109C8.2002 7.73384 8.73745 8.27109 9.4002 8.27109Z" fill="#292929"></path><path d="M9.4002 3.47031C10.0629 3.47031 10.6002 2.93305 10.6002 2.27031C10.6002 1.60757 10.0629 1.07031 9.4002 1.07031C8.73745 1.07031 8.2002 1.60757 8.2002 2.27031C8.2002 2.93305 8.73745 3.47031 9.4002 3.47031Z" fill="#292929"></path></svg></div></div></div></div><style>
+    .acrobat-button-container {
+        position: fixed;
+        right: 0;
+        bottom: 36px;
+        z-index: 2147483646;
+        visibility: visible !important;
+        pointer-events: all;
+        opacity: 1;
+        display: flex;
+        align-items: center;
+        transition: opacity 0.3s ease-in-out;
+    }
+
+    @media print {
+        .acrobat-button-container {
+            display: none !important;
+        }
+    }
+
+    .acrobat-button {
+        position: relative;
+        background: white;
+        display: flex;
+        align-items: center;
+        pointer-events: all;
+        touch-action: none;
+        box-shadow: 0px 2px 8px 0px #00000029;
+        height: 34px;
+        width: 34px;
+        border: 1px solid transparent;
+        background-clip: padding-box, border-box;
+        background-origin: border-box;
+        background-image: linear-gradient(white, white),
+                        linear-gradient(95.85deg, #D73220 0%, #D92361 33%, #7155FA 100%);
+        border-radius: 18px;
+        justify-content: right;
+        margin-right: var(--fab-margin-right, 28px);
+        overflow: hidden;
+    }
+
+    .acrobat-button-container-transparent {
+        opacity: 0.4 !important;
+        transition: opacity 0.3s ease-in-out;
+    }
+
+    .acrobat-button-container-transparent:hover,
+    .acrobat-button-container-transparent:focus,
+    .acrobat-button-container-transparent:active {
+        opacity: 1;
+    }
+
+    .acrobat-button > svg {
+        flex-shrink: 0;
+        margin: 4px 5px 5px 5px;
+        width: 22px;
+        height: 22px;
+        pointer-events: none;
+        fill: #b40000;
+    }
+    .acrobat-button:has(.close-btn.open),
+    .expand-acrobat-button {
+        width: 64px;
+    }
+
+    .disabled {
+        background: #B1B1B1;
+    }
+
+    .tooltip-text {
+        width: 160px;
+        visibility: hidden;
+        opacity: 0;
+        background-color: #FFFFFF;
+        color: #292929;
+        border-radius: 7px;
+        padding: 4px 1px 5px 9px;
+        position: absolute;
+        z-index: 1;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-right: 10px;
+        transition: opacity 0.3s, visibility 0s linear 2s;
+        font-size: 12px;
+        line-height: 15px;
+        font-family: 'adobe-clean', Adobe Clean, sans-serif;
+        filter: drop-shadow(0px 1px 6px rgba(0, 0, 0, 0.12));
+    }
+
+    .tooltip-text::after {
+       content: '';
+       position: absolute;
+       top: 50%;
+       left: 100%;
+       transform: translateY(-50%);
+       border-width: 6px;
+       border-style: solid;
+       border-color: transparent transparent transparent #fff;
+    }
+
+    .show-tooltip {
+        visibility: visible;
+        opacity: 1;
+        line-height: 1.5;
+        font-family: 'adobe-clean', Adobe Clean, sans-serif;
+        transition: opacity 0.3s;
+        transition-delay: 500ms;
+    }
+
+    .close-btn {
+        position: relative;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .close-btn svg {
+        fill: #464646;
+    }
+
+    .close-btn.showCloseButton {
+        opacity: 1;
+        display: flex;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 2px;
+    }
+
+    .fab-view-settings-dialog {
+        display: none;
+        position: absolute;
+        bottom: 40px;
+        z-index: 1;
+    }
+
+    .close-btn:hover {
+        background: #E6E6E6;
+        border-radius: 50%; /* Keep original circular hover */
+        cursor: pointer;
+    }
+
+    .fab-view-settings-dialog.showDialog {
+        display: block;
+    }
+    .close-btn .burger-icon {
+        display: inline;
+        margin-bottom: 2px;
+    }
+    .close-btn .close-icon {
+        display: none;
+    }
+    .close-btn.open .burger-icon {
+        display: none;
+    }
+    .close-btn.open .close-icon {
+        display: inline;
+    }
+    .tooltip-text .tooltip-text-content {
+        font-weight: bold;
+    }
+    .tooltip-text .tooltip-sub-text-text {
+        font-style: italic;
+        font-size: 11px;
+    }
+
+    /* Icon container styles - replaces iframe */
+    .icon-container {
+        width: 33px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        pointer-events: all;
+        flex-shrink: 0;
+        background: transparent;
+        border: none;
+    }
+
+    .icon-container:active {
+        cursor: grabbing;
+    }
+
+    .fab-svg-icon {
+        width: 22px;
+        height: 22px;
+        padding: 5px 5px 5px 6px;
+        pointer-events: none;
+        fill: #b40000;
+    }
+
+    .draggable-handle {
+        display: none;
+        position: absolute;
+        right: var(--drag-handle-right, 12px);
+        cursor: grab;
+    }
+    .draggable-handle-visible {
+        display: flex;
+    }
+
+    /* Font face declarations - for proper font loading in Shadow DOM */
+    @font-face {
+        font-family: 'adobe-clean';
+        font-weight: 400;
+        src: url('chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/browser/css/fonts/AdobeClean-Regular.otf') format('opentype');
+    }
+    @font-face {
+        font-family: 'adobe-clean';
+        font-weight: 700;
+        src: url('chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/browser/css/fonts/AdobeClean-Bold.otf') format('opentype');
+    }
+    @font-face {
+        font-family: 'AdobeClean-Regular';
+        src: url('chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/browser/css/fonts/AdobeClean-Regular.otf') format('opentype');
+    }
+    @font-face {
+        font-family: 'AdobeClean-Bold';
+        src: url('chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/browser/css/fonts/AdobeClean-Bold.otf') format('opentype');
+    }
+    body {
+        font-family: 'AdobeClean-Regular', adobe-clean, "Adobe Clean", sans-serif;
+    }
+
+    .dialog-container {
+        width: 166px;
+        background-color: #ffffff;
+        border-radius: 4px;
+        border: 1px solid #B1B1B1;
+        box-shadow: 0px 1px 4px 0px #00000026;
+        z-index: 1000;
+        padding: 4px;
+        position: relative;
+        margin: 4px 0px;
+    }
+
+    .menu {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .menu .menu_item {
+        cursor: pointer;
+        font-family: 'AdobeClean-Regular', adobe-clean, "Adobe Clean", sans-serif;
+        align-content: center;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 18.2px;
+        text-align: left;
+        color: #222222;
+        padding: 0px 12px;
+        height: 32px;
+        width: 140px;
+    }
+
+    .menu .menu_item:hover {
+        background-color: #eaeaea;
+    }
+
+    .preferences {
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 18.2px;
+        text-align: left;
+        color: #464646;
+    }
+
+    .divider {
+        border-top: 1px solid #E6E6E6;
+    }
+
+    /* React-specific wrappers - minimal */
+    .fab-root {
+        font-family: 'adobe-clean', Adobe Clean, sans-serif;
+    }
+
+    button.close-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 10; /* Ensure clickable above all other elements */
+        pointer-events: auto;
+    }
+
+    /* FAB Action Pills - From Figma Design */
+    .fab-pills-container {
+        position: absolute;
+        bottom: 42px; /* FAB height (34px) + gap (8px) = 42px */
+        right: var(--fab-margin-right, 28px);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-end;
+        width: 142px;
+        z-index: 1;
+    }
+
+    .fab-pills-container.pills-below {
+        bottom: auto;
+        top: 42px; /* Same gap when positioned below */
+    }
+
+    /* Extend hover area using ::after pseudo-element - doesn't affect visual layout */
+    .fab-pills-container::after {
+        content: '';
+        position: absolute;
+        top: 100%; /* Start right after the pills content */
+        left: 0;
+        right: 0;
+        height: 8px;
+        background: transparent;
+        pointer-events: auto;
+    }
+
+    .fab-pills-container.pills-below::after {
+        top: auto;
+        bottom: 100%; /* Start right before the pills when positioned below */
+    }
+
+    /* FTE Header - First Time Experience (56px with close button) */
+    .fab-fte-header {
+        position: relative;
+        width: 142px;
+        min-height: 56px;
+        background: #FFFFFF;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.08), 0px 2px 6px 0px rgba(0, 0, 0, 0.04), 0px 0px 2px 0px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+    }
+
+    .fab-fte-background {
+        position: absolute;
+        left: -13px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 183.33px;
+        height: 126.82px;
+        background: url('chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/browser/images/fab-header-background.svg') no-repeat center;
+        background-size: cover;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .fab-fte-close {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 2;
+        color: #222222;
+        padding: 0;
+    }
+
+    .fab-fte-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+    }
+
+    .fab-fte-close svg {
+        width: 8px;
+        height: 8px;
+    }
+
+    .fab-fte-text {
+        position: relative;
+        width: 102px;
+        font-family: 'AdobeClean-Bold', adobe-clean, sans-serif;
+        font-weight: 400; /* Use Bold font file directly, not synthetic bold */
+        font-size: 12px;
+        line-height: 16px;
+        color: #222222; /* Figma spec color */
+        z-index: 1;
+        white-space: normal;
+        word-wrap: break-word;
+        margin-left: 16px;
+        margin-right: auto;
+        box-sizing: border-box;
+        -webkit-font-smoothing: subpixel-antialiased; /* Better font rendering */
+        -moz-osx-font-smoothing: auto;
+    }
+
+    /* Hover Header - Normal state (24px without close button) */
+    .fab-hover-header {
+        position: relative;
+        width: 142px;
+        min-height: 24px;
+        background: #FFFFFF; /* White background to show the colorful SVG and text */
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.08), 0px 2px 6px 0px rgba(0, 0, 0, 0.04), 0px 0px 2px 0px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+    }
+
+    .fab-hover-background {
+        position: absolute;
+        left: -27px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 212.63px;
+        height: 147.09px;
+        background: url('chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/browser/images/fab-header-background.svg') no-repeat center;
+        background-size: cover;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .fab-hover-text {
+        position: relative;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'AdobeClean-Bold', adobe-clean, sans-serif;
+        font-weight: 400; /* Use Bold font file directly, not synthetic bold */
+        font-size: 12px;
+        line-height: 15px;
+        color: #222222; /* Figma spec color */
+        z-index: 1;
+        white-space: normal;
+        padding: 4px 9px;
+        box-sizing: border-box;
+        -webkit-font-smoothing: subpixel-antialiased; /* Better font rendering */
+        -moz-osx-font-smoothing: auto;
+    }
+
+    /* Individual Pill Buttons */
+    .fab-pill-button {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0;
+        width: 142px;
+        min-height: 24px; /* Min height, allows growth with content */
+        background: #FFFFFF;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.08), 0px 2px 6px 0px rgba(0, 0, 0, 0.04), 0px 0px 2px 0px rgba(0, 0, 0, 0.12);
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.2s ease;
+        overflow: visible;
+    }
+
+    .fab-pill-button:hover {
+        background: #D5D5D5;
+    }
+
+    .fab-pill-button:hover .fab-pill-label,
+    .fab-pill-button:hover .fab-pill-icon {
+        color: #000000; /* Hover state color from Figma Alias/content/neutral/hover */
+    }
+
+    .fab-pill-button:active {
+        background: #F4F4F4;
+    }
+
+    .fab-pill-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 7px 4px 10px; /* Exact Figma specs: top right bottom left */
+        flex-shrink: 0;
+        box-sizing: border-box;
+    }
+
+    .fab-pill-icon img {
+        width: 16px;
+        height: 16px;
+        display: block;
+        flex-shrink: 0;
+        /* SVG icons with currentColor fill will inherit color from parent */
+        filter: brightness(0) saturate(100%) invert(13%) sepia(0%) saturate(0%) hue-rotate(196deg) brightness(97%) contrast(97%); /* #222222 */
+    }
+
+    .fab-pill-button:hover .fab-pill-icon img {
+        filter: brightness(0) saturate(100%); /* #000000 on hover */
+    }
+
+    .fab-pill-label {
+        display: flex;
+        align-items: center;
+        font-family: 'AdobeClean-Bold', adobe-clean, sans-serif;
+        font-weight: 400; /* Use Bold font file directly, not synthetic bold */
+        font-size: 12px;
+        line-height: 15px; /* 1.252 * 12px = 15.024px */
+        color: #222222; /* Default text color from Figma Alias/content/neutral/default */
+        padding: 4px 9px 5px 0; /* Reduced right padding to prevent wrapping */
+        text-align: left;
+        white-space: normal; /* Allow text wrapping for multi-line content */
+        box-sizing: border-box;
+        flex: 1;
+        overflow: visible;
+        -webkit-font-smoothing: subpixel-antialiased; /* Better font rendering */
+        -moz-osx-font-smoothing: auto;
+    }
+</style></template></div></html>

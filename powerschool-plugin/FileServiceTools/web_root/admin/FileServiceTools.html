@@ -10,49 +10,7 @@
     ~[wc:commonscripts] 
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
-    <style>
-        /* Scope all styles under our wrapper to avoid conflicts */
-        #fs-root, #fs-root * { box-sizing: border-box; }
-        #fs-root input, #fs-root button, #fs-root select, #fs-root textarea { font: inherit; }
-        #fs-root button { appearance: none; -webkit-appearance: none; line-height: 1.2; }
-        #fs-root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #222; }
-        #fs-root h1 { margin: 0 0 12px; }
-        #fs-root .fs-user-context { background: #f0f0f0; border-left: 4px solid #0078d4; padding: 12px; margin-bottom: 16px; border-radius: 4px; font-size: 13px; }
-        #fs-root .fs-user-context strong { color: #0078d4; }
-        #fs-root fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
-        #fs-root legend { font-weight: 600; }
-        #fs-root label { display: inline-block; margin-right: 12px; }
-        #fs-root input[type="text"] { width: 360px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
-        #fs-root input[type="file"] { padding: 6px 0; }
-        #fs-root button { padding: 8px 12px; border: 1px solid #0078d4; background: #0078d4; color: #fff; border-radius: 6px; cursor: pointer; }
-        #fs-root button.fs-secondary { border-color: #555; background: #fff; color: #222; }
-        #fs-root button + button { margin-left: 8px; }
-        #fs-root .fs-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        #fs-root .fs-muted { color: #666; }
-        #fs-root .fs-progress { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 8px; }
-        #fs-root .fs-bar { height: 100%; background: #28a745; width: 0%; transition: width 0.1s linear; }
-        #fs-root .fs-stats { margin-top: 6px; font-size: 13px; }
-        #fs-root .fs-table-wrap { width: 100%; overflow-x: auto; }
-        #fs-root table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 800px; }
-        #fs-root th, #fs-root td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
-        #fs-root th { background: #f7f7f7; }
-        #fs-root .fs-right { text-align: right; }
-        #fs-root .fs-danger { background: #c62828; border-color: #c62828; }
-        #fs-root .fs-success { color: #1b5e20; }
-        #fs-root .fs-error { color: #b00020; }
-        #fs-root .fs-hidden { display: none; }
-        #fs-root .fs-small { font-size: 12px; }
-        #fs-root .fs-small-btn { padding: 6px 10px; font-size: 12px; }
-        #fs-root .fs-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        @media (max-width: 600px) {
-            #fs-root { margin: 12px; }
-            #fs-root input[type="text"] { width: 100%; }
-            #fs-root table { min-width: 600px; }
-            #fs-root .fs-actions { flex-direction: row; }
-            #fs-root .fs-actions button { flex: 1 0 auto; }
-            #fs-root .fs-row { gap: 8px; }
-        }
-    </style>
+    <link href="FileServiceTools.css" rel="stylesheet" media="screen">
 </head>
 <body>
     ~[wc:admin_header_css] 
@@ -63,7 +21,7 @@
     <p class="fs-muted fs-small">Manage files via the File Service API. Your PowerSchool account is used for authentication.</p>
     
     <div class="fs-user-context">
-        <strong>Authenticated as:</strong> <span id="displayUsername">~[x:username]</span> <strong>| Role:</strong> <span id="displayRole">admin</span>
+        <strong>Authenticated as (UserId):</strong> <span id="displayUserId">~[x:userid]</span> <strong>| Role:</strong> <span id="displayRole">admin</span>
     </div>
 
     <fieldset>
@@ -72,7 +30,7 @@
             <input id="singleFile" type="file" />
             <button id="btnUploadSingle">Upload One</button>
         </div>
-        <div class="fs-row" style="margin-top:8px;">
+        <div class="fs-row fs-upload-row">
             <input id="multiFiles" type="file" multiple />
             <button id="btnUploadMulti">Upload Multiple</button>
             <button id="btnCancelUploads" class="fs-secondary">Cancel</button>
@@ -87,7 +45,7 @@
         <div class="fs-row">
             <button id="btnRefresh">Refresh List</button>
             <button id="btnDeleteSelected" class="fs-danger">Delete Selected</button>
-            <button id="btnDownloadSelected" class="fs-secondary" style="border-color: #0078d4; color: #0078d4;">Download Selected (Zip)</button>
+            <button id="btnDownloadSelected" class="fs-secondary fs-outline-primary">Download Selected (Zip)</button>
         </div>
         <div class="fs-table-wrap">
             <table id="filesTable">
@@ -111,19 +69,19 @@
     </fieldset>
 
     <!-- Preview Modal -->
-    <div id="previewOverlay" class="fs-hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999; display:none;">
-        <div style="background:#fff; width:90%; max-width:1000px; height:80vh; border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.2); display:flex; flex-direction:column;">
-            <div style="padding:10px 12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+        <div id="previewOverlay" class="fs-preview-overlay fs-hidden">
+        <div class="fs-preview-container">
+            <div class="fs-preview-header">
                 <strong id="previewTitle">Preview</strong>
                 <div>
-                    <button id="btnOpenInTab" class="fs-secondary" style="margin-right: 8px;">Open in New Tab</button>
+                    <button id="btnOpenInTab" class="fs-secondary fs-mr-8">Open in New Tab</button>
                     <button id="btnClosePreview" class="fs-secondary">Close</button>
                 </div>
             </div>
-            <div id="previewBody" style="flex:1; background:#fafafa; display:flex; align-items:center; justify-content:center; overflow:auto;">
+            <div id="previewBody" class="fs-preview-body">
                 <div class="fs-muted">Loading preview...</div>
             </div>
-            <div id="previewFooter" class="fs-small fs-muted" style="padding:8px 12px; border-top:1px solid #eee;">If the preview fails, try Open in New Tab or Download.</div>
+            <div id="previewFooter" class="fs-preview-footer fs-small fs-muted">If the preview fails, try Open in New Tab or Download.</div>
         </div>
     </div>
 
@@ -150,13 +108,16 @@
 
         function headers() {
             const h = new Headers();
+            const qs = new URLSearchParams(window.location.search);
             // PowerSchool replaces these server-side before serving the page
-            const user = '~[x:username]' || new URLSearchParams(window.location.search).get('user') || 'testuser';
+            const username = '~[x:username]' || qs.get('user') || '';
             const userIdMeta = document.querySelector('meta[name="ps-userid"]');
-            const userId = (userIdMeta && userIdMeta.content) ? userIdMeta.content : '';
+            const userId = (userIdMeta && userIdMeta.content) ? userIdMeta.content : (qs.get('userid') || qs.get('userId') || '');
+            const effectiveUserId = userId || username || 'unknown';
 
             // Always include stable ASCII-safe identifiers
-            if (userId) h.set('X-PowerSchool-UserId', String(userId));
+            h.set('X-PowerSchool-UserId', String(effectiveUserId));
+            h.set('X-PowerSchool-User', String(effectiveUserId));
             h.set('X-PowerSchool-Role', 'admin');
 
             // Helper to test Latin-1 safety
@@ -165,23 +126,17 @@
                 return true;
             };
 
-            // Try to set the real username first; on strict browsers catch and fall back
+            // Optional: send display username for logging only
             try {
-                if (user) h.set('X-PowerSchool-User', user);
+                if (username) h.set('X-PowerSchool-UserName', username);
             } catch (err) {
-                console.warn('[FileServiceTools] Header set failed for username, falling back to safe value', err);
-            }
-
-            // If strict browser rejected or user was non-Latin1, ensure required header is present with safe value
-            if (!h.has('X-PowerSchool-User')) {
-                const safeUser = (userId && isLatin1(userId)) ? String(userId) : 'unknown';
-                h.set('X-PowerSchool-User', safeUser);
+                console.warn('[FileServiceTools] Header set failed for username (logging only)', err);
             }
 
             // Provide full-fidelity username for servers that can decode it
-            if (user && !isLatin1(user)) {
-                const b64 = btoa(unescape(encodeURIComponent(user)));
-                h.set('X-PowerSchool-User-B64', b64);
+            if (username && !isLatin1(username)) {
+                const b64 = btoa(unescape(encodeURIComponent(username)));
+                h.set('X-PowerSchool-UserName-B64', b64);
             }
 
             return h;
@@ -550,35 +505,51 @@
                 previewBody.innerHTML = '';
                 
                 if (contentType.includes('image') || contentType.includes('pdf')) {
-                    // Use iframe for images and PDFs
+                    // Use iframe for images and PDFs; show helpful message if blocked
                     const iframe = document.createElement('iframe');
                     iframe.src = downloadUrl;
                     iframe.style.width = '100%';
                     iframe.style.height = '100%';
                     iframe.style.border = 'none';
                     previewBody.appendChild(iframe);
+
+                    const blockedMsg = () => {
+                        const msg = document.createElement('div');
+                        msg.className = 'fs-error';
+                        msg.style.padding = '12px';
+                        msg.innerHTML = 'This content is blocked. Contact the site owner to fix the issue.<br>Preview may be restricted by site policy (X-Frame-Options or Content-Security-Policy). Use Open in New Tab or Download.';
+                        previewBody.innerHTML = '';
+                        previewBody.appendChild(msg);
+                    };
+
+                    // If iframe errors, show the blocked message
+                    iframe.addEventListener('error', blockedMsg);
+                    // Fallback: if no load within 2s for PDFs, assume blocked
+                    if (contentType.includes('pdf')) {
+                        let loaded = false;
+                        iframe.addEventListener('load', () => { loaded = true; });
+                        setTimeout(() => { if (!loaded) blockedMsg(); }, 2000);
+                    }
                 } else if (contentType.includes('text') || contentType.includes('json') || contentType.includes('xml')) {
                     // For text, try to fetch and display
                     try {
                         const textRes = await fetch(downloadUrl, { mode: 'no-cors' });
                         const text = await textRes.text();
                         const pre = document.createElement('pre');
-                        pre.style.padding = '12px';
-                        pre.style.overflow = 'auto';
-                        pre.style.fontSize = '12px';
+                        pre.className = 'fs-preview-pre';
                         pre.textContent = text.length > 50000 ? text.substring(0, 50000) + '\n... (truncated)' : text;
                         previewBody.appendChild(pre);
                     } catch (err) {
                         // If fetch fails, just show link
                         const msg = document.createElement('div');
-                        msg.className = 'muted';
+                        msg.className = 'fs-muted';
                         msg.innerHTML = 'Text preview unavailable due to browser restrictions.<br><a href="' + downloadUrl + '" target="_blank">Open in New Tab</a>';
                         previewBody.appendChild(msg);
                     }
                 } else {
                     // For other types, show message and link
                     const msg = document.createElement('div');
-                    msg.className = 'muted';
+                    msg.className = 'fs-muted';
                     msg.innerHTML = 'Preview not available for file type: ' + contentType + '<br><a href="' + downloadUrl + '" target="_blank">Open in New Tab</a>';
                     previewBody.appendChild(msg);
                 }

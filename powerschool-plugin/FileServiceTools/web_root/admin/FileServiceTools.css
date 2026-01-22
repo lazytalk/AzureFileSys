@@ -1,0 +1,50 @@
+/* Scope all styles under our wrapper to avoid conflicts */
+#fs-root, #fs-root * { box-sizing: border-box; }
+#fs-root input, #fs-root button, #fs-root select, #fs-root textarea { font: inherit; }
+#fs-root button { appearance: none; -webkit-appearance: none; line-height: 1.2; }
+#fs-root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #222; }
+#fs-root h1 { margin: 0 0 12px; }
+#fs-root .fs-user-context { background: #f0f0f0; border-left: 4px solid #0078d4; padding: 12px; margin-bottom: 16px; border-radius: 4px; font-size: 13px; }
+#fs-root .fs-user-context strong { color: #0078d4; }
+#fs-root fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+#fs-root legend { font-weight: 600; }
+#fs-root label { display: inline-block; margin-right: 12px; }
+#fs-root input[type="text"] { width: 360px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; }
+#fs-root input[type="file"] { padding: 6px 0; }
+#fs-root button { padding: 8px 12px; border: 1px solid #0078d4; background: #0078d4; color: #fff; border-radius: 6px; cursor: pointer; }
+#fs-root button.fs-secondary { border-color: #555; background: #fff; color: #222; }
+#fs-root button + button { margin-left: 8px; }
+#fs-root .fs-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+#fs-root .fs-upload-row { margin-top: 8px; }
+#fs-root .fs-muted { color: #666; }
+#fs-root .fs-progress { height: 10px; background: #eee; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+#fs-root .fs-bar { height: 100%; background: #28a745; width: 0%; transition: width 0.1s linear; }
+#fs-root .fs-stats { margin-top: 6px; font-size: 13px; }
+#fs-root .fs-table-wrap { width: 100%; overflow-x: auto; }
+#fs-root table { width: 100%; border-collapse: collapse; margin-top: 12px; min-width: 800px; }
+#fs-root th, #fs-root td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+#fs-root th { background: #f7f7f7; }
+#fs-root .fs-right { text-align: right; }
+#fs-root .fs-danger { background: #c62828; border-color: #c62828; }
+#fs-root .fs-success { color: #1b5e20; }
+#fs-root .fs-error { color: #b00020; }
+#fs-root .fs-hidden { display: none; }
+#fs-root .fs-small { font-size: 12px; }
+#fs-root .fs-small-btn { padding: 6px 10px; font-size: 12px; }
+#fs-root .fs-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+#fs-root .fs-outline-primary { border-color: #0078d4; color: #0078d4; background: #fff; }
+#fs-root .fs-mr-8 { margin-right: 8px; }
+#fs-root .fs-preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 9999; }
+#fs-root .fs-preview-container { background: #fff; width: 90%; max-width: 1000px; height: 80vh; border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+#fs-root .fs-preview-header { padding: 10px 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+#fs-root .fs-preview-body { flex: 1; background: #fafafa; display: flex; align-items: center; justify-content: center; overflow: auto; }
+#fs-root .fs-preview-footer { padding: 8px 12px; border-top: 1px solid #eee; }
+#fs-root .fs-preview-pre { padding: 12px; overflow: auto; font-size: 12px; }
+@media (max-width: 600px) {
+    #fs-root { margin: 12px; }
+    #fs-root input[type="text"] { width: 100%; }
+    #fs-root table { min-width: 600px; }
+    #fs-root .fs-actions { flex-direction: row; }
+    #fs-root .fs-actions button { flex: 1 0 auto; }
+    #fs-root .fs-row { gap: 8px; }
+}

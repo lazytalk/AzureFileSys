@@ -209,7 +209,17 @@ if ($CreateResources) {
         
         # Configure CORS for Direct-to-Blob uploads (Staging and Production)
         Write-Host "Configuring CORS for Blob Storage to allow direct uploads..." -ForegroundColor Gray
-        az storage cors add --account-name $storageAccount --services b --origins "*" --methods DELETE GET HEAD MERGE POST OPTIONS PUT --allowed-headers "*" --exposed-headers "*" --max-age 86400
+        $corsOriginsRaw = $appSettings["Cors__AllowedOrigins"]
+        $corsOrigins = @()
+        if (-not [string]::IsNullOrWhiteSpace($corsOriginsRaw)) {
+            $corsOrigins = $corsOriginsRaw.Split(';') | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        }
+        if ($corsOrigins.Count -eq 0) {
+            Write-Host "⚠ No CORS origins configured; skipping blob CORS setup" -ForegroundColor Yellow
+        } else {
+            az storage cors clear --account-name $storageAccount --services b
+            az storage cors add --account-name $storageAccount --services b --origins ($corsOrigins -join ',') --methods DELETE GET HEAD MERGE POST OPTIONS PUT --allowed-headers "*" --exposed-headers "*" --max-age 86400
+        }
     }
     $storageConnString = az storage account show-connection-string -n $storageAccount -g $resourceGroup -o tsv
     

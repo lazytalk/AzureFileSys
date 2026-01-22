@@ -45,6 +45,7 @@ $envConfig = switch ($Environment) {
             "CustomDomain" = "filesvc-stg-app.kaiweneducation.com"
             "CertificatePfxFileName" = "filesvc-stg-app.kaiweneducation.com.pfx"
             "CertificatePassword" = "5fuutvuc"
+            "CorsAllowedOrigins" = "https://ps1.kaiwenacademy.cn;https://filesvc-stg-app.kaiweneducation.com"
             "TableName" = "FileMetadata"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Staging"
@@ -67,6 +68,7 @@ $envConfig = switch ($Environment) {
             "CustomDomain" = "filesvc.kaiweneducation.com"
             "CertificatePfxFileName" = "filesvc.kaiweneducation.com.pfx"
             "CertificatePassword" = ""
+            "CorsAllowedOrigins" = "https://ps1.kaiwenacademy.cn;https://filesvc.kaiweneducation.com"
             "TableName" = "FileMetadata"
             # Application settings
             "ASPNETCORE_ENVIRONMENT" = "Production"
@@ -122,6 +124,7 @@ $appSettings = @{
     "BlobStorage__ContainerName" = $envConfig["BlobStorage__ContainerName"]
     "Persistence__Type" = $envConfig["Persistence__Type"]
     "TableStorage__TableName" = $envConfig["TableStorage__TableName"]
+    "Cors__AllowedOrigins" = $envConfig["CorsAllowedOrigins"]
 }
 
 # ============================================================================

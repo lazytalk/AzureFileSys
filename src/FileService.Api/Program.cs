@@ -52,28 +52,31 @@ builder.Services.AddSingleton<IFileStorageService>(sp =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS: allow local test origins for staging tools
+// CORS: allow origins via configuration
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LocalTools", policy =>
     {
         if (builder.Environment.IsDevelopment() || builder.Environment.IsStaging())
         {
-            policy.SetIsOriginAllowed(_ => true) // Allow any origin in Dev/Staging (including file://)
+            policy.SetIsOriginAllowed(_ => true)
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();
         }
         else
         {
-            policy.WithOrigins(
-                "http://localhost:8080",
-                "http://localhost:9000",
-                "https://filesvc-stg-app.kaiweneducation.com",
-                "https://ps1.kaiwenacademy.cn"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+            if (corsOrigins.Length > 0)
+            {
+                policy.WithOrigins(corsOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            }
+            else
+            {
+                policy.SetIsOriginAllowed(_ => false);
+            }
         }
     });
 });

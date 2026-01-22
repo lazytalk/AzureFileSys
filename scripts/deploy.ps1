@@ -576,7 +576,27 @@ if ($ConfigureCustomDomain) {
     
     $certificates = az webapp config ssl list --resource-group $resourceGroup -o json | ConvertFrom-Json
     $existingCert = $certificates | Where-Object { $_.hostNames -contains $CustomDomain }
+    $existingSelfSigned = $false
+    if ($existingCert) {
+        $issuer = $existingCert.issuer
+        $subject = $existingCert.subjectName
+        if (-not [string]::IsNullOrWhiteSpace($issuer) -and -not [string]::IsNullOrWhiteSpace($subject)) {
+            if ($issuer -eq $subject -or $issuer -like "*$CustomDomain*") {
+                $existingSelfSigned = $true
+            }
+        }
+    }
     
+    if ($existingCert -and $existingSelfSigned) {
+        if ($pfxFile) {
+            $shouldReplaceCert = $true
+            Write-Host "Existing certificate appears self-signed; will replace with provided CA certificate" -ForegroundColor Yellow
+        } else {
+            Write-Host "Error: Existing certificate for $CustomDomain appears self-signed. Provide a CA-issued .pfx in $certFolder or via -CertificatePassword." -ForegroundColor Red
+            exit 1
+        }
+    }
+
     if ($existingCert -and -not $shouldReplaceCert) {
         Write-Host "✓ SSL certificate already exists for $CustomDomain" -ForegroundColor Green
         Write-Host "  Thumbprint: $($existingCert.thumbprint)" -ForegroundColor Gray

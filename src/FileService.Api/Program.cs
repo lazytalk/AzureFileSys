@@ -354,8 +354,6 @@ app.MapGet("/api/health/check", async (HttpContext ctx, CancellationToken ct) =>
     return Results.Ok(new { checks });
 });
 
-// (Removed) Unused local function 'TestEndpoint'
-
 // Map Endpoints (initial version; can be moved to controllers or Minimal APIs kept)
 app.MapPost("/api/files/begin-upload", async (
     [FromBody] BeginUploadRequest request,

@@ -3,6 +3,7 @@ using FileService.Infrastructure.Storage;
 using FileService.Infrastructure.Data;
 using FileService.Api.Models;
 using FileService.Api.Services;
+using FileService.Api.Middleware;
 using Azure.Data.Tables;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
@@ -141,75 +142,8 @@ if (openIdService != null)
     FileService.Api.Services.OpenIdRelyingPartyExtensions.MapOpenIdAuthentication(app, openIdService);
 }
 
-// Terminal middleware for PowerSchool authentication (MUST be after endpoint registration)
-app.Use(async (ctx, next) =>
-{
-    var userCtx = ctx.RequestServices.GetRequiredService<PowerSchoolUserContext>();
-    
-    // Skip authentication for public OpenID endpoints
-    if (ctx.Request.Path.StartsWithSegments("/authenticate") || 
-        ctx.Request.Path.StartsWithSegments("/verify") ||
-        ctx.Request.Path.StartsWithSegments("/api/auth/session-info") ||
-        ctx.Request.Path.StartsWithSegments("/api/auth/logout"))
-    {
-        await next();
-        return;
-    }
-
-    // Dev shortcut: allow ?devUser=xxx
-    if (isDevMode && ctx.Request.Query.TryGetValue("devUser", out var devUser))
-    {
-        userCtx.UserId = devUser!;
-        userCtx.Role = ctx.Request.Query.TryGetValue("role", out var r) ? r.ToString() : "user";
-        await next();
-        return;
-    }
-
-    // PowerSchool identity headers (prefer numeric UserId/DCID for validation)
-    var hasUser = ctx.Request.Headers.TryGetValue("X-PowerSchool-User", out var userHeader) && !string.IsNullOrWhiteSpace(userHeader);
-    var hasUserId = ctx.Request.Headers.TryGetValue("X-PowerSchool-UserId", out var userIdHeader) && !string.IsNullOrWhiteSpace(userIdHeader);
-    // Some environments may send different casing like X-Powerschool-Userid
-    if (!hasUserId && ctx.Request.Headers.TryGetValue("X-Powerschool-Userid", out var userIdHeaderAlt) && !string.IsNullOrWhiteSpace(userIdHeaderAlt))
-    {
-        userIdHeader = userIdHeaderAlt;
-        hasUserId = true;
-    }
-
-    if (!hasUserId && !hasUser)
-    {
-        ctx.Response.StatusCode = 401;
-        await ctx.Response.WriteAsJsonAsync(new { error = "Missing PowerSchool identity header 'X-PowerSchool-UserId'/'X-Powerschool-Userid' or 'X-PowerSchool-User'" });
-        return;
-    }
-
-    var canonicalUserId = hasUserId ? userIdHeader.ToString() : userHeader.ToString();
-
-    // Validate session cookie matches the numeric user id (defense-in-depth)
-    if (!OpenIdRelyingPartyExtensions.ValidateSessionAndUser(ctx, canonicalUserId))
-    {
-        ctx.Response.StatusCode = 401;
-        var cfg = ctx.RequestServices.GetRequiredService<IConfiguration>();
-        var enableDetailed = cfg.GetSection("Features").GetValue<bool>("EnableDetailedErrors");
-        var debug = enableDetailed ? new
-        {
-            reason = ctx.Items["AuthDebugReason"],
-            details = ctx.Items["AuthDebugDetails"]
-        } : null;
-
-        await ctx.Response.WriteAsJsonAsync(new { 
-            error = "Authentication failed",
-            details = "Session validation failed. Please authenticate through PowerSchool.",
-            debug
-        });
-        return;
-    }
-
-    var role = ctx.Request.Headers.TryGetValue("X-PowerSchool-Role", out var roleHeader) ? roleHeader.ToString() : "user";
-    // Use DCID/UserId as canonical identity for file ownership and paths; fallback to username header if userId missing
-    userCtx.UserId = canonicalUserId;
-    userCtx.Role = role;
-    await next();
-});
+// PowerSchool authentication middleware
+app.UsePowerSchoolAuthentication();
 
 if (isDevMode)
 {

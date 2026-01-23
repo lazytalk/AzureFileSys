@@ -149,6 +149,36 @@
       currentPage: 1,
     };
 
+    // Helper to parse and display detailed error information from API responses
+    async function parseDetailedError(response) {
+      try {
+        const errorData = await response.json();
+        if (errorData.error && errorData.debug) {
+          // Detailed error with debug info (401s from server with EnableDetailedErrors)
+          let details = `<strong>Error:</strong> ${errorData.error}<br/>`;
+          if (errorData.debug.reason) {
+            details += `<strong>Reason:</strong> ${errorData.debug.reason}<br/>`;
+          }
+          if (errorData.debug.details) {
+            details += `<strong>Details:</strong> ${errorData.debug.details}<br/>`;
+          }
+          // Show full debug object for more context
+          if (Object.keys(errorData.debug).length > 2) {
+            const debugStr = JSON.stringify(errorData.debug, null, 2);
+            details += `<details><summary>Full Debug Info</summary><pre style="background:#f5f5f5; padding:8px; border-radius:4px; font-size:11px; overflow-x:auto;">${debugStr}</pre></details>`;
+          }
+          return details;
+        } else if (errorData.error) {
+          return `<strong>Error:</strong> ${errorData.error}`;
+        } else {
+          return `<strong>Error:</strong> ${JSON.stringify(errorData)}`;
+        }
+      } catch (e) {
+        // Could not parse JSON, return raw status
+        return `<strong>HTTP ${response.status}:</strong> ${response.statusText}`;
+      }
+    }
+
 
 
     async function headers(method = 'GET', path = '') {
@@ -207,8 +237,8 @@
           });
 
           if (!beginRes.ok) {
-              const errText = await beginRes.text();
-              throw new Error(`Begin-upload failed: ${beginRes.status} - ${errText}`);
+              const errDetail = await parseDetailedError(beginRes);
+              throw new Error(`Begin-upload failed: ${errDetail}`);
           }
           const beginJson = await beginRes.json();
           const fileId = beginJson.fileId || beginJson.FileId;
@@ -261,8 +291,8 @@
                          headers: Object.fromEntries(h2)
                      });
                      if (!completeRes.ok) {
-                         const errText = await completeRes.text();
-                         throw new Error(`Complete-upload failed: ${completeRes.status} - ${errText}`);
+                         const errDetail = await parseDetailedError(completeRes);
+                         throw new Error(`Complete-upload failed: ${errDetail}`);
                      }
                      resolve('OK');
                  } catch (err) {
@@ -337,7 +367,10 @@
       try {
         const h = await headers('GET', path);
         const res = await fetch(url, { headers: h, mode: 'cors' });
-        if (!res.ok) throw new Error(`List failed: ${res.status}`);
+        if (!res.ok) {
+          const errDetail = await parseDetailedError(res);
+          throw new Error(`List failed: ${errDetail}`);
+        }
         const data = await res.json();
         setList(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -444,7 +477,8 @@
           alert('No download URL returned');
         }
       } catch (err) {
-        alert('Download error: ' + err.message);
+        const detail = err.message.includes('<') ? err.message : `Download error: ${err.message}`;
+        alert(detail.replace(/<[^>]*>/g, '\n')); // Convert HTML to readable alert
       }
     }
 
@@ -452,8 +486,8 @@
       const h = await headers('GET', `/api/files/${id}`);
       const res = await fetch(`${baseUrl}/api/files/${id}`, { headers: h, mode: 'cors' });
       if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Get failed: ${res.status} ${text}`);
+        const errDetail = await parseDetailedError(res);
+        throw new Error(`Get failed: ${errDetail}`);
       }
       return await res.json();
     }
@@ -570,7 +604,10 @@
           
           if (res.status !== 202) {
               // Fallback for old behaviour if any (or error)
-               if (!res.ok) throw new Error(`Zip request failed: ${res.status}`);
+               if (!res.ok) {
+                 const errDetail = await parseDetailedError(res);
+                 throw new Error(`Zip request failed: ${errDetail}`);
+               }
                // Direct download buffer response?
                const blob = await res.blob();
                if (blob.size === 0) throw new Error("Received 0 bytes");
@@ -599,7 +636,10 @@
             try {
                 const h4 = await headers('GET', `/api/files/download-zip/${jobId}`);
                 const res = await fetch(`${baseUrl}/api/files/download-zip/${jobId}`, { headers: h4 });
-                if (!res.ok) throw new Error("Poll failed");
+                if (!res.ok) {
+                  const errDetail = await parseDetailedError(res);
+                  throw new Error(`Poll failed: ${errDetail}`);
+                }
                 const job = await res.json();
                 
                 if (job.status === 'Completed' || job.Status === 'Completed') {
@@ -662,15 +702,25 @@
       const ids = Array.from(state.selectedIds);
       if (ids.length === 0) { el('listStatus').textContent = 'No files selected.'; return; }
       el('listStatus').textContent = `Deleting ${ids.length} files...`;
-      let ok = 0, fail = 0;
+      let ok = 0, fail = 0, lastError = '';
       for (const id of ids) {
         try {
           const h = await headers('DELETE', `/api/files/${id}`);
           const res = await fetch(`${baseUrl}/api/files/${id}`, { method: 'DELETE', headers: h, mode: 'cors' });
-          if (res.ok) ok++; else fail++;
-        } catch { fail++; }
+          if (res.ok) {
+            ok++;
+          } else {
+            fail++;
+            if (!lastError) lastError = await parseDetailedError(res);
+          }
+        } catch (err) { 
+          fail++;
+          if (!lastError) lastError = err.message;
+        }
       }
-      el('listStatus').textContent = `Deleted ${ok}, failed ${fail}.`;
+      let msg = `Deleted ${ok}, failed ${fail}.`;
+      if (lastError) msg += ` Last error: ${lastError}`;
+      el('listStatus').innerHTML = fail > 0 ? `<span class="error">${msg}</span>` : `<span class="success">${msg}</span>`;
       await refreshList();
     }
 

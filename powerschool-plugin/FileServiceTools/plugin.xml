@@ -10,14 +10,18 @@
     </publisher>
     
     <!-- Web links for PowerSchool UI integration -->
+    <openid host="filesvc-stg-app.kaiweneducation.com" port="443">
+
     <links>
         <link display-text="File Service Tools" 
               title="File Service Tools" 
-              path="/admin/FileServiceTools.html">
+              path="/authenticate"
+              >
             <ui_contexts>
                 <ui_context id="admin.left_nav" />
             </ui_contexts>
         </link>
     </links>
-    
+    </openid>
+    <oauth/>    
 </plugin>

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -300,11 +302,22 @@ namespace FileService.Api.Services
 
                 result.Authenticated = true;
 
-                // Extract Attribute Exchange data
-                result.Dcid = query["openid.ax.value.dcid"].ToString();
-                result.Email = query["openid.ax.value.email"].ToString();
-                result.FirstName = query["openid.ax.value.firstName"].ToString();
-                result.LastName = query["openid.ax.value.lastName"].ToString();
+                // Extract Attribute Exchange data - PowerSchool sends as openid.ext1.value.* 
+                result.Dcid = query["openid.ext1.value.dcid"].ToString();
+                result.Email = query["openid.ext1.value.email"].ToString();
+                result.FirstName = query["openid.ext1.value.firstName"].ToString();
+                result.LastName = query["openid.ext1.value.lastName"].ToString();
+
+                Console.WriteLine($"[VERIFY] Extracted Dcid: '{result.Dcid}', Email: '{result.Email}', FirstName: '{result.FirstName}', LastName: '{result.LastName}'");
+                
+                // Log all AX values for debugging
+                foreach (var param in query)
+                {
+                    if (param.Key.Contains("ax", StringComparison.OrdinalIgnoreCase) || param.Key.Contains("ext1", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine($"[VERIFY] Param: {param.Key} = {param.Value}");
+                    }
+                }
 
                 return result;
             }
@@ -337,6 +350,10 @@ namespace FileService.Api.Services
     /// </summary>
     public static class OpenIdRelyingPartyExtensions
     {
+        // Session storage for authenticated users
+        private static readonly ConcurrentDictionary<string, UserSessionInfo> _userSessions = 
+            new ConcurrentDictionary<string, UserSessionInfo>();
+
         public static IEndpointRouteBuilder MapOpenIdAuthentication(this IEndpointRouteBuilder app, OpenIdRelyingPartyService service)
         {
             Console.WriteLine("[OPENID] Registering OpenID authentication endpoints");
@@ -351,6 +368,66 @@ namespace FileService.Api.Services
                 async (HttpContext context) => await VerifyAsync(service, context))
                 .WithName("OpenID_Verify")
                 .WithDescription("Callback endpoint for PowerSchool OpenID authentication. Verifies and displays user information.");
+
+            // Session info endpoint - retrieve stored user session (persistent, not consumed)
+            app.MapGet("/api/auth/session-info", 
+                (string? sessionId, HttpContext context) =>
+                {
+                    if (string.IsNullOrEmpty(sessionId))
+                    {
+                        return Results.BadRequest(new { error = "sessionId is required" });
+                    }
+
+                    var userSession = OpenIdRelyingPartyExtensions.GetUserSession(sessionId);
+                    if (userSession == null)
+                    {
+                        return Results.NotFound(new { error = "Session not found or expired" });
+                    }
+
+                    // Re-stamp session cookie if missing, to help browsers that dropped it on redirect
+                    if (!context.Request.Cookies.ContainsKey("FileService.Session"))
+                    {
+                        var sessionExpiration = userSession.ExpiresAt;
+                        context.Response.Cookies.Append("FileService.Session", sessionId, new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Secure = true,
+                            SameSite = SameSiteMode.None,
+                            Expires = sessionExpiration,
+                            Path = "/",
+                            Domain = ".kaiweneducation.com"
+                        });
+                        Console.WriteLine($"[OPENID] Re-stamped session cookie for session {sessionId}");
+                    }
+
+                    Console.WriteLine($"[OPENID] Session info retrieved: {sessionId}");
+                    return Results.Ok(new
+                    {
+                        dcid = userSession.Dcid,
+                        email = userSession.Email,
+                        firstName = userSession.FirstName,
+                        lastName = userSession.LastName,
+                        expiresAt = userSession.ExpiresAt
+                    });
+                })
+                .WithName("OpenID_SessionInfo")
+                .WithDescription("Retrieves user session information by session ID (does not consume session).");
+
+            // Logout endpoint - clear session
+            app.MapPost("/api/auth/logout", 
+                (HttpContext context) =>
+                {
+                    var sessionId = context.Request.Cookies["FileService.Session"];
+                    if (!string.IsNullOrEmpty(sessionId))
+                    {
+                        OpenIdRelyingPartyExtensions.RemoveUserSession(sessionId);
+                        context.Response.Cookies.Delete("FileService.Session");
+                        Console.WriteLine($"[OPENID] User logged out, session cleared: {sessionId}");
+                    }
+                    return Results.Ok(new { message = "Logged out successfully" });
+                })
+                .WithName("OpenID_Logout")
+                .WithDescription("Logs out user and clears authentication session.");
 
             return app;
         }
@@ -428,7 +505,42 @@ namespace FileService.Api.Services
                 if (!string.IsNullOrEmpty(result.LastName))
                     values["lastName"] = result.LastName;
 
-                await RenderSuccess(context, values, result);
+                // Create persistent session with user info
+                var sessionId = Guid.NewGuid().ToString();
+                var sessionExpiration = DateTime.UtcNow.AddHours(8);
+                Console.WriteLine($"[OPENID] Creating session with Dcid: '{result.Dcid}' (empty={string.IsNullOrWhiteSpace(result.Dcid)})");
+                OpenIdRelyingPartyExtensions.StoreUserSession(sessionId, new UserSessionInfo
+                {
+                    Dcid = result.Dcid,
+                    Email = result.Email,
+                    FirstName = result.FirstName,
+                    LastName = result.LastName,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = sessionExpiration
+                });
+
+                // Set secure HttpOnly cookie for authentication
+                context.Response.Cookies.Append("FileService.Session", sessionId, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = sessionExpiration,
+                    Path = "/", // allow all API paths
+                    Domain = ".kaiweneducation.com" // ensure cookie available on custom domain
+                });
+
+                Console.WriteLine($"[OPENID] Persistent session created: {sessionId} for user: {result.Dcid}, expires: {sessionExpiration}");
+
+                var config = context.RequestServices.GetRequiredService<IConfiguration>();
+                var pluginBaseUrl = config["PowerSchool:PluginBaseUrl"];
+                var pluginPath = config["PowerSchool:PluginPath"];
+                var redirectUrl = !string.IsNullOrWhiteSpace(pluginBaseUrl)
+                    ? $"{pluginBaseUrl!.TrimEnd('/')}{pluginPath}?session={Uri.EscapeDataString(sessionId)}"
+                    : $"{pluginPath}?session={Uri.EscapeDataString(sessionId)}";
+
+                Console.WriteLine($"[OPENID] Redirecting to FileServiceTools: {redirectUrl}");
+                context.Response.Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
@@ -532,5 +644,180 @@ namespace FileService.Api.Services
 
             await context.Response.WriteAsync(content);
         }
+
+        /// <summary>
+        /// Store user session information with expiration
+        /// </summary>
+        public static void StoreUserSession(string sessionId, UserSessionInfo userInfo)
+        {
+            _userSessions[sessionId] = userInfo;
+            
+            // Background cleanup of expired sessions
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(userInfo.ExpiresAt - DateTime.UtcNow + TimeSpan.FromMinutes(5));
+                _userSessions.TryRemove(sessionId, out _);
+            });
+        }
+
+        /// <summary>
+        /// Retrieve user session without removing it (persistent session)
+        /// </summary>
+        public static UserSessionInfo? GetUserSession(string sessionId)
+        {
+            if (_userSessions.TryGetValue(sessionId, out var userInfo))
+            {
+                // Check if session hasn't expired
+                if (userInfo.ExpiresAt > DateTime.UtcNow)
+                {
+                    return userInfo;
+                }
+                // Remove expired session
+                _userSessions.TryRemove(sessionId, out _);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Remove user session (for logout)
+        /// </summary>
+        public static void RemoveUserSession(string sessionId)
+        {
+            _userSessions.TryRemove(sessionId, out _);
+        }
+
+        /// <summary>
+        /// Validate session cookie and user header match with CSRF protection
+        /// </summary>
+        public static bool ValidateSessionAndUser(HttpContext context, string? requiredUserId)
+        {
+            void SetDebug(string reason, object? details = null)
+            {
+                context.Items["AuthDebugReason"] = reason;
+                context.Items["AuthDebugDetails"] = details;
+            }
+
+            Console.WriteLine("[AUTH] --- Validation Start ---");
+            Console.WriteLine($"[AUTH] Path: {context.Request.Path}");
+            Console.WriteLine($"[AUTH] Origin: {context.Request.Headers["Origin"]}");
+            Console.WriteLine($"[AUTH] Referer: {context.Request.Headers["Referer"]}");
+            var hdrUser = context.Request.Headers["X-PowerSchool-User"].ToString();
+            var hdrUserId = context.Request.Headers["X-PowerSchool-UserId"].ToString();
+            // Some environments may send different casing like X-Powerschool-Userid
+            var hdrUserIdAlt = string.IsNullOrEmpty(hdrUserId) ? context.Request.Headers["X-Powerschool-Userid"].ToString() : string.Empty;
+            Console.WriteLine($"[AUTH] X-PowerSchool-User: {hdrUser}");
+            Console.WriteLine($"[AUTH] X-PowerSchool-UserId: {hdrUserId}");
+            if (!string.IsNullOrEmpty(hdrUserIdAlt)) Console.WriteLine($"[AUTH] X-Powerschool-Userid (alt): {hdrUserIdAlt}");
+            Console.WriteLine($"[AUTH] Cookie (FileService.Session) present: {context.Request.Cookies.ContainsKey("FileService.Session")}");
+
+            // CSRF Protection: Validate Origin header
+            var origin = context.Request.Headers["Origin"].ToString();
+            var referer = context.Request.Headers["Referer"].ToString();
+            
+            var config = context.RequestServices.GetRequiredService<IConfiguration>();
+            var allowedOrigins = config.GetSection("PowerSchool:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            
+            // Check Origin header (sent on cross-origin requests)
+            if (!string.IsNullOrEmpty(origin))
+            {
+                var isAllowedOrigin = allowedOrigins.Any(allowed => 
+                    origin.Equals(allowed, StringComparison.OrdinalIgnoreCase));
+                
+                if (!isAllowedOrigin)
+                {
+                    Console.WriteLine($"[CSRF] Blocked request from unauthorized origin: {origin}");
+                    SetDebug("Blocked: origin not allowed", new { origin, allowedOrigins });
+                    return false;
+                }
+            }
+            // Fallback to Referer validation if Origin not present (some browsers/scenarios)
+            else if (!string.IsNullOrEmpty(referer))
+            {
+                var refererUri = new Uri(referer);
+                var refererOrigin = $"{refererUri.Scheme}://{refererUri.Host}";
+                
+                var isAllowedReferer = allowedOrigins.Any(allowed => 
+                    refererOrigin.Equals(allowed, StringComparison.OrdinalIgnoreCase));
+                
+                if (!isAllowedReferer)
+                {
+                    Console.WriteLine($"[CSRF] Blocked request from unauthorized referer: {refererOrigin}");
+                    SetDebug("Blocked: referer not allowed", new { refererOrigin, allowedOrigins });
+                    return false;
+                }
+            }
+
+            var sessionId = context.Request.Cookies["FileService.Session"];
+            var hdrSession = context.Request.Headers["X-Session-Id"].ToString();
+            var qsSession = context.Request.Query["session"].ToString();
+            Console.WriteLine($"[AUTH] Session lookup - Cookie: {sessionId}, Header: {hdrSession}, Query: {qsSession}");
+            
+            // Fallback to session header or query if cookie not present
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                sessionId = !string.IsNullOrEmpty(hdrSession) ? hdrSession : qsSession;
+                if (!string.IsNullOrEmpty(sessionId))
+                {
+                    Console.WriteLine($"[AUTH] Using session from header/query: {sessionId}");
+                    // Re-stamp cookie to persist for subsequent calls
+                    context.Response.Cookies.Append("FileService.Session", sessionId, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.None,
+                        Expires = DateTime.UtcNow.AddHours(8),
+                        Path = "/",
+                        Domain = ".kaiweneducation.com"
+                    });
+                }
+            }
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                Console.WriteLine("[AUTH] No session cookie found");
+                SetDebug("No session cookie", new { hdrUser, hdrUserId, hdrUserIdAlt, origin, referer });
+                return false;
+            }
+
+            var session = GetUserSession(sessionId);
+            if (session == null)
+            {
+                Console.WriteLine($"[AUTH] Invalid or expired session: {sessionId}");
+                SetDebug("Invalid or expired session", new { sessionId, hdrUser, hdrUserId, hdrUserIdAlt, origin, referer });
+                return false;
+            }
+
+            // Verify the user ID in header matches the authenticated session (accept any of the known header variants)
+            var headerCandidates = new List<string>();
+            if (!string.IsNullOrWhiteSpace(requiredUserId)) headerCandidates.Add(requiredUserId!);
+            if (!string.IsNullOrWhiteSpace(hdrUserId)) headerCandidates.Add(hdrUserId!);
+            if (!string.IsNullOrWhiteSpace(hdrUserIdAlt)) headerCandidates.Add(hdrUserIdAlt!);
+            if (!string.IsNullOrWhiteSpace(hdrUser)) headerCandidates.Add(hdrUser!);
+
+            var headerMatchesSession = headerCandidates.Any(h => string.Equals(session.Dcid, h, StringComparison.OrdinalIgnoreCase));
+            if (!headerMatchesSession)
+            {
+                Console.WriteLine($"[AUTH] Session user mismatch - Session.Dcid: {session.Dcid}, Candidates: {string.Join(", ", headerCandidates)}");
+                SetDebug("Session header mismatch", new { sessionId, sessionDcid = session.Dcid, headerCandidates, origin, referer });
+                return false;
+            }
+
+            SetDebug("Success", new { sessionId, sessionDcid = session.Dcid, origin, referer });
+            Console.WriteLine($"[AUTH] Validation succeeded for user {session.Dcid}");
+            Console.WriteLine("[AUTH] --- Validation End ---");
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// User session information stored server-side
+    /// </summary>
+    public class UserSessionInfo
+    {
+        public string? Dcid { get; set; }
+        public string? Email { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime ExpiresAt { get; set; }
     }
 }

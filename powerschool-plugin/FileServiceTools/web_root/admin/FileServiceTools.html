@@ -106,19 +106,84 @@
             currentPage: 1,
         };
 
+        // Retrieve session info from URL parameter and validate authentication
+        async function validateSessionAndSetContext() {
+            const qs = new URLSearchParams(window.location.search);
+            const sessionId = qs.get('session');
+            state.sessionId = sessionId || '';
+            console.log('[FileServiceTools] URL query params:', Object.fromEntries(qs));
+            console.log('[FileServiceTools] Captured sessionId from URL:', state.sessionId);
+            
+            if (!sessionId) {
+                console.warn('[FileServiceTools] No session ID in URL - using PowerSchool header authentication');
+                return true;
+            }
+
+            console.log('[FileServiceTools] Session ID found, validating session...');
+            
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/auth/session-info?sessionId=${encodeURIComponent(sessionId)}`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    mode: 'cors'
+                });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.error('[FileServiceTools] Session not found or expired');
+                        // Could redirect to login here: window.location.href = '/authenticate';
+                    } else {
+                        console.error('[FileServiceTools] Failed to retrieve session:', response.status);
+                    }
+                    return false;
+                }
+
+                const sessionData = await response.json();
+                console.log('[FileServiceTools] Session validated for user:', sessionData.dcid);
+                
+                // Update display with session user info
+                if (sessionData.dcid) {
+                    document.getElementById('displayUserId').textContent = sessionData.dcid;
+                }
+                if (sessionData.firstName || sessionData.lastName) {
+                    const fullName = `${sessionData.firstName || ''} ${sessionData.lastName || ''}`.trim();
+                    console.log('[FileServiceTools] Authenticated as:', fullName);
+                }
+
+                // Store user context for API calls
+                state.sessionUserId = sessionData.dcid;
+                state.sessionEmail = sessionData.email;
+                
+                return true;
+            } catch (error) {
+                console.error('[FileServiceTools] Error validating session:', error);
+                return false;
+            }
+        }
+
         function headers() {
             const h = new Headers();
             const qs = new URLSearchParams(window.location.search);
-            // PowerSchool replaces these server-side before serving the page
+            // Prefer authenticated session DCID if available, otherwise fall back to PowerSchool-provided values
             const username = '~[x:username]' || qs.get('user') || '';
             const userIdMeta = document.querySelector('meta[name="ps-userid"]');
             const userId = (userIdMeta && userIdMeta.content) ? userIdMeta.content : (qs.get('userid') || qs.get('userId') || '');
-            const effectiveUserId = userId || username || 'unknown';
+            const sessionUserId = state.sessionUserId || '';
+            const effectiveUserId = sessionUserId || userId || username || 'unknown';
 
-            // Always include stable ASCII-safe identifiers
+            const sessionId = state.sessionId || qs.get('session') || '';
+            if (sessionId) {
+                h.set('X-Session-Id', sessionId);
+                console.log('[FileServiceTools] Set X-Session-Id header:', sessionId);
+            } else {
+                console.warn('[FileServiceTools] No session ID available for header');
+            }
+
+            // Always include stable ASCII-safe identifiers (server expects DCID)
             h.set('X-PowerSchool-UserId', String(effectiveUserId));
             h.set('X-PowerSchool-User', String(effectiveUserId));
             h.set('X-PowerSchool-Role', 'admin');
+            console.log('[FileServiceTools] Headers effective user id:', effectiveUserId, '| sessionId:', sessionId);
 
             // Helper to test Latin-1 safety
             const isLatin1 = (s) => {
@@ -179,6 +244,8 @@
                     el('uploadStatus').innerHTML = 'Requesting upload slot...';
                     const beginRes = await fetch(apiBaseUrl + '/api/files/begin-upload', {
                         method: 'POST',
+                        credentials: 'include',
+                        mode: 'cors',
                         headers: {
                             'Content-Type': 'application/json',
                             ...Object.fromEntries(headers())
@@ -223,6 +290,8 @@
                                     el('uploadStatus').innerHTML = 'Finalizing upload...';
                                     const completeRes = await fetch(apiBaseUrl + '/api/files/complete-upload/' + fileId, {
                                         method: 'POST',
+                                        credentials: 'include',
+                                        mode: 'cors',
                                         headers: Object.fromEntries(headers())
                                     });
                                     if (!completeRes.ok) {
@@ -286,7 +355,7 @@
             const url = apiBaseUrl + '/api/files';
             el('listStatus').textContent = 'Loading...';
             try {
-                const res = await fetch(url, { headers: headers(), mode: 'cors' });
+                const res = await fetch(url, { headers: headers(), mode: 'cors', credentials: 'include' });
                 if (!res.ok) throw new Error('List failed: ' + res.status);
                 const data = await res.json();
                 setList(Array.isArray(data) ? data : []);
@@ -397,7 +466,7 @@
 
         async function downloadOne(fileId) {
             try {
-                const res = await fetch(apiBaseUrl + '/api/files/' + fileId, { headers: headers() });
+                const res = await fetch(apiBaseUrl + '/api/files/' + fileId, { headers: headers(), credentials: 'include', mode: 'cors' });
                 if (!res.ok) throw new Error('Get file failed: ' + res.status);
                 const data = await res.json();
                 const downloadUrl = data.DownloadUrl || data.downloadUrl;
@@ -421,6 +490,8 @@
                         'Content-Type': 'application/json',
                         ...Object.fromEntries(headers())
                     },
+                    credentials: 'include',
+                    mode: 'cors',
                     body: JSON.stringify(ids)
                 });
 
@@ -452,7 +523,7 @@
             const interval = setInterval(async () => {
                 attempts++;
                 try {
-                    const res = await fetch(apiBaseUrl + '/api/files/download-zip/' + jobId, { headers: headers() });
+                    const res = await fetch(apiBaseUrl + '/api/files/download-zip/' + jobId, { headers: headers(), credentials: 'include', mode: 'cors' });
                     if (!res.ok) throw new Error('Poll failed: ' + res.status);
                     const status = await res.json();
 
@@ -469,7 +540,7 @@
                         window.location.href = url;
                         // optional cleanup after 30s
                         setTimeout(() => {
-                            fetch(apiBaseUrl + '/api/files/download-zip/' + jobId, { method: 'DELETE', headers: headers() }).catch(() => {});
+                            fetch(apiBaseUrl + '/api/files/download-zip/' + jobId, { method: 'DELETE', headers: headers(), credentials: 'include', mode: 'cors' }).catch(() => {});
                         }, 30000);
                     } else if (st === 'Failed') {
                         clearInterval(interval);
@@ -491,7 +562,7 @@
 
         async function previewFile(fileId) {
             try {
-                const res = await fetch(apiBaseUrl + '/api/files/' + fileId, { headers: headers() });
+                const res = await fetch(apiBaseUrl + '/api/files/' + fileId, { headers: headers(), credentials: 'include', mode: 'cors' });
                 if (!res.ok) throw new Error('Get file failed: ' + res.status);
                 const data = await res.json();
                 const downloadUrl = data.DownloadUrl || data.downloadUrl;
@@ -569,7 +640,7 @@
             let deleted = 0;
             for (const id of state.selectedIds) {
                 try {
-                    const res = await fetch(apiBaseUrl + '/api/files/' + id, { method: 'DELETE', headers: headers() });
+                    const res = await fetch(apiBaseUrl + '/api/files/' + id, { method: 'DELETE', headers: headers(), credentials: 'include', mode: 'cors' });
                     if (res.ok) deleted++;
                 } catch (err) {}
             }
@@ -600,16 +671,27 @@
 
         // Initialize on page load
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                console.log('[FileServiceTools] DOM loaded, initializing...');
-                setupEventListeners();
-                refreshList();
+            document.addEventListener('DOMContentLoaded', async () => {
+                console.log('[FileServiceTools] DOM loaded, validating session...');
+                const isAuthenticated = await validateSessionAndSetContext();
+                if (isAuthenticated) {
+                    setupEventListeners();
+                    refreshList();
+                } else {
+                    console.error('[FileServiceTools] Session validation failed');
+                }
             });
         } else {
             // DOM already loaded
-            console.log('[FileServiceTools] DOM already loaded, initializing immediately...');
-            setupEventListeners();
-            refreshList();
+            console.log('[FileServiceTools] DOM already loaded, validating session...');
+            validateSessionAndSetContext().then(isAuthenticated => {
+                if (isAuthenticated) {
+                    setupEventListeners();
+                    refreshList();
+                } else {
+                    console.error('[FileServiceTools] Session validation failed');
+                }
+            });
         }
     </script>
 </body>

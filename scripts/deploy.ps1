@@ -366,18 +366,21 @@ if ($Environment -eq "Production" -and $PromoteFromStaging) {
     Write-Host "🚀 Deploying application to $Environment..." -ForegroundColor Yellow
     
     $environmentLabel = $Environment.ToLower()
-    $publishDir = "publish-$environmentLabel"
-    $deployZip = "deploy-$environmentLabel.zip"
+    $scriptDir = $PSScriptRoot
+    $rootDir = Split-Path $scriptDir -Parent
+    $publishDir = Join-Path $rootDir "publish-$environmentLabel"
+    $deployZip = Join-Path $rootDir "deploy-$environmentLabel.zip"
+    $projectFile = Join-Path $rootDir "src\FileService.Api\FileService.Api.csproj"
     
     # Build and publish
     Write-Host "Building application..."
-    dotnet publish src/FileService.Api/FileService.Api.csproj -c Release -o $publishDir --verbosity quiet
+    dotnet publish $projectFile -c Release -o $publishDir --verbosity quiet
     
     # Create deployment package
     Write-Host "Creating deployment package..."
-    Set-Location $publishDir
-    Compress-Archive -Path * -DestinationPath "../$deployZip" -Force
-    Set-Location ..
+    Push-Location $publishDir
+    Compress-Archive -Path * -DestinationPath $deployZip -Force
+    Pop-Location
     
     # Deploy to Azure
     Write-Host "Deploying to Azure App Service..."

@@ -118,17 +118,17 @@ Active only when `EnvironmentMode=Development` (or config equals `Development`):
 - Harden: disable `/dev/powerschool/*` by ensuring `EnvironmentMode` is not `Development`.
 
 ### Dev Run Script
-`scripts/dev-run.ps1` launches the API pre-configured for local development.
+`scripts/dev-run.ps1` launches the API pre-configured for local development with in-memory storage.
 
 Usage:
 ```powershell
 cd scripts
-./dev-run.ps1 -Port 5090 -SqlitePath dev-files.db
+./dev-run.ps1 -Port 5090
 ```
 
 Then test an upload (no headers needed due to dev shortcut):
 ```powershell
-Invoke-RestMethod -Method Post -Uri 'http://localhost:5090/api/files/upload?devUser=demo1&role=admin' -Form @{ file=Get-Item ..\README.md }
+Invoke-RestMethod -Method Post -Uri 'http://localhost:5090/api/files/begin-upload?devUser=demo1&role=admin' -Body '{"fileName":"test.txt","sizeBytes":100,"contentType":"text/plain"}' -ContentType 'application/json' -Method Post
 ```
 
 List files:
@@ -141,12 +141,12 @@ Invoke-RestMethod -Method Get -Uri 'http://localhost:5090/api/files?devUser=demo
 $env:EnvironmentMode='Production'
 $env:Persistence__Type='TableStorage'
 $env:TableStorage__ConnectionString='DefaultEndpointsProtocol=...'
+$env:BlobStorage__ConnectionString='DefaultEndpointsProtocol=...'
+$env:BlobStorage__UseLocalStub='false'
 dotnet run --project src/FileService.Api/FileService.Api.csproj
 ```
 
-The service will then use the real Azure Blob and Table Storage backends
-
-The service will then use the real Azure Blob backend (if credentials permit SAS generation).
+The service will then use the real Azure Blob and Table Storage backends.
 
 ## Configuration (Future)
 Environment variables expected (once implemented):

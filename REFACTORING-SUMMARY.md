@@ -1,11 +1,36 @@
-# Program.cs Refactoring Summary
+# Architecture Refactoring Summary
 
 ## Overview
-Refactored the monolithic Program.cs file (~827 lines) into a well-organized project structure following separation of concerns and .NET best practices.
+Refactored the monolithic Program.cs file (~670 lines) into a modular, maintainable architecture following clean code principles and .NET best practices. The refactoring focuses on separation of concerns with dedicated endpoint classes per API domain.
+
+## Latest Refactoring (Endpoint Modularization)
+
+### Endpoint Classes Created
+1. **HealthCheckEndpoints.cs** - Health monitoring API with integration tests
+2. **FileOperationEndpoints.cs** - File CRUD operations (upload, list, get, delete)
+3. **ZipDownloadEndpoints.cs** - Async batch download with background processing
+4. **PowerSchoolAuthEndpoints.cs** - Development authentication helpers
+
+### Program.cs Transformation
+**Before**: ~670 lines with all endpoint logic inline
+**After**: ~162 lines acting as clean gateway/router
+
+**Current Responsibilities**:
+- Service registration (DI configuration)
+- Middleware pipeline setup  
+- Endpoint routing via extension methods
+- Configuration management
+
+### Benefits
+✅ **Maintainability**: Each API domain isolated in its own class
+✅ **Testability**: Endpoint logic can be tested independently
+✅ **Scalability**: Easy to add new endpoint groups
+✅ **Readability**: Program.cs is now a clear central router
+✅ **Team Collaboration**: Multiple developers can work on different endpoints
 
 ## Changes Made
 
-### 1. Created Middleware Layer
+### 1. Created Endpoint Layer (New)
 **File:** [src/FileService.Api/Middleware/HmacAuthenticationMiddleware.cs](src/FileService.Api/Middleware/HmacAuthenticationMiddleware.cs)
 - Extracted HMAC authentication logic from Program.cs middleware
 - Validates X-Signature and X-Timestamp headers
@@ -61,37 +86,83 @@ Refactored the monolithic Program.cs file (~827 lines) into a well-organized pro
 ### 4. Updated Program.cs
 **Changes:**
 - Added using statements for new namespaces
-- Removed ~200 lines of middleware, model, and service code
-- Registered `HmacAuthenticationMiddleware` via `UseMiddleware<>()`
-- Simplified authentication middleware (removed HMAC logic, kept PowerSchool user context)
-- Kept endpoint registrations and configuration
-- Reduced from ~827 lines to ~673 lines
+- Removed ~500 lines of endpoint logic code
+- Clean routing via extension methods (MapHealthCheckEndpoints, MapFileOperationEndpoints, etc.)
+- Reduced from ~670 lines to ~162 lines
 
 **What Remains in Program.cs:**
 - Service registrations (DI configuration)
 - Middleware pipeline setup
 - CORS configuration
-- API endpoint mappings
+- Clean endpoint routing via extension methods
 - App configuration and startup
 
-## Build Verification
-✅ Build successful with no errors
-✅ All warnings resolved
-✅ Functionality preserved
-
-## File Structure After Refactoring
+## File Structure After All Refactoring
 ```
 src/FileService.Api/
+├── Endpoints/
+│   ├── HealthCheckEndpoints.cs       (Health monitoring)
+│   ├── FileOperationEndpoints.cs     (File CRUD)
+│   ├── ZipDownloadEndpoints.cs       (Batch download)
+│   └── PowerSchoolAuthEndpoints.cs   (Dev auth)
 ├── Middleware/
-│   └── HmacAuthenticationMiddleware.cs
+│   └── PowerSchoolAuthenticationMiddleware.cs
 ├── Models/
 │   ├── BeginUploadRequest.cs
+│   ├── FileListItemDto.cs           (Moved from Core)
 │   ├── FileMetadataDto.cs
 │   ├── PowerSchoolUserContext.cs
 │   ├── ZipExportRequestDto.cs
 │   └── ZipJobStatus.cs
 ├── Services/
-│   └── ExportCleanupService.cs
+│   ├── ExportCleanupService.cs
+│   └── OpenIdRelyingPartyService.cs
+└── Program.cs (clean gateway - 162 lines)
+
+src/FileService.Core/
+├── Entities/
+│   └── FileRecord.cs               (Domain model)
+└── Interfaces/
+    ├── IFileMetadataRepository.cs
+    └── IFileStorageService.cs
+
+src/FileService.Infrastructure/
+├── Data/
+│   ├── InMemoryFileMetadataRepository.cs
+│   └── TableStorageFileMetadataRepository.cs
+└── Storage/
+    ├── AzureBlobFileStorageService.cs
+    └── StubBlobFileStorageService.cs
+```
+
+## Technology Cleanup
+✅ Removed Entity Framework dependencies (no longer needed)
+✅ Removed SQLite support (migrated to Azure Table Storage)
+✅ Deleted legacy migration scripts
+✅ Updated all documentation
+
+## Architecture Pattern
+Follows **Clean Architecture** principles:
+- **Core**: Domain entities and interfaces (no dependencies)
+- **API**: Presentation layer with DTOs and endpoints
+- **Infrastructure**: Storage implementations
+
+## Build Verification
+✅ Build successful with no errors
+✅ All warnings resolved
+✅ Functionality preserved
+✅ Documentation updated
+
+## Next Steps
+1. ✅ All code extracted and organized
+2. ✅ Build verified successful
+3. ✅ Documentation updated
+4. ✅ Legacy code removed
+5. 🔄 Consider message queue for zip processing
+6. 🔄 Add comprehensive unit tests for endpoints
+
+**Last Updated**: January 24, 2026
+**Architecture Version**: 2.0
 └── Program.cs (simplified)
 ```
 

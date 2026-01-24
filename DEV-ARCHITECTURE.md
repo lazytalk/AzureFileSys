@@ -22,25 +22,37 @@ AzureFileSys/
 ## 🔧 Core Architecture Components
 
 ### 1. **FileService.Api** (Web API Layer)
-- **Framework**: ASP.NET Core 8.0 Minimal APIs
-- **Authentication**: PowerSchool header-based auth (`X-PowerSchool-User`, `X-PowerSchool-Role`)
-- **Endpoints**: 
-  - `POST /api/files/begin-upload` - **(New)** Initialize upload session and get Write SAS token
-  - `PUT [SAS_URL]` - **(Client-Side)** Direct upload to Blob Storage (bypass API server)
-  - `POST /api/files/complete-upload/{id}` - **(New)** Finalize upload and mark file as available
-  - `GET /api/files?all=false` - List files with user filtering
-  - `GET /api/files/{id}` - Get file details and download URL
-  - `DELETE /api/files/{id}` - Delete files with access control
+- **Framework**: ASP.NET Core 9.0 Minimal APIs
+- **Architecture**: Modular endpoint structure with separate classes per API domain
+- **Authentication**: PowerSchool header-based auth (`X-PowerSchool-User`, `X-PowerSchool-Role`) + OpenID support
+- **Endpoint Groups**:
+  - **Health Check API** (`HealthCheckEndpoints.cs`)
+    - `GET /api/health/check` - Comprehensive health monitoring with integration tests
+  - **File Operations API** (`FileOperationEndpoints.cs`)
+    - `POST /api/files/begin-upload` - Initialize upload session and get Write SAS token
+    - `PUT [SAS_URL]` - (Client-Side) Direct upload to Blob Storage (bypass API server)
+    - `POST /api/files/complete-upload/{id}` - Finalize upload and mark file as available
+    - `GET /api/files?all=false` - List files with user filtering
+    - `GET /api/files/{id}` - Get file details and download URL
+    - `DELETE /api/files/{id}` - Delete files with access control
+  - **Zip Download API** (`ZipDownloadEndpoints.cs`)
+    - `POST /api/files/download-zip` - Start async batch download job
+    - `GET /api/files/download-zip/{jobId}` - Check job status
+    - `DELETE /api/files/download-zip/{jobId}` - Cleanup completed job
+  - **PowerSchool Auth API** (`PowerSchoolAuthEndpoints.cs` - dev only)
+    - `POST /dev/powerschool/token` - Generate test token
+    - `POST /dev/powerschool/validate` - Validate token
 - **Documentation**: Swagger/OpenAPI available at `/swagger`
 - **CORS**: Configured for development and production scenarios
+- **Program.cs**: Acts as clean central router with service configuration
 
 ### 2. **FileService.Core** (Domain Layer)  
 - **Entities**: `FileRecord` - comprehensive file metadata model
 - **Interfaces**: 
   - `IFileMetadataRepository` - file metadata persistence abstraction
   - `IFileStorageService` - blob storage abstraction
-- **DTOs**: `FileListItemDto` for optimized API responses
-- **Clean Architecture**: Zero dependencies on infrastructure concerns
+- **Clean Architecture**: Zero dependencies on infrastructure or API concerns
+- **DTOs**: All moved to FileService.Api/Models for better separation
 
 ### 3. **FileService.Infrastructure** (Data & Storage Layer)
 - **Metadata Storage**: Azure Table Storage for file metadata persistence
@@ -134,10 +146,12 @@ AzureFileSys/
 ```powershell
 # Development uses in-memory storage (no persistence)
 # Data automatically resets on each application restart
+# No SQLite, no Entity Framework, no migrations needed
 
 # For Staging/Production:
 # Table Storage automatically creates tables on first use
 # No manual migration or schema management required
+# Serverless NoSQL with PartitionKey/RowKey design
 ```
 
 ## 🎯 Key Development Features

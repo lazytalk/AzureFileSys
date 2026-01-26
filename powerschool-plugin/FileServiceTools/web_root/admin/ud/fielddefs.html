@@ -37,13 +37,13 @@
 
   <p>
     <a class="kwe_ud_btn" href="categories.html">← Back to Categories</a>
-    ~[if#unlocked.~(rec_count)=0]
+    ~[if#unlocked.~(rec_count)==0]
       <a class="kwe_ud_btn" href="fielddefs-edit.html?id=-1&catid=~(catid)">+ New Field</a>
     [else#unlocked]
       <span class="kwe_ud_btn kwe_ud_btn_disabled" title="Locked: category has records">+ New Field</span>
     [/if#unlocked]
   </p>
-~[/tlist_sql]
+[/tlist_sql]
 
   <table>
     <thead>

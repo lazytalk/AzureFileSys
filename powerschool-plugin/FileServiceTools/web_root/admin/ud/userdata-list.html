@@ -8,15 +8,15 @@
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
     <style>
-        .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
-        .btn-danger{border-color:#c00}
-        .row{margin:10px 0}
-        table{border-collapse:collapse;width:100%}
-        th,td{border:1px solid #ddd;padding:8px;vertical-align:top}
-        th{background:#f0f0f0;text-align:left}
-        .right{text-align:right}
-        .hint{color:#666;font-size:12px}
-        .pager a{margin-right:8px}
+      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
+      .kwe_ud_btn_danger{border-color:#c00}
+      .kwe_ud_row{margin:10px 0}
+      table{border-collapse:collapse;width:100%}
+      th,td{border:1px solid #ddd;padding:8px;vertical-align:top}
+      th{background:#f0f0f0;text-align:left}
+      .kwe_ud_right{text-align:right}
+      .kwe_ud_hint{color:#666;font-size:12px}
+      .pager a{margin-right:8px}
     </style>
 </head>
 <body>
@@ -26,9 +26,9 @@
 
 <h1>User Data Records</h1>
 
-<div class="row">
-  <a class="btn" href="userdata-home.html">← Change User/Category</a>
-  <a class="btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=-1">+ Add Record</a>
+<div class="kwe_ud_row">
+  <a class="kwe_ud_btn" href="userdata-home.html">← Change User/Category</a>
+  <a class="kwe_ud_btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=-1">+ Add Record</a>
 </div>
 
 <form method="GET" action="userdata-list.html" onsubmit="return prepSearch();">
@@ -38,8 +38,8 @@
   <label>Search:</label>
   <input type="text" id="qHuman" value="~(gpv.q)">
   <input type="hidden" name="q" id="qSql" value="~(gpv.q)">
-  <button class="btn" type="submit">Search</button>
-  <span class="hint">Use * wildcard. Example: *2025*, Toronto*</span>
+  <button class="kwe_ud_btn" type="submit">Search</button>
+  <span class="kwe_ud_hint">Use * wildcard. Example: *2025*, Toronto*</span>
 </form>
 
 <script>
@@ -67,7 +67,7 @@ function prepSearch(){
         <th style="width:90px">Record ID</th>
         <th style="width:180px">Created</th>
         <th>Summary (searchable)</th>
-        <th style="width:110px" class="right">Actions</th>
+        <th style="width:110px" class="kwe_ud_right">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -122,17 +122,17 @@ function prepSearch(){
         <td>~(recid)</td>
         <td>~(created_on)</td>
         <td>~(summary)</td>
-        <td class="right">
-          <a class="btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=~(recid)">Edit</a>
+        <td class="kwe_ud_right">
+          <a class="kwe_ud_btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=~(recid)">Edit</a>
         </td>
       </tr>
       ~[/tlist_sql]
     </tbody>
   </table>
 
-  <div class="row">
-    <button class="btn btn-danger" type="submit">Delete Selected</button>
-    <span class="hint">Deletes record + its values (handled in userdata-delete.html)</span>
+  <div class="kwe_ud_row">
+    <button class="kwe_ud_btn kwe_ud_btn_danger" type="submit">Delete Selected</button>
+    <span class="kwe_ud_hint">Deletes record + its values (handled in userdata-delete.html)</span>
   </div>
 </form>
 
@@ -145,9 +145,9 @@ function prepSearch(){
   FROM DUAL
 ]
 <div class="pager">
-  <a class="btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(prev_page)&q=~(gpv.q)">Prev</a>
-  <a class="btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(next_page)&q=~(gpv.q)">Next</a>
-  <span class="hint">Page: ~(curr_page)</span>
+  <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(prev_page)&q=~(gpv.q)">Prev</a>
+  <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(next_page)&q=~(gpv.q)">Next</a>
+  <span class="kwe_ud_hint">Page: ~(curr_page)</span>
 </div>
 ~[/tlist_sql]
 

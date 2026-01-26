@@ -7,16 +7,16 @@
     ~[wc:commonscripts] 
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
-<!--<style>
-        .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
-        .btn-danger{border-color:#c00}
-        .btn-disabled{opacity:.45;pointer-events:none}
-        table{border-collapse:collapse;width:100%}
-        th,td{border:1px solid #ddd;padding:8px}
-        th{background:#f0f0f0;text-align:left}
-        .right{text-align:right}
-        .hint{color:#666;font-size:12px}
-    </style>-->    
+    <style>
+      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
+      .kwe_ud_btn_danger{border-color:#c00}
+      .kwe_ud_btn_disabled{opacity:.45;pointer-events:none}
+      table{border-collapse:collapse;width:100%}
+      th,td{border:1px solid #ddd;padding:8px}
+      th{background:#f0f0f0;text-align:left}
+      .kwe_ud_right{text-align:right}
+      .kwe_ud_hint{color:#666;font-size:12px}
+    </style>
 </head>
 <body>
     ~[wc:admin_header_css] 
@@ -25,13 +25,13 @@
 
 <h1>User Data Categories</h1>
 
-<p class="hint">
+<p class="kwe_ud_hint">
   Categories define "types" of user data (MAP Scores, Club Experience, Skillsets).  
   You can only delete (or edit fields) when no user records exist for that category.
 </p>
 
 <p>
-  <a class="btn" href="categories-edit.html?id=-1">+ New Category</a>
+  <a class="kwe_ud_btn" href="categories-edit.html?id=-1">+ New Category</a>
 </p>
 
 <table id="catTable">
@@ -42,7 +42,7 @@
       <th>Active</th>
       <th>Sort</th>
       <th>Records</th>
-      <th class="right">Actions</th>
+      <th class="kwe_ud_right">Actions</th>
     </tr>
   </thead>
   <tbody>
@@ -63,13 +63,13 @@
       <td>~(is_active)</td>
       <td>~(sort_order)</td>
       <td>~(rec_count)</td>
-      <td class="right">
-        <a class="btn" href="categories-edit.html?id=~(id)">Edit</a>
-        <a class="btn" href="fielddefs.html?catid=~(id)">Fields</a>
+      <td class="kwe_ud_right">
+        <a class="kwe_ud_btn" href="categories-edit.html?id=~(id)">Edit</a>
+        <a class="kwe_ud_btn" href="fielddefs.html?catid=~(id)">Fields</a>
         ~[if#canDelete.~(rec_count)=0]
-          <a class="btn btn-danger" href="categories-delete.html?id=~(id)">Delete</a>
+          <a class="kwe_ud_btn kwe_ud_btn_danger" href="categories-delete.html?id=~(id)">Delete</a>
         [else#canDelete]
-          <span class="btn btn-danger btn-disabled" title="Locked: category has records">Delete</span>
+          <span class="kwe_ud_btn kwe_ud_btn_danger kwe_ud_btn_disabled" title="Locked: category has records">Delete</span>
         [/if#canDelete]
       </td>
     </tr>

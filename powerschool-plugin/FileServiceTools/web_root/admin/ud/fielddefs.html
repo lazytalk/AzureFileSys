@@ -8,13 +8,13 @@
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
     <style>
-        .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
-        .btn-disabled{opacity:.45;pointer-events:none}
-        table{border-collapse:collapse;width:100%}
-        th,td{border:1px solid #ddd;padding:8px}
-        th{background:#f0f0f0;text-align:left}
-        .hint{color:#666;font-size:12px}
-        .right{text-align:right}
+      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
+      .kwe_ud_btn_disabled{opacity:.45;pointer-events:none}
+      table{border-collapse:collapse;width:100%}
+      th,td{border:1px solid #ddd;padding:8px}
+      th{background:#f0f0f0;text-align:left}
+      .kwe_ud_hint{color:#666;font-size:12px}
+      .kwe_ud_right{text-align:right}
     </style>
 </head>
 <body>
@@ -33,14 +33,14 @@
   WHERE c.ID = ~(gpv.catid)
 ]
   <p>Category: <b>~(catname)</b></p>
-  <p class="hint">Fields can only be edited if record count is 0.</p>
+  <p class="kwe_ud_hint">Fields can only be edited if record count is 0.</p>
 
   <p>
-    <a class="btn" href="categories.html">← Back to Categories</a>
+    <a class="kwe_ud_btn" href="categories.html">← Back to Categories</a>
     ~[if#unlocked.~(rec_count)=0]
-      <a class="btn" href="fielddefs-edit.html?id=-1&catid=~(catid)">+ New Field</a>
+      <a class="kwe_ud_btn" href="fielddefs-edit.html?id=-1&catid=~(catid)">+ New Field</a>
     [else#unlocked]
-      <span class="btn btn-disabled" title="Locked: category has records">+ New Field</span>
+      <span class="kwe_ud_btn kwe_ud_btn_disabled" title="Locked: category has records">+ New Field</span>
     [/if#unlocked]
   </p>
 ~[/tlist_sql]
@@ -53,7 +53,7 @@
         <th>Type</th>
         <th>Required</th>
         <th>Sort</th>
-        <th class="right">Actions</th>
+        <th class="kwe_ud_right">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -76,13 +76,13 @@
         <td>~(value_type)</td>
         <td>~(required)</td>
         <td>~(sort_order)</td>
-        <td class="right">
+        <td class="kwe_ud_right">
           ~[if#unlocked2.~(rec_count)=0]
-            <a class="btn" href="fielddefs-edit.html?id=~(id)&catid=~(gpv.catid)">Edit</a>
-            <a class="btn" href="fielddefs-delete.html?id=~(id)&catid=~(gpv.catid)">Delete</a>
+            <a class="kwe_ud_btn" href="fielddefs-edit.html?id=~(id)&catid=~(gpv.catid)">Edit</a>
+            <a class="kwe_ud_btn" href="fielddefs-delete.html?id=~(id)&catid=~(gpv.catid)">Delete</a>
           [else#unlocked2]
-            <span class="btn btn-disabled">Edit</span>
-            <span class="btn btn-disabled">Delete</span>
+            <span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span>
+            <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>
           [/if#unlocked2]
         </td>
       </tr>
@@ -90,10 +90,10 @@
     </tbody>
   </table>
 
-  <p class="hint">
+  <p class="kwe_ud_hint">
     Value Types supported in this starter UI: STRING, INT, DECIMAL, DATE, BOOL, TEXT
   </p>
 
-~[wc:admin_footer]
+
 </body>
 </html>

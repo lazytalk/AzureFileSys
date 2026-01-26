@@ -8,9 +8,9 @@
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
     <style>
-        .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
-        .danger{border-color:#c00}
-        .box{padding:12px;border:1px solid #ddd;background:#fafafa}
+      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+      .kwe_ud_danger{border-color:#c00}
+      .kwe_ud_box{padding:12px;border:1px solid #ddd;background:#fafafa}
     </style>
 </head>
 <body>
@@ -21,17 +21,17 @@
 <h1>Delete Field</h1>
 
 <form action="fielddefs.html?catid=~(gpv.catid)" method="POST">
-  <div class="box">
+  <div class="kwe_ud_box">
     <p style="color:#c00"><b>This will delete the field definition.</b></p>
 
     <input type="hidden" name="DD-U_UD_FIELDDEF.ID:~(gpv.id)" value="1">
     <input type="hidden" name="ac" value="prim">
 
-    <button class="btn danger" type="submit">Delete</button>
-    <a class="btn" href="fielddefs.html?catid=~(gpv.catid)">Cancel</a>
+    <button class="kwe_ud_btn kwe_ud_danger" type="submit">Delete</button>
+    <a class="kwe_ud_btn" href="fielddefs.html?catid=~(gpv.catid)">Cancel</a>
   </div>
 </form>
 
-~[wc:admin_footer]
+
 </body>
 </html>

@@ -8,13 +8,13 @@
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
     <style>
-        .row{margin:10px 0}
-        label{display:inline-block;width:200px;vertical-align:top}
-        input[type=text], input[type=number], input[type=date], textarea{width:420px;padding:6px}
-        textarea{height:90px}
-        .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
-        .box{padding:12px;border:1px solid #ddd;background:#fafafa;margin:10px 0}
-        .hint{color:#666;font-size:12px}
+      .kwe_ud_row{margin:10px 0}
+      label{display:inline-block;width:200px;vertical-align:top}
+      input[type=text], input[type=number], input[type=date], textarea{width:420px;padding:6px}
+      textarea{height:90px}
+      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+      .kwe_ud_box{padding:12px;border:1px solid #ddd;background:#fafafa;margin:10px 0}
+      .kwe_ud_hint{color:#666;font-size:12px}
     </style>
 </head>
 <body>
@@ -24,7 +24,7 @@
     <h1>Edit Record</h1>
 
     <p>
-      <a class="btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">← Back to List</a>
+      <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">← Back to List</a>
     </p>
 
     <form action="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)" method="POST">
@@ -33,12 +33,12 @@
   <input type="hidden" name="[U_UD_RECORD]USERSDCID" value="~(gpv.usersdcid)">
   <input type="hidden" name="[U_UD_RECORD]CATEGORY_ID" value="~(gpv.catid)">
 
-  <div class="box">
-    <div class="row">
+  <div class="kwe_ud_box">
+    <div class="kwe_ud_row">
       <label>User DCID</label>
       <span>~(gpv.usersdcid)</span>
     </div>
-    <div class="row">
+    <div class="kwe_ud_row">
       <label>Category</label>
       <span>~(gpv.catid)</span>
     </div>
@@ -100,8 +100,8 @@
     WHERE f.CATEGORY_ID = ~(gpv.catid)
     ORDER BY NVL(f.SORT_ORDER,9999), UPPER(f.FIELD_LABEL)
   ]
-    <div class="box">
-      <div class="row">
+    <div class="kwe_ud_box">
+      <div class="kwe_ud_row">
         <label>~(field_label) ~[if#req.~(required)=1]*[/if#req]</label>
 
         <!-- If an existing value row exists, edit it; else create one -->
@@ -141,18 +141,18 @@
       </div>
 
       ~[if#help.~(help_text)!=]
-        <div class="hint" style="margin-left:200px">~(help_text)</div>
+        <div class="kwe_ud_hint" style="margin-left:200px">~(help_text)</div>
       [/if#help]
     </div>
   ~[/tlist_sql]
 
-  <div class="row">
-    <button class="btn" type="submit">Save</button>
+  <div class="kwe_ud_row">
+    <button class="kwe_ud_btn" type="submit">Save</button>
     <input type="hidden" name="ac" value="prim">
   </div>
 
 </form>
 
-~[wc:admin_footer]
+
 </body>
 </html>

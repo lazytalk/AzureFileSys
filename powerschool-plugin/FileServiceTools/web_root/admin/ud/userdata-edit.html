@@ -1,31 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  ~[wc:admin_header_css]
-  <title>Edit User Data Record</title>
-  <style>
-    .row{margin:10px 0}
-    label{display:inline-block;width:200px;vertical-align:top}
-    input[type=text], input[type=number], input[type=date], textarea{width:420px;padding:6px}
-    textarea{height:90px}
-    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
-    .box{padding:12px;border:1px solid #ddd;background:#fafafa;margin:10px 0}
-    .hint{color:#666;font-size:12px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User Data Record</title>
+    ~[wc:commonscripts] 
+    <link href="/images/css/screen.css" rel="stylesheet" media="screen">
+    <link href="/images/css/print.css" rel="stylesheet" media="print">
+    <style>
+        .row{margin:10px 0}
+        label{display:inline-block;width:200px;vertical-align:top}
+        input[type=text], input[type=number], input[type=date], textarea{width:420px;padding:6px}
+        textarea{height:90px}
+        .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+        .box{padding:12px;border:1px solid #ddd;background:#fafafa;margin:10px 0}
+        .hint{color:#666;font-size:12px}
+    </style>
 </head>
 <body>
-~[wc:admin_header]
-~[wc:admin_navigation]
+    ~[wc:admin_header_css] 
+    <a href=" " target="_top">Start Page</a> &gt; File Service Tools
+    ~[wc:admin_navigation_css]
+    <h1>Edit Record</h1>
 
-<h1>Edit Record</h1>
+    <p>
+      <a class="btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">← Back to List</a>
+    </p>
 
-<p>
-  <a class="btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">← Back to List</a>
-</p>
-
-<form action="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)" method="POST">
-
-  <!-- Record header -->
+    <form action="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)" method="POST">
   ~[DirectTable.Select:U_UD_RECORD;ID:~(gpv.recid)]
 
   <input type="hidden" name="[U_UD_RECORD]USERSDCID" value="~(gpv.usersdcid)">

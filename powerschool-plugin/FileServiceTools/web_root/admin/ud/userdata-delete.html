@@ -1,23 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  ~[wc:admin_header_css]
-  <title>Delete Records</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Records</title>
+    ~[wc:commonscripts] 
+    <link href="/images/css/screen.css" rel="stylesheet" media="screen">
+    <link href="/images/css/print.css" rel="stylesheet" media="print">
+    <style>
+        .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+    </style>
 </head>
 <body>
-~[wc:admin_header]
-~[wc:admin_navigation]
+    ~[wc:admin_header_css] 
+    <a href=" " target="_top">Start Page</a> &gt; File Service Tools
+    ~[wc:admin_navigation_css]
+    <h1>Delete Records</h1>
 
-<h1>Delete Records</h1>
+    <form action="userdata-list.html" method="POST">
+      <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
+      <input type="hidden" name="catid" value="~(gpv.catid)">
+      <input type="hidden" name="page" value="~(gpv.page)">
+      <input type="hidden" name="q" value="~(gpv.q)">
 
-<form action="userdata-list.html" method="POST">
-  <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
-  <input type="hidden" name="catid" value="~(gpv.catid)">
-  <input type="hidden" name="page" value="~(gpv.page)">
-  <input type="hidden" name="q" value="~(gpv.q)">
-
-  <!-- For each selected record ID posted as del_recid, generate delete inputs for values -->
-  ~[tlist_sql;
+      <!-- For each selected record ID posted as del_recid, generate delete inputs for values -->
+      ~[tlist_sql;
     SELECT v.ID value_id
     FROM U_UD_VALUE v
     WHERE v.RECORD_ID IN (

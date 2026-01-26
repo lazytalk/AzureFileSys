@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>Category Fields</title>
+  <style>
+    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
+    .btn-disabled{opacity:.45;pointer-events:none}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #ddd;padding:8px}
+    th{background:#f0f0f0;text-align:left}
+    .hint{color:#666;font-size:12px}
+    .right{text-align:right}
+  </style>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>Category Fields</h1>
+
+~[tlist_sql;
+  SELECT
+    c.ID catid,
+    c.NAME catname,
+    (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count
+  FROM U_UD_CATEGORY c
+  WHERE c.ID = ~(gpv.catid)
+]
+  <p>Category: <b>~(catname)</b></p>
+  <p class="hint">Fields can only be edited if record count is 0.</p>
+
+  <p>
+    <a class="btn" href="categories.html">← Back to Categories</a>
+    ~[if#unlocked.~(rec_count)=0]
+      <a class="btn" href="fielddefs-edit.html?id=-1&catid=~(catid)">+ New Field</a>
+    [else#unlocked]
+      <span class="btn btn-disabled" title="Locked: category has records">+ New Field</span>
+    [/if#unlocked]
+  </p>
+~[/tlist_sql]
+
+  <table>
+    <thead>
+      <tr>
+        <th>Label</th>
+        <th>Key</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Sort</th>
+        <th class="right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      ~[tlist_sql;
+        SELECT
+          f.ID id,
+          f.FIELD_LABEL field_label,
+          f.FIELD_KEY field_key,
+          f.VALUE_TYPE value_type,
+          f.REQUIRED required,
+          f.SORT_ORDER sort_order,
+          (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = ~(gpv.catid)) rec_count
+        FROM U_UD_FIELDDEF f
+        WHERE f.CATEGORY_ID = ~(gpv.catid)
+        ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
+      ]
+      <tr>
+        <td>~(field_label)</td>
+        <td>~(field_key)</td>
+        <td>~(value_type)</td>
+        <td>~(required)</td>
+        <td>~(sort_order)</td>
+        <td class="right">
+          ~[if#unlocked2.~(rec_count)=0]
+            <a class="btn" href="fielddefs-edit.html?id=~(id)&catid=~(gpv.catid)">Edit</a>
+            <a class="btn" href="fielddefs-delete.html?id=~(id)&catid=~(gpv.catid)">Delete</a>
+          [else#unlocked2]
+            <span class="btn btn-disabled">Edit</span>
+            <span class="btn btn-disabled">Delete</span>
+          [/if#unlocked2]
+        </td>
+      </tr>
+      ~[/tlist_sql]
+    </tbody>
+  </table>
+
+  <p class="hint">
+    Value Types supported in this starter UI: STRING, INT, DECIMAL, DATE, BOOL, TEXT
+  </p>
+
+~[wc:admin_footer]
+</body>
+</html>

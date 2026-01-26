@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>User Data Records</title>
+  <style>
+    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
+    .btn-danger{border-color:#c00}
+    .row{margin:10px 0}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #ddd;padding:8px;vertical-align:top}
+    th{background:#f0f0f0;text-align:left}
+    .right{text-align:right}
+    .hint{color:#666;font-size:12px}
+    .pager a{margin-right:8px}
+  </style>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>User Data Records</h1>
+
+<div class="row">
+  <a class="btn" href="userdata-home.html">← Change User/Category</a>
+  <a class="btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=-1">+ Add Record</a>
+</div>
+
+<form method="GET" action="userdata-list.html" onsubmit="return prepSearch();">
+  <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
+  <input type="hidden" name="catid" value="~(gpv.catid)">
+  <input type="hidden" name="page" value="1">
+  <label>Search:</label>
+  <input type="text" id="qHuman" value="~(gpv.q)">
+  <input type="hidden" name="q" id="qSql" value="~(gpv.q)">
+  <button class="btn" type="submit">Search</button>
+  <span class="hint">Use * wildcard. Example: *2025*, Toronto*</span>
+</form>
+
+<script>
+function prepSearch(){
+  var human = document.getElementById('qHuman').value || '%';
+  var sql = human.replace(/\*/g, '%');
+  if(sql.trim() === '') sql = '%';
+  document.getElementById('qSql').value = sql;
+  return true;
+}
+</script>
+
+<hr>
+
+<form method="POST" action="userdata-delete.html">
+  <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
+  <input type="hidden" name="catid" value="~(gpv.catid)">
+  <input type="hidden" name="page" value="~(gpv.page)">
+  <input type="hidden" name="q" value="~(gpv.q)">
+
+  <table id="recordsTable">
+    <thead>
+      <tr>
+        <th style="width:32px"><input type="checkbox" onclick="toggleAll(this)"></th>
+        <th style="width:90px">Record ID</th>
+        <th style="width:180px">Created</th>
+        <th>Summary (searchable)</th>
+        <th style="width:110px" class="right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Paging: 10 rows per page using ROW_NUMBER -->
+      ~[tlist_sql;
+        SELECT * FROM (
+          SELECT
+            r.ID recid,
+            r.CREATED_ON created_on,
+            -- Summary: concatenate values as a single searchable string
+            (
+              SELECT LISTAGG(
+                       NVL(v.VALUE_STR,
+                           NVL(TO_CHAR(v.VALUE_NUM),
+                               NVL(TO_CHAR(v.VALUE_DATE,'YYYY-MM-DD'),
+                                   NVL(TO_CHAR(v.VALUE_BOOL),
+                                       NVL(v.VALUE_TEXT,'')
+                                   )
+                               )
+                           )
+                       ),
+                       ' | '
+                     ) WITHIN GROUP (ORDER BY v.FIELDDEF_ID)
+              FROM U_UD_VALUE v
+              WHERE v.RECORD_ID = r.ID
+            ) summary,
+            ROW_NUMBER() OVER (ORDER BY r.CREATED_ON DESC, r.ID DESC) rn
+          FROM U_UD_RECORD r
+          WHERE r.USERSDCID = ~(gpv.usersdcid)
+            AND r.CATEGORY_ID = ~(gpv.catid)
+            AND (
+              ~(gpv.q) IS NULL
+              OR ~(gpv.q) = ''
+              OR EXISTS (
+                SELECT 1
+                FROM U_UD_VALUE v2
+                WHERE v2.RECORD_ID = r.ID
+                  AND (
+                    NVL(v2.VALUE_STR,'') LIKE '~(gpv.q)'
+                    OR NVL(v2.VALUE_TEXT,'') LIKE '~(gpv.q)'
+                    OR TO_CHAR(v2.VALUE_NUM) LIKE '~(gpv.q)'
+                    OR TO_CHAR(v2.VALUE_DATE,'YYYY-MM-DD') LIKE '~(gpv.q)'
+                  )
+              )
+            )
+        )
+        WHERE rn BETWEEN ((NVL(~(gpv.page),1)-1)*10 + 1) AND (NVL(~(gpv.page),1)*10)
+        ORDER BY rn
+      ]
+      <tr>
+        <td><input type="checkbox" name="del_recid" value="~(recid)"></td>
+        <td>~(recid)</td>
+        <td>~(created_on)</td>
+        <td>~(summary)</td>
+        <td class="right">
+          <a class="btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=~(recid)">Edit</a>
+        </td>
+      </tr>
+      ~[/tlist_sql]
+    </tbody>
+  </table>
+
+  <div class="row">
+    <button class="btn btn-danger" type="submit">Delete Selected</button>
+    <span class="hint">Deletes record + its values (handled in userdata-delete.html)</span>
+  </div>
+</form>
+
+<!-- Simple pager links -->
+~[tlist_sql;
+  SELECT
+    CASE WHEN NVL(~(gpv.page),1) - 1 < 1 THEN 1 ELSE NVL(~(gpv.page),1) - 1 END prev_page,
+    NVL(~(gpv.page),1) + 1 next_page,
+    NVL(~(gpv.page),1) curr_page
+  FROM DUAL
+]
+<div class="pager">
+  <a class="btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(prev_page)&q=~(gpv.q)">Prev</a>
+  <a class="btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(next_page)&q=~(gpv.q)">Next</a>
+  <span class="hint">Page: ~(curr_page)</span>
+</div>
+~[/tlist_sql]
+
+<script>
+function toggleAll(master){
+  var cbs = document.querySelectorAll('input[name="del_recid"]');
+  for(var i=0;i<cbs.length;i++) cbs[i].checked = master.checked;
+}
+</script>
+
+~[wc:admin_footer]
+</body>
+</html>

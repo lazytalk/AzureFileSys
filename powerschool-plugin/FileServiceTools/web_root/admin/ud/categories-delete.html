@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>Delete Category</title>
+  <style>
+    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+    .danger{border-color:#c00}
+    .box{padding:12px;border:1px solid #ddd;background:#fafafa}
+  </style>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>Delete Category</h1>
+
+~[tlist_sql;
+  SELECT
+    c.ID id,
+    c.NAME name,
+    (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count
+  FROM U_UD_CATEGORY c
+  WHERE c.ID = ~(gpv.id)
+]
+  <div class="box">
+    <p>Category: <b>~(name)</b></p>
+    <p>Record count: <b>~(rec_count)</b></p>
+
+    ~[if#locked.~(rec_count)>0]
+      <p style="color:#c00"><b>Cannot delete.</b> This category already has records.</p>
+      <p><a class="btn" href="categories.html">Back</a></p>
+    [else#locked]
+      <form action="categories.html" method="POST">
+        <p style="color:#c00"><b>This will permanently delete the category.</b></p>
+
+        <input type="hidden" name="DD-U_UD_CATEGORY.ID:~(gpv.id)" value="1">
+        <input type="hidden" name="ac" value="prim">
+
+        <button class="btn danger" type="submit">Delete</button>
+        <a class="btn" href="categories.html">Cancel</a>
+      </form>
+    [/if#locked]
+  </div>
+~[/tlist_sql]
+
+~[wc:admin_footer]
+</body>
+</html>

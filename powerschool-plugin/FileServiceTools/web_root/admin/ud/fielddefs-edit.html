@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>Edit Field Definition</title>
+  <style>
+    .row{margin:10px 0}
+    label{display:inline-block;width:160px}
+    input[type=text], select, input[type=number]{width:360px;padding:6px}
+    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+    .hint{color:#666;font-size:12px}
+  </style>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>Edit Field Definition</h1>
+
+<form action="fielddefs.html?catid=~(gpv.catid)" method="POST">
+  ~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
+
+  <!-- Ensure CATEGORY_ID is set for new rows -->
+  <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(gpv.catid)">
+
+  <div class="row">
+    <label>Field Label *</label>
+    <input type="text" name="[U_UD_FIELDDEF]FIELD_LABEL" value="~([U_UD_FIELDDEF]FIELD_LABEL)" required>
+  </div>
+
+  <div class="row">
+    <label>Field Key *</label>
+    <input type="text" name="[U_UD_FIELDDEF]FIELD_KEY" value="~([U_UD_FIELDDEF]FIELD_KEY)" required>
+    <div class="hint">Example: test_date, score, club_name</div>
+  </div>
+
+  <div class="row">
+    <label>Value Type *</label>
+    <select name="[U_UD_FIELDDEF]VALUE_TYPE" required>
+      <option value="STRING" ~[if#t1.~([U_UD_FIELDDEF]VALUE_TYPE)=STRING]selected[/if#t1]>STRING</option>
+      <option value="INT" ~[if#t2.~([U_UD_FIELDDEF]VALUE_TYPE)=INT]selected[/if#t2]>INT</option>
+      <option value="DECIMAL" ~[if#t3.~([U_UD_FIELDDEF]VALUE_TYPE)=DECIMAL]selected[/if#t3]>DECIMAL</option>
+      <option value="DATE" ~[if#t4.~([U_UD_FIELDDEF]VALUE_TYPE)=DATE]selected[/if#t4]>DATE</option>
+      <option value="BOOL" ~[if#t5.~([U_UD_FIELDDEF]VALUE_TYPE)=BOOL]selected[/if#t5]>BOOL</option>
+      <option value="TEXT" ~[if#t6.~([U_UD_FIELDDEF]VALUE_TYPE)=TEXT]selected[/if#t6]>TEXT</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <label>Required</label>
+    <input type="checkbox" name="[U_UD_FIELDDEF]REQUIRED" value="1" ~[if#req.~([U_UD_FIELDDEF]REQUIRED)=1]checked[/if#req]>
+  </div>
+
+  <div class="row">
+    <label>Sort Order</label>
+    <input type="number" name="[U_UD_FIELDDEF]SORT_ORDER" value="~([U_UD_FIELDDEF]SORT_ORDER)">
+  </div>
+
+  <div class="row">
+    <label>Help Text</label>
+    <input type="text" name="[U_UD_FIELDDEF]HELP_TEXT" value="~([U_UD_FIELDDEF]HELP_TEXT)">
+  </div>
+
+  <div class="row">
+    <button class="btn" type="submit">Save</button>
+    <a class="btn" href="fielddefs.html?catid=~(gpv.catid)">Cancel</a>
+    <input type="hidden" name="ac" value="prim">
+  </div>
+</form>
+
+~[wc:admin_footer]
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>Delete Records</title>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>Delete Records</h1>
+
+<form action="userdata-list.html" method="POST">
+  <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
+  <input type="hidden" name="catid" value="~(gpv.catid)">
+  <input type="hidden" name="page" value="~(gpv.page)">
+  <input type="hidden" name="q" value="~(gpv.q)">
+
+  <!-- For each selected record ID posted as del_recid, generate delete inputs for values -->
+  ~[tlist_sql;
+    SELECT v.ID value_id
+    FROM U_UD_VALUE v
+    WHERE v.RECORD_ID IN (
+      -- PowerSchool may provide a way to access multi-value posted inputs.
+      -- If your PS build does not support this, we will switch to a one-at-a-time delete.
+      ~(gpv.del_recid)
+    )
+  ]
+    <input type="hidden" name="DD-U_UD_VALUE.ID:~(value_id)" value="1">
+  ~[/tlist_sql]
+
+  <!-- Delete record headers -->
+  <!-- If multi-value GPV does not work, replace with a single recid workflow -->
+  <input type="hidden" name="DD-U_UD_RECORD.ID:~(gpv.del_recid)" value="1">
+
+  <input type="hidden" name="ac" value="prim">
+
+  <p>Deleting…</p>
+</form>
+
+<script>
+  // auto submit
+  document.forms[0].submit();
+</script>
+
+~[wc:admin_footer]
+</body>
+</html>

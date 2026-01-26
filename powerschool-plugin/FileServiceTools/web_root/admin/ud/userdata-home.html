@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>User Data Manager</title>
+  <style>
+    .row{margin:10px 0}
+    label{display:inline-block;width:160px}
+    select,input[type=text]{width:360px;padding:6px}
+    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+    .hint{color:#666;font-size:12px}
+  </style>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>User Data Manager</h1>
+
+<form action="userdata-list.html" method="GET" onsubmit="return prepSearch();">
+  <div class="row">
+    <label>Category *</label>
+    <select name="catid" required>
+      <option value="">-- Select --</option>
+      ~[tlist_sql;
+        SELECT ID id, NAME name
+        FROM U_UD_CATEGORY
+        WHERE IS_ACTIVE = 1
+        ORDER BY NVL(SORT_ORDER,9999), UPPER(NAME)
+      ]
+        <option value="~(id)">~(name)</option>
+      ~[/tlist_sql]
+    </select>
+  </div>
+
+  <div class="row">
+    <label>User DCID *</label>
+    <input type="text" name="usersdcid" required>
+    <div class="hint">Starter input. Next step: replace with a real user search/picker.</div>
+  </div>
+
+  <div class="row">
+    <label>Search</label>
+    <input type="text" id="qHuman" value="*">
+    <input type="hidden" name="q" id="qSql" value="%">
+    <div class="hint">Use <b>*</b> wildcard (e.g. <b>*math*</b>, <b>Toronto*</b>). Empty = all.</div>
+  </div>
+
+  <input type="hidden" name="page" value="1">
+
+  <div class="row">
+    <button class="btn" type="submit">Open</button>
+  </div>
+</form>
+
+<script>
+function prepSearch(){
+  var human = document.getElementById('qHuman').value || '*';
+  // Convert '*' to SQL '%' wildcard
+  var sql = human.replace(/\*/g, '%');
+  if(sql.trim() === '') sql = '%';
+  document.getElementById('qSql').value = sql;
+  return true;
+}
+</script>
+
+~[wc:admin_footer]
+</body>
+</html>

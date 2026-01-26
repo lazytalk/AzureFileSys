@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>Delete Field</title>
+  <style>
+    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+    .danger{border-color:#c00}
+    .box{padding:12px;border:1px solid #ddd;background:#fafafa}
+  </style>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>Delete Field</h1>
+
+<form action="fielddefs.html?catid=~(gpv.catid)" method="POST">
+  <div class="box">
+    <p style="color:#c00"><b>This will delete the field definition.</b></p>
+
+    <input type="hidden" name="DD-U_UD_FIELDDEF.ID:~(gpv.id)" value="1">
+    <input type="hidden" name="ac" value="prim">
+
+    <button class="btn danger" type="submit">Delete</button>
+    <a class="btn" href="fielddefs.html?catid=~(gpv.catid)">Cancel</a>
+  </div>
+</form>
+
+~[wc:admin_footer]
+</body>
+</html>

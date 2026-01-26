@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  ~[wc:admin_header_css]
+  <title>Edit Category</title>
+  <style>
+    .row{margin:10px 0}
+    label{display:inline-block;width:140px}
+    input[type=text], input[type=number]{width:320px;padding:6px}
+    .btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
+  </style>
+</head>
+<body>
+~[wc:admin_header]
+~[wc:admin_navigation]
+
+<h1>Edit Category</h1>
+
+<form action="categories.html" method="POST">
+  ~[DirectTable.Select:U_UD_CATEGORY;ID:~(gpv.id)]
+
+  <div class="row">
+    <label>Name *</label>
+    <input type="text" name="[U_UD_CATEGORY]NAME" value="~([U_UD_CATEGORY]NAME)" required>
+  </div>
+
+  <div class="row">
+    <label>Code</label>
+    <input type="text" name="[U_UD_CATEGORY]CODE" value="~([U_UD_CATEGORY]CODE)">
+  </div>
+
+  <div class="row">
+    <label>Active</label>
+    <input type="checkbox" name="[U_UD_CATEGORY]IS_ACTIVE" value="1" ~[if#act.~([U_UD_CATEGORY]IS_ACTIVE)=1]checked[/if#act]>
+  </div>
+
+  <div class="row">
+    <label>Sort Order</label>
+    <input type="number" name="[U_UD_CATEGORY]SORT_ORDER" value="~([U_UD_CATEGORY]SORT_ORDER)">
+  </div>
+
+  <div class="row">
+    <button class="btn" type="submit">Save</button>
+    <a class="btn" href="categories.html">Cancel</a>
+    <input type="hidden" name="ac" value="prim">
+  </div>
+
+</form>
+
+~[wc:admin_footer]
+</body>
+</html>

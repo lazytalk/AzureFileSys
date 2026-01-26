@@ -48,26 +48,26 @@
   <tbody>
     ~[tlist_sql;
       SELECT
-        c.ID id,
-        c.NAME name,
-        c.CODE code,
-        c.IS_ACTIVE is_active,
-        c.SORT_ORDER sort_order,
-        (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count
+        c.ID cat_id,
+        c.NAME cat_name,
+        c.CODE cat_code,
+        c.IS_ACTIVE cat_active,
+        c.SORT_ORDER cat_sort,
+        (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) cat_rec_count
       FROM U_UD_CATEGORY c
       ORDER BY NVL(c.SORT_ORDER, 9999), UPPER(c.NAME)
     ]
     <tr>
-      <td>~(name)</td>
-      <td>~(code)</td>
-      <td>~(is_active)</td>
-      <td>~(sort_order)</td>
-      <td>~(rec_count)</td>
+      <td>~(cat_name)</td>
+      <td>~(cat_code)</td>
+      <td>~(cat_active)</td>
+      <td>~(cat_sort)</td>
+      <td>~(cat_rec_count)</td>
       <td class="kwe_ud_right">
-        <a class="kwe_ud_btn" href="categories-edit.html?id=~(id)">Edit</a>
-        <a class="kwe_ud_btn" href="fielddefs.html?catid=~(id)">Fields</a>
-        ~[if#canDelete.~(rec_count)=0]
-          <a class="kwe_ud_btn kwe_ud_btn_danger" href="categories-delete.html?id=~(id)">Delete</a>
+        <a class="kwe_ud_btn" href="categories-edit.html?id=~(cat_id)">Edit</a>
+        <a class="kwe_ud_btn" href="fielddefs.html?catid=~(cat_id)">Fields</a>
+        ~[if#canDelete.~(cat_rec_count)=0]
+          <a class="kwe_ud_btn kwe_ud_btn_danger" href="categories-delete.html?id=~(cat_id)">Delete</a>
         [else#canDelete]
           <span class="kwe_ud_btn kwe_ud_btn_danger kwe_ud_btn_disabled" title="Locked: category has records">Delete</span>
         [/if#canDelete]

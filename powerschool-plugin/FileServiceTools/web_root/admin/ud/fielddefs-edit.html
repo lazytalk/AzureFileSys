@@ -22,15 +22,11 @@
 
 <h1>Edit Field Definition</h1>
 
-<form action="fielddefs.html" method="POST">
-  ~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
+    <form action="fielddefs.html?catid=~(gpv.catid)" method="POST">
+      ~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
 
-  <!-- Ensure CATEGORY_ID is set for new rows -->
-  <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(#TRIM(gpv.catid))">
-  <!-- After save, redirect using the numeric CATEGORY_ID -->
-  <input type="hidden" name="redirect_url" value="fielddefs.html?catid=~([U_UD_FIELDDEF]CATEGORY_ID)">
-
-  <div class="kwe_ud_row">
+      <!-- Ensure CATEGORY_ID is set for new rows -->
+      <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(#TRIM(gpv.catid))">
     <label>Field Label *</label>
     <input type="text" name="[U_UD_FIELDDEF]FIELD_LABEL" value="~([U_UD_FIELDDEF]FIELD_LABEL)" required>
   </div>

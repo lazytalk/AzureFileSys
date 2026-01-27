@@ -28,7 +28,11 @@
   SELECT
     c.ID catid,
     c.NAME catname,
-    (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(c.ID)) rec_count
+    (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(c.ID)) rec_count,
+    CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(c.ID)) = 0 
+      THEN '<a class=kwe_ud_btn href=fielddefs-edit.html?id=-1&catid=' || TRIM(c.ID) || '>+ New Field</a>'
+      ELSE '<span class="kwe_ud_btn kwe_ud_btn_disabled" title="Locked: category has records">+ New Field</span>'
+    END add_btn
   FROM U_UD_CATEGORY c
   WHERE TRIM(c.ID) = TRIM(~(gpv.catid))
 ]
@@ -37,7 +41,7 @@
 
   <p>
     <a class="kwe_ud_btn" href="categories.html">← Back to Categories</a>
-    ~[if#addfield.~(rec_count)=0]<a class="kwe_ud_btn" href="fielddefs-edit.html?id=-1&catid=~(catid)">+ New Field</a>[else#addfield]<span class="kwe_ud_btn kwe_ud_btn_disabled" title="Locked: category has records">+ New Field</span>[/if#addfield]
+    ~(add_btn)
   </p>
 [/tlist_sql]
 
@@ -61,7 +65,11 @@
           f.VALUE_TYPE value_type,
           f.REQUIRED required,
           f.SORT_ORDER sort_order,
-          (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(~(gpv.catid))) rec_count
+          (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(~(gpv.catid))) rec_count,
+          CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(~(gpv.catid))) = 0
+            THEN '<a class=kwe_ud_btn href=fielddefs-edit.html?id=' || TRIM(f.ID) || '&catid=' || TRIM(~(gpv.catid)) || '>Edit</a> <a class=kwe_ud_btn href=fielddefs-delete.html?id=' || TRIM(f.ID) || '&catid=' || TRIM(~(gpv.catid)) || '>Delete</a>'
+            ELSE '<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>'
+          END action_btn
         FROM U_UD_FIELDDEF f
         WHERE TRIM(f.CATEGORY_ID) = TRIM(~(gpv.catid))
         ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
@@ -73,7 +81,7 @@
         <td>~(required)</td>
         <td>~(sort_order)</td>
         <td class="kwe_ud_right">
-          <span class="fieldActions" data-rec-count="~(rec_count)" data-id="~(id)" data-catid="~(catid)"></span>
+          ~(action_btn)
         </td>
       </tr>
       [/tlist_sql]
@@ -83,22 +91,6 @@
   <p class="kwe_ud_hint">
     Value Types supported in this starter UI: STRING, INT, DECIMAL, DATE, BOOL, TEXT
   </p>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var actions = document.querySelectorAll('.fieldActions');
-      actions.forEach(function(action) {
-        var recCount = parseInt(action.dataset.recCount) || 0;
-        var id = action.dataset.id;
-        var catid = action.dataset.catid;
-        if (recCount > 0) {
-          action.innerHTML = '<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>';
-        } else {
-          action.innerHTML = '<a class="kwe_ud_btn" href="fielddefs-edit.html?id=' + id + '&catid=' + catid + '">Edit</a> <a class="kwe_ud_btn" href="fielddefs-delete.html?id=' + id + '&catid=' + catid + '">Delete</a>';
-        }
-      });
-    });
-  </script>
 
 
 </body>

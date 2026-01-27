@@ -27,21 +27,21 @@
 <div style="margin:20px 0; border:1px solid #ddd; padding:10px;">
 ~[tlist_sql;
   SELECT
+    c.ID catid,
     c.NAME catname,
     (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count,
     CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) = 0 
       THEN 'unlocked'
       ELSE 'locked'
-    END lock_status,
-    c.ID catid
+    END lock_status
   FROM U_UD_CATEGORY c
   WHERE TRIM(TO_CHAR(c.ID)) = TRIM('~(gpv.catid)')
 ]
-<p><strong>Category: ~(catname)</strong> (ID: ~(catid))</p>
+<p><strong>Category: ~(catname)</strong></p>
 <p class="kwe_ud_hint">Fields can only be edited if record count is 0. [Records: ~(rec_count)]</p>
 <p>
   <a class="kwe_ud_btn" href="categories.html">← Back to Categories</a>
-  catid=~(catid) -- ~(gpv.catid) <a href="fielddefs-edit.html?id=-1&catid=~(gpv.catid)" class="kwe_ud_btn" 
+  <a href="fielddefs-edit.html?id=-1&catid=~(catid)" class="kwe_ud_btn" 
      style="~(lock_status=='unlocked'?'':'opacity:.45;pointer-events:none')">+ New Field</a>
 </p>
 [/tlist_sql]
@@ -67,7 +67,7 @@
     f.REQUIRED required,
     f.SORT_ORDER sort_order,
     CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = f.CATEGORY_ID) = 0
-      THEN '<a class=kwe_ud_btn href=fielddefs-edit.html?id=' || f.ID || '&catid=' || TRIM('~(gpv.catid)') || '>Edit</a> <a class=kwe_ud_btn href=fielddefs-delete.html?id=' || f.ID || '&catid=' || TRIM('~(gpv.catid)') || '>Delete</a>'
+      THEN '<a class=kwe_ud_btn href=fielddefs-edit.html?id=' || f.ID || '&catid=' || f.CATEGORY_ID || '>Edit</a> <a class=kwe_ud_btn href=fielddefs-delete.html?id=' || f.ID || '&catid=' || f.CATEGORY_ID || '>Delete</a>'
       ELSE '<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>'
     END action_btn,
     f.ID fid

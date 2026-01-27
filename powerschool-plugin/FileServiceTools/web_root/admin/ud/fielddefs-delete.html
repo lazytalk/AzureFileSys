@@ -20,7 +20,7 @@
 
 <h1>Delete Field</h1>
 
-<form action="fielddefs.html?catid=~(#TRIM(gpv.catid))" method="POST">
+<form action="fielddefs.html?catid=~(gpv.catid)" method="POST">
   <div class="kwe_ud_box">
     <p style="color:#c00"><b>This will delete the field definition.</b></p>
 
@@ -28,7 +28,7 @@
     <input type="hidden" name="ac" value="prim">
 
     <button class="kwe_ud_btn kwe_ud_danger" type="submit">Delete</button>
-    <a class="kwe_ud_btn" href="fielddefs.html?catid=~(#TRIM(gpv.catid))">Cancel</a>
+    <a class="kwe_ud_btn" href="fielddefs.html?catid=~(gpv.catid)">Cancel</a>
   </div>
 </form>
 

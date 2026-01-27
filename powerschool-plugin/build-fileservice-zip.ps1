@@ -1,7 +1,8 @@
 # Build FileService Tools Plugin ZIP
 # Removes existing zip files and creates a clean fileservice.zip with plugin contents
 
-$basePath = "c:\Users\wang_\Documents\Codes\AzureFileSys\AzureFileSys\powerschool-plugin\FileServiceTools"
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$basePath = Join-Path $scriptDir "FileServiceTools"
 $outputZip = Join-Path $basePath "fileservice.zip"
 
 # Verify base path exists

@@ -32,24 +32,10 @@
     CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(c.ID)) = 0 
       THEN '<a class=kwe_ud_btn href=fielddefs-edit.html?id=-1&catid=' || TRIM(c.ID) || '>+ New Field</a>'
       ELSE '<span class="kwe_ud_btn kwe_ud_btn_disabled" title="Locked: category has records">+ New Field</span>'
-    END add_btn,
-    f.ID fid,
-    f.FIELD_LABEL field_label,
-    f.FIELD_KEY field_key,
-    f.VALUE_TYPE value_type,
-    f.REQUIRED required,
-    f.SORT_ORDER sort_order,
-    CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(c.ID)) = 0
-      THEN '<a class=kwe_ud_btn href=fielddefs-edit.html?id=' || TRIM(f.ID) || '&catid=' || TRIM(c.ID) || '>Edit</a> <a class=kwe_ud_btn href=fielddefs-delete.html?id=' || TRIM(f.ID) || '&catid=' || TRIM(c.ID) || '>Delete</a>'
-      ELSE '<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>'
-    END action_btn,
-    ROW_NUMBER() OVER (ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)) row_num
+    END add_btn
   FROM U_UD_CATEGORY c
-  LEFT JOIN U_UD_FIELDDEF f ON TRIM(f.CATEGORY_ID) = TRIM(c.ID)
   WHERE TRIM(c.ID) = TRIM(~(gpv.catid))
-  ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
 ]
-  ~[if#header.~(row_num)=1]
   <p>Category: <b>~(catname)</b></p>
   <p class="kwe_ud_hint">Fields can only be edited if record count is 0.</p>
 
@@ -57,6 +43,7 @@
     <a class="kwe_ud_btn" href="categories.html">← Back to Categories</a>
     ~(add_btn)
   </p>
+[/tlist_sql]
 
   <table>
     <thead>
@@ -70,7 +57,22 @@
       </tr>
     </thead>
     <tbody>
-  [/if#header]
+~[tlist_sql;
+  SELECT
+    f.ID fid,
+    f.FIELD_LABEL field_label,
+    f.FIELD_KEY field_key,
+    f.VALUE_TYPE value_type,
+    f.REQUIRED required,
+    f.SORT_ORDER sort_order,
+    CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE TRIM(r.CATEGORY_ID) = TRIM(~(gpv.catid))) = 0
+      THEN '<a class=kwe_ud_btn href=fielddefs-edit.html?id=' || TRIM(f.ID) || '&catid=' || TRIM(~(gpv.catid)) || '>Edit</a> <a class=kwe_ud_btn href=fielddefs-delete.html?id=' || TRIM(f.ID) || '&catid=' || TRIM(~(gpv.catid)) || '>Delete</a>'
+      ELSE '<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>'
+    END action_btn
+  FROM U_UD_FIELDDEF f
+  WHERE TRIM(f.CATEGORY_ID) = TRIM(~(gpv.catid))
+  ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
+]
       <tr>
         <td>~(field_label)</td>
         <td>~(field_key)</td>

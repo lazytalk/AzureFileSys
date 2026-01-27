@@ -14,6 +14,17 @@
       .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
       .kwe_ud_hint{color:#666;font-size:12px}
     </style>
+    <script>
+      function sanitizeForm() {
+        var catid = '~(gpv.catid)';
+        // Extract the longest sequence of consecutive digits
+        var matches = catid.match(/\d+/g);
+        var cleanCatid = (matches && matches.length > 0) ? matches[matches.length - 1] : catid.replace(/[^0-9]/g, '');
+        document.getElementById('hiddenCatid').value = cleanCatid;
+        document.getElementById('editForm').action = 'fielddefs.html?catid=' + cleanCatid;
+        return true;
+      }
+    </script>
 </head>
 <body>
     ~[wc:admin_header_css] 
@@ -22,15 +33,12 @@
 
 <h1>Edit Field Definition</h1>
 
-~[tlist_sql;
-  SELECT REGEXP_SUBSTR('~(gpv.catid)', '[0-9]+') clean_catid FROM DUAL
-]
-    <form action="fielddefs.html?catid=~(clean_catid)" method="POST">
-      ~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
+~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
 
-      <!-- Ensure CATEGORY_ID is set for new rows -->
-      <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(clean_catid)">
-[/tlist_sql]
+<form id="editForm" action="fielddefs.html?catid=~(gpv.catid)" method="POST" onsubmit="return sanitizeForm()">
+  Debug: ~(gpv.catid)
+  <!-- Ensure CATEGORY_ID is set for new rows -->
+  <input type="hidden" id="hiddenCatid" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(gpv.catid)">
 
   <div class="kwe_ud_row">
     <label>Field Label *</label>
@@ -72,7 +80,7 @@
 
   <div class="kwe_ud_row">
     <button class="kwe_ud_btn" type="submit">Save</button>
-    <a class="kwe_ud_btn" href="fielddefs.html?catid=~([U_UD_FIELDDEF]CATEGORY_ID)">Cancel</a>
+    <a class="kwe_ud_btn" href="fielddefs.html?catid=~(gpv.catid)">Cancel</a>
     <input type="hidden" name="ac" value="prim">
   </div>
 </form>

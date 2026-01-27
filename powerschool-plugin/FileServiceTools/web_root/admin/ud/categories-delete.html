@@ -24,7 +24,12 @@
   SELECT
     c.ID id,
     c.NAME name,
-    (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count
+    (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count,
+    CASE
+      WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) > 0
+      THEN '<p style="color:#c00"><b>Cannot delete.</b> This category already has records.</p><p><a class="kwe_ud_btn" href="categories.html">Back</a></p>'
+      ELSE '<form action="categories.html" method="POST"><p style="color:#c00"><b>This will permanently delete the category.</b></p><input type="hidden" name="DD-U_UD_CATEGORY.ID:' || TO_CHAR(c.ID) || '" value="1"><input type="hidden" name="ac" value="prim"><button class="kwe_ud_btn kwe_ud_danger" type="submit">Delete</button> <a class="kwe_ud_btn" href="categories.html">Cancel</a></form>'
+    END delete_content
   FROM U_UD_CATEGORY c
   WHERE c.ID = ~(gpv.id)
 ]
@@ -32,20 +37,7 @@
     <p>Category: <b>~(name)</b></p>
     <p>Record count: <b>~(rec_count)</b></p>
 
-    ~[if#locked.~(rec_count)>0]
-      <p style="color:#c00"><b>Cannot delete.</b> This category already has records.</p>
-      <p><a class="kwe_ud_btn" href="categories.html">Back</a></p>
-    [else#locked]
-      <form action="categories.html" method="POST">
-        <p style="color:#c00"><b>This will permanently delete the category.</b></p>
-
-        <input type="hidden" name="DD-U_UD_CATEGORY.ID:~(gpv.id)" value="1">
-        <input type="hidden" name="ac" value="prim">
-
-        <button class="kwe_ud_btn kwe_ud_danger" type="submit">Delete</button>
-        <a class="kwe_ud_btn" href="categories.html">Cancel</a>
-      </form>
-    [/if#locked]
+    ~(delete_content)
   </div>
 [/tlist_sql]
 </body>

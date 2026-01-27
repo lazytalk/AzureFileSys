@@ -53,7 +53,12 @@
         c.IS_ACTIVE is_active,
         c.SORT_ORDER sort_order,
         (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count,
-        c.ID id
+        c.ID id,
+        CASE 
+          WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) > 0 
+          THEN '<span class="kwe_ud_btn kwe_ud_btn_danger kwe_ud_btn_disabled">Delete</span>'
+          ELSE '<a class="kwe_ud_btn kwe_ud_btn_danger" href="categories-delete.html?id=' || TO_CHAR(c.ID) || '">Delete</a>'
+        END delete_btn
       FROM U_UD_CATEGORY c
       ORDER BY NVL(c.SORT_ORDER, 9999), UPPER(c.NAME)
     ]
@@ -66,11 +71,7 @@
       <td class="kwe_ud_right">
         <a class="kwe_ud_btn" href="categories-edit.html?id=~(id)">Edit</a>
         <a class="kwe_ud_btn" href="fielddefs.html?catid=~(id)">Fields</a>
-        ~[if.~(rec_count;l)=0]
-          <a class="kwe_ud_btn kwe_ud_btn_danger" href="categories-delete.html?id=~(id)">Delete</a>
-        [else]
-          <span class="kwe_ud_btn kwe_ud_btn_danger kwe_ud_btn_disabled" title="Locked: category has records">Delete</span>
-        [/if]
+        ~(delete_btn)
       </td>
     </tr>
     [/tlist_sql]

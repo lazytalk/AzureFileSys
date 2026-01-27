@@ -26,7 +26,7 @@
   ~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
 
   <!-- Ensure CATEGORY_ID is set for new rows -->
-  <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(gpv.catid)">
+  <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(#TRIM(gpv.catid))">
 
   <div class="kwe_ud_row">
     <label>Field Label *</label>
@@ -68,7 +68,7 @@
 
   <div class="kwe_ud_row">
     <button class="kwe_ud_btn" type="submit">Save</button>
-    <a class="kwe_ud_btn" href="fielddefs.html?catid=~(gpv.catid)">Cancel</a>
+    <a class="kwe_ud_btn" href="fielddefs.html?catid=~(#TRIM(gpv.catid))">Cancel</a>
     <input type="hidden" name="ac" value="prim">
   </div>
 </form>

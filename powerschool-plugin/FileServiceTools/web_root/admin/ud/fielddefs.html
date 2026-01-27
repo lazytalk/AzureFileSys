@@ -30,18 +30,14 @@
     c.NAME catname,
     (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count
   FROM U_UD_CATEGORY c
-  WHERE c.ID = ~(gpv.catid)
+  WHERE c.ID = TRIM(~(gpv.catid))
 ]
   <p>Category: <b>~(catname)</b></p>
   <p class="kwe_ud_hint">Fields can only be edited if record count is 0.</p>
 
   <p>
     <a class="kwe_ud_btn" href="categories.html">← Back to Categories</a>
-    ~[if#unlocked.~(rec_count)==0]
-      <a class="kwe_ud_btn" href="fielddefs-edit.html?id=-1&catid=~(catid)">+ New Field</a>
-    [else#unlocked]
-      <span class="kwe_ud_btn kwe_ud_btn_disabled" title="Locked: category has records">+ New Field</span>
-    [/if#unlocked]
+    ~[if#addfield.~(rec_count)=0]<a class="kwe_ud_btn" href="fielddefs-edit.html?id=-1&catid=~(catid)">+ New Field</a>[else#addfield]<span class="kwe_ud_btn kwe_ud_btn_disabled" title="Locked: category has records">+ New Field</span>[/if#addfield]
   </p>
 [/tlist_sql]
 
@@ -65,9 +61,9 @@
           f.VALUE_TYPE value_type,
           f.REQUIRED required,
           f.SORT_ORDER sort_order,
-          (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = ~(gpv.catid)) rec_count
+          (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = TRIM(~(gpv.catid))) rec_count
         FROM U_UD_FIELDDEF f
-        WHERE f.CATEGORY_ID = ~(gpv.catid)
+        WHERE f.CATEGORY_ID = TRIM(~(gpv.catid))
         ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
       ]
       <tr>
@@ -77,13 +73,7 @@
         <td>~(required)</td>
         <td>~(sort_order)</td>
         <td class="kwe_ud_right">
-          ~[if#unlocked2.~(rec_count)=0]
-            <a class="kwe_ud_btn" href="fielddefs-edit.html?id=~(id)&catid=~(gpv.catid)">Edit</a>
-            <a class="kwe_ud_btn" href="fielddefs-delete.html?id=~(id)&catid=~(gpv.catid)">Delete</a>
-          [else#unlocked2]
-            <span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span>
-            <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>
-          [/if#unlocked2]
+          ~[if#editdel.~(rec_count)=0]<a class="kwe_ud_btn" href="fielddefs-edit.html?id=~(id)&catid=~(catid)">Edit</a> <a class="kwe_ud_btn" href="fielddefs-delete.html?id=~(id)&catid=~(catid)">Delete</a>[else#editdel]<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>[/if#editdel]
         </td>
       </tr>
       [/tlist_sql]

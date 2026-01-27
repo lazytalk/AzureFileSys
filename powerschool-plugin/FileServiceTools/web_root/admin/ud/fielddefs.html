@@ -73,7 +73,7 @@
         <td>~(required)</td>
         <td>~(sort_order)</td>
         <td class="kwe_ud_right">
-          ~[if#editdel.~(rec_count)=0]<a class="kwe_ud_btn" href="fielddefs-edit.html?id=~(id)&catid=~(catid)">Edit</a> <a class="kwe_ud_btn" href="fielddefs-delete.html?id=~(id)&catid=~(catid)">Delete</a>[else#editdel]<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>[/if#editdel]
+          <span class="fieldActions" data-rec-count="~(rec_count)" data-id="~(id)" data-catid="~(catid)"></span>
         </td>
       </tr>
       [/tlist_sql]
@@ -83,6 +83,22 @@
   <p class="kwe_ud_hint">
     Value Types supported in this starter UI: STRING, INT, DECIMAL, DATE, BOOL, TEXT
   </p>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var actions = document.querySelectorAll('.fieldActions');
+      actions.forEach(function(action) {
+        var recCount = parseInt(action.dataset.recCount) || 0;
+        var id = action.dataset.id;
+        var catid = action.dataset.catid;
+        if (recCount > 0) {
+          action.innerHTML = '<span class="kwe_ud_btn kwe_ud_btn_disabled">Edit</span> <span class="kwe_ud_btn kwe_ud_btn_disabled">Delete</span>';
+        } else {
+          action.innerHTML = '<a class="kwe_ud_btn" href="fielddefs-edit.html?id=' + id + '&catid=' + catid + '">Edit</a> <a class="kwe_ud_btn" href="fielddefs-delete.html?id=' + id + '&catid=' + catid + '">Delete</a>';
+        }
+      });
+    });
+  </script>
 
 
 </body>

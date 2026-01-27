@@ -22,11 +22,17 @@
 
 <h1>Edit Field Definition</h1>
 
-    <form action="fielddefs.html?catid=~(gpv.catid)" method="POST">
+~[tlist_sql;
+  SELECT REGEXP_SUBSTR('~(gpv.catid)', '[0-9]+') clean_catid FROM DUAL
+]
+    <form action="fielddefs.html?catid=~(clean_catid)" method="POST">
       ~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
 
       <!-- Ensure CATEGORY_ID is set for new rows -->
-      <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(#TRIM(gpv.catid))">
+      <input type="hidden" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(clean_catid)">
+[/tlist_sql]
+
+  <div class="kwe_ud_row">
     <label>Field Label *</label>
     <input type="text" name="[U_UD_FIELDDEF]FIELD_LABEL" value="~([U_UD_FIELDDEF]FIELD_LABEL)" required>
   </div>

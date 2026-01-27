@@ -21,17 +21,89 @@
     ~[wc:admin_header_css] 
     <a href="/" target="_top">Start Page</a> &gt; File Service Tools
     ~[wc:admin_navigation_css]
+
+<p style="background:cyan;padding:10px;">
+  DEBUG ALL PARAMS:<br>
+  frm.save_userdata=[~(frm.save_userdata)]<br>
+  frm.fld_916860=[~(frm.fld_916860)]<br>
+  frm.fld_916852=[~(frm.fld_916852)]<br>
+  frm.fld_916851=[~(frm.fld_916851)]<br>
+  frm.usersdcid_val=[~(frm.usersdcid_val)]<br>
+  REQUEST_METHOD=[~(env.REQUEST_METHOD)]
+</p>
+
+~[if#save.~(frm.save_userdata)=1]
+  <p style="background:yellow;padding:10px;">DEBUG SAVE: save_userdata=[~(frm.save_userdata)] | recid=[~(gpv.recid)] | catid=[~(gpv.catid)]</p>
+  ~[if#hasrec.~(gpv.recid)>0]
+    <p style="background:lightgreen;padding:10px;">DEBUG: Has record, processing fields...</p>
+    ~[tlist_sql;
+      SELECT f.ID fielddef_id, f.VALUE_TYPE value_type, f.FIELD_LABEL field_label
+      FROM U_UD_FIELDDEF f
+      WHERE f.CATEGORY_ID = ~(gpv.catid)
+    ]
+      <p style="background:lightblue;padding:5px;">DEBUG Field: fielddef_id=[~(fielddef_id)] | value_type=[~(value_type)] | form_value=[~(frm.fld_~(fielddef_id))]</p>
+      ~[if#vexists.~(sqlrows;SELECT ID FROM U_UD_VALUE WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))>0]
+        <p style="color:green;">Value exists, updating...</p>
+        ~[if#tstr.~(value_type)=STRING]
+          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_STR='~(frm.fld_~(fielddef_id))' WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
+        [/if#tstr]
+        ~[if#tint.~(value_type)=INT]
+          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_NUM=~[if#v.~(frm.fld_~(fielddef_id))=]NULL[else#v]~(frm.fld_~(fielddef_id))[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
+        [/if#tint]
+        ~[if#tdec.~(value_type)=DECIMAL]
+          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_NUM=~[if#v.~(frm.fld_~(fielddef_id))=]NULL[else#v]~(frm.fld_~(fielddef_id))[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
+        [/if#tdec]
+        ~[if#tdate.~(value_type)=DATE]
+          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_DATE=~[if#v.~(frm.fld_~(fielddef_id))=]NULL[else#v]TO_DATE('~(frm.fld_~(fielddef_id))','YYYY-MM-DD')[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
+        [/if#tdate]
+        ~[if#tbool.~(value_type)=BOOL]
+          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_BOOL=~[if#v.~(frm.fld_~(fielddef_id))=1]1[else#v]0[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
+        [/if#tbool]
+        ~[if#ttext.~(value_type)=TEXT]
+          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_TEXT='~(frm.fld_~(fielddef_id))' WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
+        [/if#ttext]
+      [else#vexists]
+        <p style="color:blue;">Value doesn't exist, inserting if has value...</p>
+        ~[if#hasval.~(frm.fld_~(fielddef_id))!=]
+          <p style="color:orange;">Has value, inserting...</p>
+          ~[if#tstr.~(value_type)=STRING]
+            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_STR) VALUES (~(gpv.recid),~(fielddef_id),'~(frm.fld_~(fielddef_id))'))
+          [/if#tstr]
+          ~[if#tint.~(value_type)=INT]
+            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_NUM) VALUES (~(gpv.recid),~(fielddef_id),~(frm.fld_~(fielddef_id))))
+          [/if#tint]
+          ~[if#tdec.~(value_type)=DECIMAL]
+            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_NUM) VALUES (~(gpv.recid),~(fielddef_id),~(frm.fld_~(fielddef_id))))
+          [/if#tdec]
+          ~[if#tdate.~(value_type)=DATE]
+            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_DATE) VALUES (~(gpv.recid),~(fielddef_id),TO_DATE('~(frm.fld_~(fielddef_id))','YYYY-MM-DD')))
+          [/if#tdate]
+          ~[if#tbool.~(value_type)=BOOL]
+            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_BOOL) VALUES (~(gpv.recid),~(fielddef_id),1))
+          [/if#tbool]
+          ~[if#ttext.~(value_type)=TEXT]
+            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_TEXT) VALUES (~(gpv.recid),~(fielddef_id),'~(frm.fld_~(fielddef_id))'))
+          [/if#ttext]
+        [/if#hasval]
+      [/if#vexists]
+    [/tlist_sql]
+    <p style="background:pink;padding:10px;">DEBUG: About to redirect...</p>
+    ~[redirect_to;userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)]
+  [/if#hasrec]
+[else#save]
+  <p style="background:lightcoral;padding:10px;">DEBUG: NOT SAVING - save_userdata=[~(frm.save_userdata)]</p>
+[/if#save]
+
     <h1>Edit Record</h1>
 
     <p>
       <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">← Back to List</a>
     </p>
 
-    <form action="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)" method="POST">
-  ~[DirectTable.Select:U_UD_RECORD;ID:~(gpv.recid)]
-
-  <input type="hidden" name="[U_UD_RECORD]USERSDCID" value="~(gpv.usersdcid)">
-  <input type="hidden" name="[U_UD_RECORD]CATEGORY_ID" value="~(gpv.catid)">
+    <form action="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)&recid=~(gpv.recid)" method="POST">
+  
+  <input type="hidden" name="usersdcid_val" value="~(gpv.usersdcid)">
+  <input type="hidden" name="catid_val" value="~(gpv.catid)">
 
   <div class="kwe_ud_box">
     <div class="kwe_ud_row">
@@ -50,105 +122,44 @@
   ~[tlist_sql;
     SELECT
       f.ID fielddef_id,
-      f.FIELD_LABEL field_label,
+      f.FIELD_LABEL || CASE WHEN f.REQUIRED = 1 THEN ' *' ELSE '' END AS field_label,
       f.VALUE_TYPE value_type,
-      f.REQUIRED required,
       f.HELP_TEXT help_text,
-      (
-        SELECT v.ID
-        FROM U_UD_VALUE v
-        WHERE v.RECORD_ID = ~(gpv.recid)
-          AND v.FIELDDEF_ID = f.ID
-        FETCH FIRST 1 ROWS ONLY
-      ) value_id,
-      (
-        SELECT v.VALUE_STR FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_str,
-      (
-        SELECT TO_CHAR(v.VALUE_NUM) FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_num,
-      (
-        SELECT TO_CHAR(v.VALUE_DATE,'YYYY-MM-DD') FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_date,
-      (
-        SELECT TO_CHAR(v.VALUE_BOOL) FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_bool,
-      (
-        SELECT v.VALUE_TEXT FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_text
+      NVL((SELECT v.VALUE_STR FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') value_str,
+      NVL(TO_CHAR((SELECT v.VALUE_NUM FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID)), '') value_num,
+      NVL(TO_CHAR((SELECT v.VALUE_DATE FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 'YYYY-MM-DD'), '') value_date,
+      NVL((SELECT v.VALUE_BOOL FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 0) value_bool,
+      NVL((SELECT v.VALUE_TEXT FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') value_text,
+      CASE 
+        WHEN f.VALUE_TYPE = 'STRING' THEN 'text'
+        WHEN f.VALUE_TYPE = 'INT' THEN 'number'
+        WHEN f.VALUE_TYPE = 'DECIMAL' THEN 'number'
+        WHEN f.VALUE_TYPE = 'DATE' THEN 'date'
+        WHEN f.VALUE_TYPE = 'BOOL' THEN 'checkbox'
+        WHEN f.VALUE_TYPE = 'TEXT' THEN 'textarea'
+      END input_type,
+      CASE 
+        WHEN f.VALUE_TYPE = 'INT' THEN '1'
+        WHEN f.VALUE_TYPE = 'DECIMAL' THEN '0.01'
+        ELSE ''
+      END step_val
     FROM U_UD_FIELDDEF f
     WHERE f.CATEGORY_ID = ~(gpv.catid)
     ORDER BY NVL(f.SORT_ORDER,9999), UPPER(f.FIELD_LABEL)
   ]
     <div class="kwe_ud_box">
       <div class="kwe_ud_row">
-        <label>~(field_label) ~[if#req.~(required)=1]*[/if#req]</label>
-
-        <!-- If an existing value row exists, edit it; else create one -->
-        ~[if#hasVal.~(value_id)!=]
-          ~[DirectTable.Select:U_UD_VALUE;ID:~(value_id)]
-        [else#hasVal]
-          ~[DirectTable.Select:U_UD_VALUE;ID:-1]
-          <input type="hidden" name="[U_UD_VALUE]RECORD_ID" value="~(gpv.recid)">
-          <input type="hidden" name="[U_UD_VALUE]FIELDDEF_ID" value="~(fielddef_id)">
-        [/if#hasVal]
-
-        <!-- Typed input -->
-        ~[if#tstr.~(value_type)=STRING]
-          <input type="text" name="[U_UD_VALUE]VALUE_STR" value="~(value_str)">
-        [/if#tstr]
-
-        ~[if#tint.~(value_type)=INT]
-          <input type="number" step="1" name="[U_UD_VALUE]VALUE_NUM" value="~(value_num)">
-        [/if#tint]
-
-        ~[if#tdec.~(value_type)=DECIMAL]
-          <input type="number" step="0.01" name="[U_UD_VALUE]VALUE_NUM" value="~(value_num)">
-        [/if#tdec]
-
-        ~[if#tdate.~(value_type)=DATE]
-          <input type="date" name="[U_UD_VALUE]VALUE_DATE" value="~(value_date)">
-        [/if#tdate]
-
-        ~[if#tbool.~(value_type)=BOOL]
-          <input type="checkbox" name="[U_UD_VALUE]VALUE_BOOL" value="1" ~[if#bc.~(value_bool)=1]checked[/if#bc]>
-        [/if#tbool]
-
-        ~[if#ttext.~(value_type)=TEXT]
-          <textarea name="[U_UD_VALUE]VALUE_TEXT">~(value_text)</textarea>
-        [/if#ttext]
-
+        <label>~(field_label)</label>
+        ~[if#txt.~(value_type)=TEXT]<textarea name="fld_~(fielddef_id)">~(value_text)</textarea>[else#txt]~[if#chk.~(value_type)=BOOL]<input type="checkbox" name="fld_~(fielddef_id)" value="1" ~[if#bc.~(value_bool)=1]checked[/if#bc]>[else#chk]<input type="~(input_type)" name="fld_~(fielddef_id)" value="~[if#s.~(value_type)=STRING]~(value_str)[/if#s]~[if#i.~(value_type)=INT]~(value_num)[/if#i]~[if#d.~(value_type)=DECIMAL]~(value_num)[/if#d]~[if#dt.~(value_type)=DATE]~(value_date)[/if#dt]" ~[if#stp.~(step_val)!=]step="~(step_val)"[/if#stp]>[/if#chk][/if#txt]
       </div>
-
-      ~[if#help.~(help_text)!=]
-        <div class="kwe_ud_hint" style="margin-left:200px">~(help_text)</div>
-      [/if#help]
+      ~[if#help.~(help_text)!=]<div class="kwe_ud_hint" style="margin-left:200px">~(help_text)</div>[/if#help]
     </div>
   [/tlist_sql]
 
+  <input type="hidden" name="save_userdata" value="1">
+
   <div class="kwe_ud_row">
     <button class="kwe_ud_btn" type="submit">Save</button>
-    <input type="hidden" name="ac" value="prim">
   </div>
 
 </form>

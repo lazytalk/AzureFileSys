@@ -1,0 +1,208 @@
+<!-- Dedicated GET processing page for user data record saves -->
+<!-- This page receives URL parameters and handles record+value saves -->
+
+<!-- Handle POST requests for individual field saves -->
+~[if#eq.~(gpv.action)=save_field]
+  <p style="background:lime;padding:10px;"><strong>✓ PROCESSING FIELD SAVE VIA POST</strong></p>
+  <p style="background:lightyellow;padding:10px;">
+    RecID: ~(gpv.recid)<br>
+    FieldID: ~(gpv.fieldid)<br>
+    FieldValue: ~(gpv.fieldvalue)<br>
+  </p>
+  
+  <!-- Store parameters in hidden divs to preserve them -->
+  <div style="display:none;" id="saved-params" data-recid="~(gpv.recid)" data-fieldid="~(gpv.fieldid)" data-fieldvalue="~(gpv.fieldvalue)" data-username="~(curuser.name)"></div>
+  
+  <p style="background:lightyellow;padding:10px;">
+    <strong>Parameters being passed:</strong><br>
+    gpv.recid = ~(gpv.recid)<br>
+    gpv.fieldid = ~(gpv.fieldid)<br>
+    gpv.fieldvalue = ~(gpv.fieldvalue)<br>
+    curuser.name = ~(curuser.name)<br>
+  </p>
+  
+  <p style="background:lightcyan;padding:10px;"><strong>DEBUG:</strong> About to execute INSERT...</p>
+  
+  <!-- Insert using values directly from gpv (don't try to use them again later) -->
+  ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID, FIELDDEF_ID, VALUE_STR, CREATED_ON, CREATED_BY) VALUES (~(gpv.recid), ~(gpv.fieldid), '~(gpv.fieldvalue)', SYSDATE, '~(curuser.name)'))
+  
+  <p style="background:lightgreen;padding:10px;"><strong>✓ SQL executed! Field should be inserted successfully!</strong></p>
+  
+  <!-- First check total count of all values -->
+  ~[tlist_sql;
+    SELECT COUNT(*) as total_cnt FROM U_UD_VALUE
+  ]
+    <p style="background:orange;padding:10px;">Total U_UD_VALUE records in DB: ~(total_cnt)</p>
+  [/tlist_sql]
+  
+  <!-- Use JavaScript to get the stored params and verify -->
+  <script>
+    var params = document.getElementById('saved-params');
+    var recid = params.getAttribute('data-recid');
+    var fieldid = params.getAttribute('data-fieldid');
+    var fieldvalue = params.getAttribute('data-fieldvalue');
+    
+    document.write('<p style="background:lightblue;padding:10px;"><strong>Verification for field ' + fieldid + ' in record ' + recid + ':</strong></p>');
+    document.write('<p style="background:lightblue;padding:10px;">Submitted value was: ' + fieldvalue + '</p>');
+  </script>
+  
+  <!-- Verify by querying back - but use hardcoded values if variables don't work -->
+  ~[tlist_sql;
+    SELECT COUNT(*) as cnt FROM U_UD_VALUE WHERE RECORD_ID=~(gpv.recid)
+  ]
+    <p style="background:lightblue;padding:10px;">Records found for RecID ~(gpv.recid): ~(cnt) total values</p>
+  [/tlist_sql]
+  
+  <!-- Also check if record exists -->
+  ~[tlist_sql;
+    SELECT COUNT(*) as rec_cnt, ID, USERSDCID, CATEGORY_ID FROM U_UD_RECORD WHERE ID=~(gpv.recid)
+  ]
+    <p style="background:lightyellow;padding:10px;">Parent Record check: Found ~(rec_cnt) records with ID ~(gpv.recid)</p>
+    ~[if#first.~(rownum)=1]
+      <p style="background:lightyellow;padding:10px;">Record details: ID=~(ID), USERSDCID=~(USERSDCID), CATEGORY_ID=~(CATEGORY_ID)</p>
+    [/if#first]
+  [/tlist_sql]
+  
+  <!-- Redirect back to edit page -->
+  <meta http-equiv="refresh" content="10; url=userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=~(gpv.recid)&saved=1">
+  
+  <p style="background:yellow;padding:10px;"><strong>⏱️ Redirecting in 10 seconds... (or click the link below)</strong></p>
+  <a href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=~(gpv.recid)&saved=1" style="display:inline-block;margin-top:10px;padding:8px 15px;background:#4CAF50;color:white;text-decoration:none;border-radius:4px;">← Return to Edit Page Now</a>
+  
+[else#eq]
+
+<p style="background:cyan;padding:10px;">
+DEBUG SAVE PAGE:<br>
+gpv.save_values=[~(gpv.save_values)]<br>
+gpv.recid=[~(gpv.recid)]<br>
+gpv.catid=[~(gpv.catid)]<br>
+gpv.usersdcid=[~(gpv.usersdcid)]<br>
+<br>
+<strong>FULL URL QUERY STRING:</strong><br>
+<script>document.write(window.location.search);</script>
+</p>
+
+<!-- Handle record creation/loading and process all in one tlist_sql to keep rec_id in scope -->
+~[if#newrec.~(gpv.recid)=-1]
+  <p style="background:orange;padding:10px;">Creating new record...</p>
+  ~(sqlupdate;INSERT INTO U_UD_RECORD (USERSDCID, CATEGORY_ID, CREATED_ON, CREATED_BY) VALUES (~(gpv.usersdcid), ~(gpv.catid), SYSDATE, '~(curuser.name)'))
+  
+  <!-- Get the new record ID and store in variable for reuse -->
+  ~[tlist_sql;
+    SELECT MAX(ID) AS newrecid FROM U_UD_RECORD WHERE USERSDCID=~(gpv.usersdcid) AND CATEGORY_ID=~(gpv.catid)
+  ]
+    <p style="background:lightgreen;padding:10px;"><strong>Created record ID: ~(newrecid)</strong></p>
+    <p style="background:lime;padding:10px;font-size:16px;"><strong>📌 ACTUAL RECORD ID BEING USED: ~(newrecid)</strong></p>
+    <div style="display:none;" id="saved-recid" data-recid="~(newrecid)"></div>
+  [/tlist_sql]
+  
+  <!-- Now process fields for the newly created record -->
+  ~[tlist_sql;
+    SELECT 
+      f.ID AS fieldid,
+      f.VALUE_TYPE AS fieldtype
+    FROM U_UD_FIELDDEF f
+    WHERE f.CATEGORY_ID = ~(gpv.catid)
+  ]
+    <div class="field-processor" data-fid="~(fieldid)" data-ftype="~(fieldtype)" data-recid="">
+      <p style="background:lightblue;padding:5px;">Field <span class="fid-display">~(fieldid)</span> (type: <span class="ftype-display">~(fieldtype)</span>): Checking URL for fld_~(fieldid)</p>
+    </div>
+    
+    <script>
+      // Get the record ID from the saved element
+      var savedRecIdEl = document.getElementById('saved-recid');
+      var actualRecId = savedRecIdEl ? savedRecIdEl.getAttribute('data-recid') : 'UNKNOWN';
+      
+      // Update the current field processor with the record ID
+      var div = document.currentScript.previousElementSibling;
+      div.setAttribute('data-recid', actualRecId);
+      
+      var fieldId = div.getAttribute('data-fid');
+      var fieldType = div.getAttribute('data-ftype');
+      var recId = div.getAttribute('data-recid');
+      var urlParams = new URLSearchParams(window.location.search);
+      var fieldValue = urlParams.get('fld_' + fieldId);
+      document.write('<p style="background:yellow;padding:5px;">JavaScript found value for field ' + fieldId + ': ' + (fieldValue || '(empty)') + '</p>');
+      
+      if (fieldValue) {
+        document.write('<p style="background:orange;padding:5px;">Has value, would save to RecID: ' + recId + ', Field: ' + fieldId + ' (type: ' + fieldType + '), Value: ' + fieldValue + '</p>');
+        
+        // Create and submit a form for this field
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'userdata-save.html';
+        form.style.display = 'none';
+        
+        var inputs = [
+          {name: 'action', value: 'save_field'},
+          {name: 'usersdcid', value: '~(gpv.usersdcid)'},
+          {name: 'catid', value: '~(gpv.catid)'},
+          {name: 'recid', value: recId},
+          {name: 'fieldid', value: fieldId},
+          {name: 'fieldvalue', value: fieldValue}
+        ];
+        
+        inputs.forEach(function(input) {
+          var inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.name = input.name;
+          inp.value = input.value;
+          form.appendChild(inp);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        
+        document.write('<p style="background:green;padding:5px;">✓ Submitted field ' + fieldId + ' to save</p>');
+      }
+    </script>
+    
+  [/tlist_sql]
+  
+[else#newrec]
+  <p style="background:lightgreen;padding:10px;">Editing existing record ID: ~(gpv.recid)</p>
+  <p style="background:lime;padding:10px;font-size:16px;"><strong>📌 ACTUAL RECORD ID BEING USED: ~(gpv.recid)</strong></p>
+  
+  <!-- Process fields for existing record -->
+  ~[tlist_sql;
+    SELECT 
+      ~(gpv.recid) AS recid,
+      f.ID AS fieldid,
+      f.VALUE_TYPE AS fieldtype
+    FROM U_UD_FIELDDEF f
+    WHERE f.CATEGORY_ID = ~(gpv.catid)
+  ]
+    ~[if#first.~(rownum)=1]
+      ~[if#sv.~(gpv.save_values)=1]
+        <p style="background:lime;padding:10px;">INSIDE SAVE CONDITION - Processing values...</p>
+      [/if#sv]
+    [/if#first]
+    
+    <div class="field-processor" data-fid="~(fieldid)" data-ftype="~(fieldtype)">
+      <p style="background:lightblue;padding:5px;">Field <span class="fid-display">~(fieldid)</span> (type: <span class="ftype-display">~(fieldtype)</span>): Checking URL for fld_~(fieldid)</p>
+    </div>
+    
+    <script>
+      var div = document.currentScript.previousElementSibling;
+      if (div && div.classList && div.classList.contains('field-processor')) {
+        var fieldId = div.getAttribute('data-fid');
+        var fieldType = div.getAttribute('data-ftype');
+        var urlParams = new URLSearchParams(window.location.search);
+        var fieldValue = urlParams.get('fld_' + fieldId);
+        document.write('<p style="background:yellow;padding:5px;">JavaScript found value for field ' + fieldId + ': ' + (fieldValue || '(empty)') + '</p>');
+        
+        if (fieldValue) {
+          document.write('<p style="background:orange;padding:5px;">Has value, would save to field ' + fieldId + ' type ' + fieldType + ': ' + fieldValue + '</p>');
+        }
+      }
+    </script>
+    
+  [/tlist_sql]
+[/if#newrec]
+
+[/if#eq]
+
+<p style="background:pink;padding:10px;">
+  Debug complete!<br>
+  <a href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=~[if#nr.~(gpv.recid)=-1]NEWID[else#nr]~(gpv.recid)[/if#nr]&page=~(gpv.page)&q=~(gpv.q)&saved=1" style="display:inline-block;margin-top:10px;padding:8px 15px;background:#4CAF50;color:white;text-decoration:none;border-radius:4px;">← Click Here to Return to Edit Page</a>
+</p>

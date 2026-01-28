@@ -22,77 +22,8 @@
     <a href="/" target="_top">Start Page</a> &gt; File Service Tools
     ~[wc:admin_navigation_css]
 
-<p style="background:cyan;padding:10px;">
-  DEBUG ALL PARAMS:<br>
-  frm.save_userdata=[~(frm.save_userdata)]<br>
-  frm.fld_916860=[~(frm.fld_916860)]<br>
-  frm.fld_916852=[~(frm.fld_916852)]<br>
-  frm.fld_916851=[~(frm.fld_916851)]<br>
-  frm.usersdcid_val=[~(frm.usersdcid_val)]<br>
-  REQUEST_METHOD=[~(env.REQUEST_METHOD)]
-</p>
-
-~[if#save.~(frm.save_userdata)=1]
-  <p style="background:yellow;padding:10px;">DEBUG SAVE: save_userdata=[~(frm.save_userdata)] | recid=[~(gpv.recid)] | catid=[~(gpv.catid)]</p>
-  ~[if#hasrec.~(gpv.recid)>0]
-    <p style="background:lightgreen;padding:10px;">DEBUG: Has record, processing fields...</p>
-    ~[tlist_sql;
-      SELECT f.ID fielddef_id, f.VALUE_TYPE value_type, f.FIELD_LABEL field_label
-      FROM U_UD_FIELDDEF f
-      WHERE f.CATEGORY_ID = ~(gpv.catid)
-    ]
-      <p style="background:lightblue;padding:5px;">DEBUG Field: fielddef_id=[~(fielddef_id)] | value_type=[~(value_type)] | form_value=[~(frm.fld_~(fielddef_id))]</p>
-      ~[if#vexists.~(sqlrows;SELECT ID FROM U_UD_VALUE WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))>0]
-        <p style="color:green;">Value exists, updating...</p>
-        ~[if#tstr.~(value_type)=STRING]
-          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_STR='~(frm.fld_~(fielddef_id))' WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
-        [/if#tstr]
-        ~[if#tint.~(value_type)=INT]
-          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_NUM=~[if#v.~(frm.fld_~(fielddef_id))=]NULL[else#v]~(frm.fld_~(fielddef_id))[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
-        [/if#tint]
-        ~[if#tdec.~(value_type)=DECIMAL]
-          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_NUM=~[if#v.~(frm.fld_~(fielddef_id))=]NULL[else#v]~(frm.fld_~(fielddef_id))[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
-        [/if#tdec]
-        ~[if#tdate.~(value_type)=DATE]
-          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_DATE=~[if#v.~(frm.fld_~(fielddef_id))=]NULL[else#v]TO_DATE('~(frm.fld_~(fielddef_id))','YYYY-MM-DD')[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
-        [/if#tdate]
-        ~[if#tbool.~(value_type)=BOOL]
-          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_BOOL=~[if#v.~(frm.fld_~(fielddef_id))=1]1[else#v]0[/if#v] WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
-        [/if#tbool]
-        ~[if#ttext.~(value_type)=TEXT]
-          ~(sqlupdate;UPDATE U_UD_VALUE SET VALUE_TEXT='~(frm.fld_~(fielddef_id))' WHERE RECORD_ID=~(gpv.recid) AND FIELDDEF_ID=~(fielddef_id))
-        [/if#ttext]
-      [else#vexists]
-        <p style="color:blue;">Value doesn't exist, inserting if has value...</p>
-        ~[if#hasval.~(frm.fld_~(fielddef_id))!=]
-          <p style="color:orange;">Has value, inserting...</p>
-          ~[if#tstr.~(value_type)=STRING]
-            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_STR) VALUES (~(gpv.recid),~(fielddef_id),'~(frm.fld_~(fielddef_id))'))
-          [/if#tstr]
-          ~[if#tint.~(value_type)=INT]
-            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_NUM) VALUES (~(gpv.recid),~(fielddef_id),~(frm.fld_~(fielddef_id))))
-          [/if#tint]
-          ~[if#tdec.~(value_type)=DECIMAL]
-            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_NUM) VALUES (~(gpv.recid),~(fielddef_id),~(frm.fld_~(fielddef_id))))
-          [/if#tdec]
-          ~[if#tdate.~(value_type)=DATE]
-            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_DATE) VALUES (~(gpv.recid),~(fielddef_id),TO_DATE('~(frm.fld_~(fielddef_id))','YYYY-MM-DD')))
-          [/if#tdate]
-          ~[if#tbool.~(value_type)=BOOL]
-            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_BOOL) VALUES (~(gpv.recid),~(fielddef_id),1))
-          [/if#tbool]
-          ~[if#ttext.~(value_type)=TEXT]
-            ~(sqlupdate;INSERT INTO U_UD_VALUE (RECORD_ID,FIELDDEF_ID,VALUE_TEXT) VALUES (~(gpv.recid),~(fielddef_id),'~(frm.fld_~(fielddef_id))'))
-          [/if#ttext]
-        [/if#hasval]
-      [/if#vexists]
-    [/tlist_sql]
-    <p style="background:pink;padding:10px;">DEBUG: About to redirect...</p>
-    ~[redirect_to;userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)]
-  [/if#hasrec]
-[else#save]
-  <p style="background:lightcoral;padding:10px;">DEBUG: NOT SAVING - save_userdata=[~(frm.save_userdata)]</p>
-[/if#save]
+<!-- Load record using DirectTable -->
+~[DirectTable.Select:U_UD_RECORD;ID:~(gpv.recid)]
 
     <h1>Edit Record</h1>
 
@@ -100,63 +31,118 @@
       <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">← Back to List</a>
     </p>
 
-    <form action="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)&recid=~(gpv.recid)" method="POST">
+    <form action="userdata-save.html" method="GET">
   
-  <input type="hidden" name="usersdcid_val" value="~(gpv.usersdcid)">
-  <input type="hidden" name="catid_val" value="~(gpv.catid)">
+  <!-- Pass context parameters -->
+  <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
+  <input type="hidden" name="catid" value="~(gpv.catid)">
+  <input type="hidden" name="recid" value="~(gpv.recid)">
+  <input type="hidden" name="page" value="~(gpv.page)">
+  <input type="hidden" name="q" value="~(gpv.q)">
+  <input type="hidden" name="save_values" value="1">
 
-  <div class="kwe_ud_box">
-    <div class="kwe_ud_row">
-      <label>User DCID</label>
-      <span>~(gpv.usersdcid)</span>
-    </div>
-    <div class="kwe_ud_row">
-      <label>Category</label>
-      <span>~(gpv.catid)</span>
-    </div>
+  <!-- Dynamically render field inputs by joining fielddef with existing values -->
+  <div style="background:cyan;padding:10px;margin-bottom:10px;">
+    DEBUG: Field rendering test<br>
+    <script>
+      document.write('JavaScript is working<br>');
+      document.write('Number of field wrappers found: ' + document.querySelectorAll('.kwe_ud_field_wrapper').length);
+    </script>
   </div>
-
-  <h2>Fields</h2>
-
-  <!-- Render fielddefs; for each, find existing value row (if any) -->
+  
   ~[tlist_sql;
     SELECT
-      f.ID fielddef_id,
-      f.FIELD_LABEL || CASE WHEN f.REQUIRED = 1 THEN ' *' ELSE '' END AS field_label,
-      f.VALUE_TYPE value_type,
-      f.HELP_TEXT help_text,
-      NVL((SELECT v.VALUE_STR FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') value_str,
-      NVL(TO_CHAR((SELECT v.VALUE_NUM FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID)), '') value_num,
-      NVL(TO_CHAR((SELECT v.VALUE_DATE FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 'YYYY-MM-DD'), '') value_date,
-      NVL((SELECT v.VALUE_BOOL FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 0) value_bool,
-      NVL((SELECT v.VALUE_TEXT FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') value_text,
-      CASE 
-        WHEN f.VALUE_TYPE = 'STRING' THEN 'text'
-        WHEN f.VALUE_TYPE = 'INT' THEN 'number'
-        WHEN f.VALUE_TYPE = 'DECIMAL' THEN 'number'
-        WHEN f.VALUE_TYPE = 'DATE' THEN 'date'
-        WHEN f.VALUE_TYPE = 'BOOL' THEN 'checkbox'
-        WHEN f.VALUE_TYPE = 'TEXT' THEN 'textarea'
-      END input_type,
-      CASE 
-        WHEN f.VALUE_TYPE = 'INT' THEN '1'
-        WHEN f.VALUE_TYPE = 'DECIMAL' THEN '0.01'
-        ELSE ''
-      END step_val
+      f.ID fid,
+      f.FIELD_LABEL || CASE WHEN f.REQUIRED = 1 THEN ' *' ELSE '' END AS flabel,
+      f.VALUE_TYPE ftype,
+      f.HELP_TEXT fhelp,
+      NVL((SELECT v.VALUE_STR FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') vstr,
+      NVL(TO_CHAR((SELECT v.VALUE_NUM FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID)), '') vnum,
+      NVL(TO_CHAR((SELECT v.VALUE_DATE FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 'YYYY-MM-DD'), '') vdate,
+      NVL((SELECT v.VALUE_BOOL FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 0) vbool,
+      NVL((SELECT v.VALUE_TEXT FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') vtext
     FROM U_UD_FIELDDEF f
     WHERE f.CATEGORY_ID = ~(gpv.catid)
     ORDER BY NVL(f.SORT_ORDER,9999), UPPER(f.FIELD_LABEL)
   ]
     <div class="kwe_ud_box">
       <div class="kwe_ud_row">
-        <label>~(field_label)</label>
-        ~[if#txt.~(value_type)=TEXT]<textarea name="fld_~(fielddef_id)">~(value_text)</textarea>[else#txt]~[if#chk.~(value_type)=BOOL]<input type="checkbox" name="fld_~(fielddef_id)" value="1" ~[if#bc.~(value_bool)=1]checked[/if#bc]>[else#chk]<input type="~(input_type)" name="fld_~(fielddef_id)" value="~[if#s.~(value_type)=STRING]~(value_str)[/if#s]~[if#i.~(value_type)=INT]~(value_num)[/if#i]~[if#d.~(value_type)=DECIMAL]~(value_num)[/if#d]~[if#dt.~(value_type)=DATE]~(value_date)[/if#dt]" ~[if#stp.~(step_val)!=]step="~(step_val)"[/if#stp]>[/if#chk][/if#txt]
+        <label>[ID: ~(fid)] ~(flabel) </label>
+        <span class="kwe_ud_field_wrapper" data-fid="~(fid)" data-ftype="~(ftype)" data-vstr="~(vstr)" data-vnum="~(vnum)" data-vdate="~(vdate)" data-vbool="~(vbool)" data-vtext="~(vtext)">
+          <!-- Direct test: ~(fid) -->
+        </span>
+        <div style="font-size:10px;color:#999;margin-left:200px;">
+          Debug: fid=~(fid), ftype=~(ftype)<br>
+          <script>
+            var wrapper = document.currentScript.previousElementSibling.previousElementSibling;
+            document.write('JS reads data-fid as: "' + wrapper.getAttribute('data-fid') + '"');
+          </script>
+        </div>
       </div>
-      ~[if#help.~(help_text)!=]<div class="kwe_ud_hint" style="margin-left:200px">~(help_text)</div>[/if#help]
+      ~[if#help.~(fhelp)!=]<div class="kwe_ud_hint" style="margin-left:200px">~(fhelp)</div>[/if#help]
     </div>
   [/tlist_sql]
 
-  <input type="hidden" name="save_userdata" value="1">
+  <script>
+    // Build all input fields via JavaScript to avoid PowerSchool template variable scoping issues
+    document.querySelectorAll('.kwe_ud_field_wrapper').forEach(function(wrapper) {
+      var fieldId = wrapper.getAttribute('data-fid');
+      var fieldType = wrapper.getAttribute('data-ftype');
+      var valueStr = wrapper.getAttribute('data-vstr');
+      var valueNum = wrapper.getAttribute('data-vnum');
+      var valueDate = wrapper.getAttribute('data-vdate');
+      var valueBool = wrapper.getAttribute('data-vbool');
+      var valueText = wrapper.getAttribute('data-vtext');
+      
+      var input;
+      
+      if (fieldType === 'TEXT') {
+        input = document.createElement('textarea');
+        input.value = valueText || '';
+        input.style.width = '420px';
+        input.style.height = '90px';
+      } else if (fieldType === 'BOOL') {
+        input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = '1';
+        if (valueBool === '1') {
+          input.checked = true;
+        }
+      } else if (fieldType === 'STRING') {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.value = valueStr || '';
+      } else if (fieldType === 'INT') {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.step = '1';
+        input.value = valueNum || '';
+      } else if (fieldType === 'DECIMAL') {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.step = '0.01';
+        input.value = valueNum || '';
+      } else if (fieldType === 'DATE') {
+        input = document.createElement('input');
+        input.type = 'date';
+        input.value = valueDate || '';
+      } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.value = valueStr || '';
+      }
+      
+      input.name = 'fld_' + fieldId;
+      
+      // Add console log to debug non-breaking space issue
+      if (input.value && input.value.charCodeAt(0) === 160) {
+        console.warn('Field ' + fieldId + ' has non-breaking space at start');
+        input.value = input.value.trim().replace(/\u00A0/g, ' '); // Remove non-breaking spaces
+      }
+      
+      wrapper.appendChild(input);
+    });
+  </script>
 
   <div class="kwe_ud_row">
     <button class="kwe_ud_btn" type="submit">Save</button>

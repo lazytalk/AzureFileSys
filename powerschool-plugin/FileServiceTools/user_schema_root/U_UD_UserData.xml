@@ -47,7 +47,7 @@
     <field name="updated_by" type="String" length="100"/>
   </extendedTable>
 
-  <extendedTable coreTable="users"
+  <extendedTable type="standalone"
                  dbTableName="u_ud_record"
                  childName="u_ud_record"
                  comment="User Data - Record header (per user, per category)">

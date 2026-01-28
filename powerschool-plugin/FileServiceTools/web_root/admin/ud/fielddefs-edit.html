@@ -36,7 +36,7 @@
 ~[DirectTable.Select:U_UD_FIELDDEF;ID:~(gpv.id)]
 
 <form id="editForm" action="fielddefs.html?catid=~(gpv.catid)" method="POST" onsubmit="return sanitizeForm()">
-  Debug: ~(gpv.catid)
+
   <!-- Ensure CATEGORY_ID is set for new rows -->
   <input type="hidden" id="hiddenCatid" name="[U_UD_FIELDDEF]CATEGORY_ID" value="~(gpv.catid)">
 

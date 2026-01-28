@@ -49,17 +49,18 @@
   <!-- Render fielddefs with simpler LEFT JOIN to values -->
   ~[tlist_sql;
     SELECT
-      f.ID fielddef_id,
-      f.FIELD_LABEL field_label,
-      f.VALUE_TYPE value_type,
+      f.FIELD_LABEL field_label,  
       f.REQUIRED required,
-      f.HELP_TEXT help_text,
       NVL(v.ID, -1) value_id,
+      v.RECORD_ID record_id,
+      f.ID fielddef_id,
+      f.VALUE_TYPE value_type,
       v.VALUE_STR value_str,
       TO_CHAR(NVL(v.VALUE_NUM, '')) value_num,
       TO_CHAR(NVL(v.VALUE_DATE,'YYYY-MM-DD')) value_date,
       NVL(v.VALUE_BOOL, 0) value_bool,
-      v.VALUE_TEXT value_text
+      v.VALUE_TEXT value_text,    
+      f.HELP_TEXT help_text,
     FROM U_UD_FIELDDEF f
     LEFT JOIN U_UD_VALUE v ON (v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID)
     WHERE f.CATEGORY_ID = ~(gpv.catid)
@@ -74,7 +75,7 @@
           ~[DirectTable.Select:U_UD_VALUE;ID:~(value_id)]
         [else#hasVal]
           ~[DirectTable.Select:U_UD_VALUE;ID:-1]
-          <input type="hidden" name="[U_UD_VALUE]RECORD_ID" value="~(gpv.recid)">
+          <input type="hidden" name="[U_UD_VALUE]RECORD_ID" value="~(record_id)">
           <input type="hidden" name="[U_UD_VALUE]FIELDDEF_ID" value="~(fielddef_id)">
         [/if#hasVal]
 

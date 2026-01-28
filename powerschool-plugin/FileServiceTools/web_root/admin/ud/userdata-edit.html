@@ -46,7 +46,7 @@
 
   <h2>Fields</h2>
 
-  <!-- Render fielddefs; for each, find existing value row (if any) -->
+  <!-- Render fielddefs with simpler LEFT JOIN to values -->
   ~[tlist_sql;
     SELECT
       f.ID fielddef_id,
@@ -54,49 +54,14 @@
       f.VALUE_TYPE value_type,
       f.REQUIRED required,
       f.HELP_TEXT help_text,
-      (
-        SELECT v.ID
-        FROM U_UD_VALUE v
-        WHERE v.RECORD_ID = ~(gpv.recid)
-          AND v.FIELDDEF_ID = f.ID
-        FETCH FIRST 1 ROWS ONLY
-      ) value_id,
-      (
-        SELECT v.VALUE_STR FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_str,
-      (
-        SELECT TO_CHAR(v.VALUE_NUM) FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_num,
-      (
-        SELECT TO_CHAR(v.VALUE_DATE,'YYYY-MM-DD') FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_date,
-      (
-        SELECT TO_CHAR(v.VALUE_BOOL) FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_bool,
-      (
-        SELECT v.VALUE_TEXT FROM U_UD_VALUE v WHERE v.ID = (
-          SELECT v2.ID FROM U_UD_VALUE v2
-          WHERE v2.RECORD_ID = ~(gpv.recid) AND v2.FIELDDEF_ID = f.ID
-          FETCH FIRST 1 ROWS ONLY
-        )
-      ) value_text
+      NVL(v.ID, -1) value_id,
+      v.VALUE_STR value_str,
+      TO_CHAR(NVL(v.VALUE_NUM, '')) value_num,
+      TO_CHAR(NVL(v.VALUE_DATE,'YYYY-MM-DD')) value_date,
+      NVL(v.VALUE_BOOL, 0) value_bool,
+      v.VALUE_TEXT value_text
     FROM U_UD_FIELDDEF f
+    LEFT JOIN U_UD_VALUE v ON (v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID)
     WHERE f.CATEGORY_ID = ~(gpv.catid)
     ORDER BY NVL(f.SORT_ORDER,9999), UPPER(f.FIELD_LABEL)
   ]
@@ -104,8 +69,8 @@
       <div class="kwe_ud_row">
         <label>~(field_label) ~[if#req.~(required)=1]*[/if#req]</label>
 
-        <!-- If an existing value row exists, edit it; else create one -->
-        ~[if#hasVal.~(value_id)!=]
+        <!-- Load the existing value or create new one -->
+        ~[if#hasVal.~(value_id)>0]
           ~[DirectTable.Select:U_UD_VALUE;ID:~(value_id)]
         [else#hasVal]
           ~[DirectTable.Select:U_UD_VALUE;ID:-1]
@@ -113,7 +78,7 @@
           <input type="hidden" name="[U_UD_VALUE]FIELDDEF_ID" value="~(fielddef_id)">
         [/if#hasVal]
 
-        <!-- Typed input -->
+        <!-- Render input based on VALUE_TYPE -->
         ~[if#tstr.~(value_type)=STRING]
           <input type="text" name="[U_UD_VALUE]VALUE_STR" value="~(value_str)">
         [/if#tstr]

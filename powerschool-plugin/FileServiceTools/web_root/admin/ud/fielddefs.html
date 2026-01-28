@@ -22,14 +22,14 @@
     <a href="/" target="_top">Start Page</a> &gt; File Service Tools
     ~[wc:admin_navigation_css]
 
-<h1>Category Fields</h1>
+<h1>Category Fields List</h1>
 
 <div style="margin:20px 0; border:1px solid #ddd; padding:10px;">
 ~[tlist_sql;
   SELECT
-    c.ID catid,
     c.NAME catname,
     (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) rec_count,
+    c.ID catid,
     CASE WHEN (SELECT COUNT(*) FROM U_UD_RECORD r WHERE r.CATEGORY_ID = c.ID) = 0 
       THEN 'unlocked'
       ELSE 'locked'

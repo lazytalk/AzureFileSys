@@ -28,8 +28,6 @@
     <a href="/" target="_top">Start Page</a> &gt; File Service Tools
     ~[wc:admin_navigation_css]
 
-    ~[DirectTable.Select:U_UD_RECORD;ID:~(gpv.recid)]
-
     <h1>Edit Record</h1>
 
     <p>
@@ -52,16 +50,33 @@
         SELECT
           f.FIELD_LABEL flabel,
           f.REQUIRED freq,
-          f.ID fid,
-          f.VALUE_TYPE ftype,
-          '' vid,
-          '' vstr,
-          '' vnum,
-          '' vdate,
-          0 vbool,
-          '' vtext,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'FIELDDEF_ID$formatnumeric=###########.#####" value="' || f.ID || '">' fielddef_id_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'RECORD_ID$formatnumeric=###########.#####" value="~(gpv.recid)">' record_id_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_NUM$format=numeric" value="">' value_num_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_DATE$format=date" value="">' value_date_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_BOOL" value="0">' value_bool_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_TEXT" value="">' value_text_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'CREATED_ON$format=date" value="">' created_on_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'CREATED_BY" value="">' created_by_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'UPDATED_ON$format=date" value="">' updated_on_hidden,
+          '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'UPDATED_BY" value="">' updated_by_hidden,
+          CASE f.VALUE_TYPE
+            WHEN 'TEXT' THEN
+              '<textarea name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_TEXT">' || NVL(v.VALUE_TEXT, '') || '</textarea>'
+            WHEN 'BOOL' THEN
+              '<input type="checkbox" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_BOOL" value="1"' || CASE WHEN NVL(v.VALUE_BOOL, 0) = 1 THEN ' checked' ELSE '' END || '>'
+            WHEN 'INT' THEN
+              '<input type="number" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_NUM$format=numeric" step="1" value="' || NVL(TO_CHAR(v.VALUE_NUM), '') || '">'
+            WHEN 'DECIMAL' THEN
+              '<input type="number" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_NUM$format=numeric" step="0.01" value="' || NVL(TO_CHAR(v.VALUE_NUM), '') || '">'
+            WHEN 'DATE' THEN
+              '<input type="date" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_DATE$format=date" value="' || NVL(TO_CHAR(v.VALUE_DATE, 'YYYY-MM-DD'), '') || '">'
+            ELSE
+              '<input type="text" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_STR" value="' || NVL(v.VALUE_STR, '') || '">'
+          END input_html,
           f.HELP_TEXT fhelp
         FROM U_UD_FIELDDEF f
+        LEFT JOIN U_UD_VALUE v ON v.FIELDDEF_ID = f.ID AND v.RECORD_ID = ~(gpv.recid)
         WHERE f.CATEGORY_ID = ~(gpv.catid)
         ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
       ]
@@ -71,16 +86,20 @@
             ~[if#req.~(freq)=1]<span class="kwe_ud_required">*</span>[/if#req]
           </label>
           
-          <span class="kwe_ud_field_wrapper" 
-            data-fid="~(fid)" 
-            data-ftype="~(ftype)" 
-            data-vid="~(vid)"
-            data-vstr="~(vstr)" 
-            data-vnum="~(vnum)" 
-            data-vdate="~(vdate)" 
-            data-vbool="~(vbool)" 
-            data-vtext="~(vtext)">
-          </span>
+          <!-- All hidden fields generated by SQL CASE statements -->
+          ~(fielddef_id_hidden)
+          ~(record_id_hidden)
+          ~(value_num_hidden)
+          ~(value_date_hidden)
+          ~(value_bool_hidden)
+          ~(value_text_hidden)
+          ~(created_on_hidden)
+          ~(created_by_hidden)
+          ~(updated_on_hidden)
+          ~(updated_by_hidden)
+          
+          <!-- Visible input rendered from SQL CASE statement -->
+          ~(input_html)
 
           ~[if#help.~(fhelp)!=]
             <div class="kwe_ud_hint">~(fhelp)</div>
@@ -93,97 +112,6 @@
         <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">Cancel</a>
       </div>
     </form>
-
-    <script>
-    // PowerSchool CF- naming (standalone): CF-[:0.U_UD_UserData.U_UD_VALUE:valueid]FIELDNAME
-    
-    document.querySelectorAll('.kwe_ud_field_wrapper').forEach(function(wrapper) {
-      var fieldId = wrapper.getAttribute('data-fid');
-      var valueId = wrapper.getAttribute('data-vid');
-      var fieldType = wrapper.getAttribute('data-ftype');
-      var valueStr = wrapper.getAttribute('data-vstr');
-      var valueNum = wrapper.getAttribute('data-vnum');
-      var valueDate = wrapper.getAttribute('data-vdate');
-      var valueBool = wrapper.getAttribute('data-vbool');
-      var valueText = wrapper.getAttribute('data-vtext');
-      var recordId = document.querySelector('input[name="recid"]').value;
-
-      // Build CF- field name: if valueId exists (update), use it; otherwise use -1 (insert)
-      var valueRecordId = (valueId && valueId.trim() && valueId !== ' ') ? valueId : '-1';
-      var cfPrefix = 'CF-[:0.U_UD_UserData.U_UD_VALUE:' + valueRecordId + ']';
-
-      // Hidden field for FIELDDEF_ID (required foreign key)
-      var hiddenFieldDef = document.createElement('input');
-      hiddenFieldDef.type = 'hidden';
-      hiddenFieldDef.name = cfPrefix + 'FIELDDEF_ID';
-      hiddenFieldDef.value = fieldId;
-      wrapper.appendChild(hiddenFieldDef);
-
-      // Hidden field for RECORD_ID (link back to U_UD_RECORD)
-      var hiddenRecordId = document.createElement('input');
-      hiddenRecordId.type = 'hidden';
-      hiddenRecordId.name = cfPrefix + 'RECORD_ID';
-      hiddenRecordId.value = recordId;
-      wrapper.appendChild(hiddenRecordId);
-
-      var input;
-
-      // Create input based on field type
-      if (fieldType === 'TEXT') {
-        input = document.createElement('textarea');
-        input.value = valueText || '';
-        input.name = cfPrefix + 'VALUE_TEXT';
-      } else if (fieldType === 'BOOL') {
-        var hidden = document.createElement('input');
-        hidden.type = 'hidden';
-        hidden.name = cfPrefix + 'VALUE_BOOL';
-        hidden.value = '0';
-        wrapper.appendChild(hidden);
-
-        input = document.createElement('input');
-        input.type = 'checkbox';
-        input.value = '1';
-        input.name = cfPrefix + 'VALUE_BOOL';
-        if (valueBool === '1' || valueBool === 1) {
-          input.checked = true;
-        }
-      } else if (fieldType === 'STRING') {
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = valueStr || '';
-        input.name = cfPrefix + 'VALUE_STR';
-      } else if (fieldType === 'INT') {
-        input = document.createElement('input');
-        input.type = 'number';
-        input.step = '1';
-        input.value = valueNum || '';
-        input.name = cfPrefix + 'VALUE_NUM';
-      } else if (fieldType === 'DECIMAL') {
-        input = document.createElement('input');
-        input.type = 'number';
-        input.step = '0.01';
-        input.value = valueNum || '';
-        input.name = cfPrefix + 'VALUE_NUM';
-      } else if (fieldType === 'DATE') {
-        input = document.createElement('input');
-        input.type = 'date';
-        input.value = valueDate || '';
-        input.name = cfPrefix + 'VALUE_DATE';
-      } else {
-        input = document.createElement('input');
-        input.type = 'text';
-        input.value = valueStr || '';
-        input.name = cfPrefix + 'VALUE_STR';
-      }
-
-      // Clean non-breaking spaces
-      if (input.value && input.value.charCodeAt(0) === 160) {
-        input.value = input.value.trim().replace(/\u00A0/g, ' ');
-      }
-
-      wrapper.appendChild(input);
-    });
-    </script>
 
 </body>
 </html>

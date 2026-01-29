@@ -58,19 +58,23 @@
     <index name="u_ud_record_cat_idx">
       <column name="category_id"/>
     </index>
+    <index name="u_ud_record_client_guid_idx">
+      <column name="client_guid"/>
+    </index>
 
     <field name="usersdcid" type="Integer" isIndexed="true"/>
     <field name="category_id" type="Integer" isIndexed="true"/>
+    <field name="client_guid" type="String" length="36"/>
     <field name="created_on" type="Date"/>
     <field name="created_by" type="String" length="100"/>
     <field name="updated_on" type="Date"/>
     <field name="updated_by" type="String" length="100"/>
   </extendedTable>
 
-  <extendedTable coreTable="u_ud_record"
+  <extendedTable type="standalone"
                  dbTableName="u_ud_value"
                  childName="u_ud_value"
-                 comment="User Data - Values per record + fielddef">
+                 comment="User Data - Values per record + fielddef (standalone)">
     <index name="u_ud_value_record_idx">
       <column name="record_id"/>
     </index>

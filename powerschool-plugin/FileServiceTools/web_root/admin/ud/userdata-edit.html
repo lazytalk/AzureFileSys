@@ -8,13 +8,19 @@
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
     <style>
-      .kwe_ud_row{margin:10px 0}
-      label{display:inline-block;width:200px;vertical-align:top}
-      input[type=text], input[type=number], input[type=date], textarea{width:420px;padding:6px}
-      textarea{height:90px}
-      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer}
-      .kwe_ud_box{padding:12px;border:1px solid #ddd;background:#fafafa;margin:10px 0}
-      .kwe_ud_hint{color:#666;font-size:12px}
+      body { font-family: Arial, sans-serif; }
+      .kwe_ud_row { margin: 10px 0; }
+      .kwe_ud_field_row { padding: 10px 0; border-bottom: 1px solid #eee; }
+      label { display: inline-block; width: 200px; vertical-align: top; font-weight: bold; }
+      input[type=text], input[type=number], input[type=date], textarea { width: 420px; padding: 6px; }
+      textarea { height: 90px; }
+      .kwe_ud_btn { padding: 6px 10px; border: 1px solid #aaa; background: #f7f7f7; border-radius: 4px; cursor: pointer; text-decoration: none; color: #333; display: inline-block; }
+      .kwe_ud_btn:hover { background: #e7e7e7; }
+      .kwe_ud_btn-primary { background: #0078d4; color: white; border: 1px solid #0078d4; }
+      .kwe_ud_btn-primary:hover { background: #106ebe; }
+      .kwe_ud_hint { color: #666; font-size: 12px; margin-left: 200px; margin-top: 4px; }
+      .kwe_ud_required { color: red; }
+      .kwe_ud_actions { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -22,8 +28,7 @@
     <a href="/" target="_top">Start Page</a> &gt; File Service Tools
     ~[wc:admin_navigation_css]
 
-<!-- Load record using DirectTable -->
-~[DirectTable.Select:U_UD_RECORD;ID:~(gpv.recid)]
+    ~[DirectTable.Select:U_UD_RECORD;ID:~(gpv.recid)]
 
     <h1>Edit Record</h1>
 
@@ -31,125 +36,154 @@
       <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">← Back to List</a>
     </p>
 
-    <form action="userdata-save.html" method="GET">
-  
-  <!-- Pass context parameters -->
-  <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
-  <input type="hidden" name="catid" value="~(gpv.catid)">
-  <input type="hidden" name="recid" value="~(gpv.recid)">
-  <input type="hidden" name="page" value="~(gpv.page)">
-  <input type="hidden" name="q" value="~(gpv.q)">
-  <input type="hidden" name="save_values" value="1">
+    <form method="POST" action="/admin/changesrecorded.white.html">
+      <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
+      <input type="hidden" name="catid" value="~(gpv.catid)">
+      <input type="hidden" name="recid" value="~(gpv.recid)">
+      <input type="hidden" name="page" value="~(gpv.page)">
+      <input type="hidden" name="q" value="~(gpv.q)">
+      <input type="hidden" name="ac" value="prim">
 
-  <!-- Dynamically render field inputs by joining fielddef with existing values -->
-  <div style="background:cyan;padding:10px;margin-bottom:10px;">
-    DEBUG: Field rendering test<br>
-    <script>
-      document.write('JavaScript is working<br>');
-      document.write('Number of field wrappers found: ' + document.querySelectorAll('.kwe_ud_field_wrapper').length);
-    </script>
-  </div>
-  
-  ~[tlist_sql;
-    SELECT
-      f.ID fid,
-      f.FIELD_LABEL || CASE WHEN f.REQUIRED = 1 THEN ' *' ELSE '' END AS flabel,
-      f.VALUE_TYPE ftype,
-      f.HELP_TEXT fhelp,
-      NVL((SELECT v.VALUE_STR FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') vstr,
-      NVL(TO_CHAR((SELECT v.VALUE_NUM FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID)), '') vnum,
-      NVL(TO_CHAR((SELECT v.VALUE_DATE FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 'YYYY-MM-DD'), '') vdate,
-      NVL((SELECT v.VALUE_BOOL FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), 0) vbool,
-      NVL((SELECT v.VALUE_TEXT FROM U_UD_VALUE v WHERE v.RECORD_ID = ~(gpv.recid) AND v.FIELDDEF_ID = f.ID), '') vtext
-    FROM U_UD_FIELDDEF f
-    WHERE f.CATEGORY_ID = ~(gpv.catid)
-    ORDER BY NVL(f.SORT_ORDER,9999), UPPER(f.FIELD_LABEL)
-  ]
-    <div class="kwe_ud_box">
-      <div class="kwe_ud_row">
-        <label>[ID: ~(fid)] ~(flabel) </label>
-        <span class="kwe_ud_field_wrapper" data-fid="~(fid)" data-ftype="~(ftype)" data-vstr="~(vstr)" data-vnum="~(vnum)" data-vdate="~(vdate)" data-vbool="~(vbool)" data-vtext="~(vtext)">
-          <!-- Direct test: ~(fid) -->
-        </span>
-        <div style="font-size:10px;color:#999;margin-left:200px;">
-          Debug: fid=~(fid), ftype=~(ftype)<br>
-          <script>
-            var wrapper = document.currentScript.previousElementSibling.previousElementSibling;
-            document.write('JS reads data-fid as: "' + wrapper.getAttribute('data-fid') + '"');
-          </script>
-        </div>
+      <div style="background:#f0f0f0;padding:10px;margin:10px 0;font-size:12px;">
+        <strong>Debug:</strong> recid=~(gpv.recid), catid=~(gpv.catid), usersdcid=~(gpv.usersdcid)
       </div>
-      ~[if#help.~(fhelp)!=]<div class="kwe_ud_hint" style="margin-left:200px">~(fhelp)</div>[/if#help]
-    </div>
-  [/tlist_sql]
 
-  <script>
-    // Build all input fields via JavaScript to avoid PowerSchool template variable scoping issues
+      ~[tlist_sql;
+        SELECT
+          f.FIELD_LABEL flabel,
+          f.REQUIRED freq,
+          f.ID fid,
+          f.VALUE_TYPE ftype,
+          '' vid,
+          '' vstr,
+          '' vnum,
+          '' vdate,
+          0 vbool,
+          '' vtext,
+          f.HELP_TEXT fhelp
+        FROM U_UD_FIELDDEF f
+        WHERE f.CATEGORY_ID = ~(gpv.catid)
+        ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
+      ]
+        <div class="kwe_ud_field_row">
+          <label>
+            ~(flabel)
+            ~[if#req.~(freq)=1]<span class="kwe_ud_required">*</span>[/if#req]
+          </label>
+          
+          <span class="kwe_ud_field_wrapper" 
+            data-fid="~(fid)" 
+            data-ftype="~(ftype)" 
+            data-vid="~(vid)"
+            data-vstr="~(vstr)" 
+            data-vnum="~(vnum)" 
+            data-vdate="~(vdate)" 
+            data-vbool="~(vbool)" 
+            data-vtext="~(vtext)">
+          </span>
+
+          ~[if#help.~(fhelp)!=]
+            <div class="kwe_ud_hint">~(fhelp)</div>
+          [/if#help]
+        </div>
+      [/tlist_sql]
+
+      <div class="kwe_ud_actions">
+        <button type="submit" class="kwe_ud_btn kwe_ud_btn-primary">Save Changes</button>
+        <a class="kwe_ud_btn" href="userdata-list.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&page=~(gpv.page)&q=~(gpv.q)">Cancel</a>
+      </div>
+    </form>
+
+    <script>
+    // PowerSchool CF- naming (standalone): CF-[:0.U_UD_UserData.U_UD_VALUE:valueid]FIELDNAME
+    
     document.querySelectorAll('.kwe_ud_field_wrapper').forEach(function(wrapper) {
       var fieldId = wrapper.getAttribute('data-fid');
+      var valueId = wrapper.getAttribute('data-vid');
       var fieldType = wrapper.getAttribute('data-ftype');
       var valueStr = wrapper.getAttribute('data-vstr');
       var valueNum = wrapper.getAttribute('data-vnum');
       var valueDate = wrapper.getAttribute('data-vdate');
       var valueBool = wrapper.getAttribute('data-vbool');
       var valueText = wrapper.getAttribute('data-vtext');
-      
+      var recordId = document.querySelector('input[name="recid"]').value;
+
+      // Build CF- field name: if valueId exists (update), use it; otherwise use -1 (insert)
+      var valueRecordId = (valueId && valueId.trim() && valueId !== ' ') ? valueId : '-1';
+      var cfPrefix = 'CF-[:0.U_UD_UserData.U_UD_VALUE:' + valueRecordId + ']';
+
+      // Hidden field for FIELDDEF_ID (required foreign key)
+      var hiddenFieldDef = document.createElement('input');
+      hiddenFieldDef.type = 'hidden';
+      hiddenFieldDef.name = cfPrefix + 'FIELDDEF_ID';
+      hiddenFieldDef.value = fieldId;
+      wrapper.appendChild(hiddenFieldDef);
+
+      // Hidden field for RECORD_ID (link back to U_UD_RECORD)
+      var hiddenRecordId = document.createElement('input');
+      hiddenRecordId.type = 'hidden';
+      hiddenRecordId.name = cfPrefix + 'RECORD_ID';
+      hiddenRecordId.value = recordId;
+      wrapper.appendChild(hiddenRecordId);
+
       var input;
-      
+
+      // Create input based on field type
       if (fieldType === 'TEXT') {
         input = document.createElement('textarea');
         input.value = valueText || '';
-        input.style.width = '420px';
-        input.style.height = '90px';
+        input.name = cfPrefix + 'VALUE_TEXT';
       } else if (fieldType === 'BOOL') {
+        var hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = cfPrefix + 'VALUE_BOOL';
+        hidden.value = '0';
+        wrapper.appendChild(hidden);
+
         input = document.createElement('input');
         input.type = 'checkbox';
         input.value = '1';
-        if (valueBool === '1') {
+        input.name = cfPrefix + 'VALUE_BOOL';
+        if (valueBool === '1' || valueBool === 1) {
           input.checked = true;
         }
       } else if (fieldType === 'STRING') {
         input = document.createElement('input');
         input.type = 'text';
         input.value = valueStr || '';
+        input.name = cfPrefix + 'VALUE_STR';
       } else if (fieldType === 'INT') {
         input = document.createElement('input');
         input.type = 'number';
         input.step = '1';
         input.value = valueNum || '';
+        input.name = cfPrefix + 'VALUE_NUM';
       } else if (fieldType === 'DECIMAL') {
         input = document.createElement('input');
         input.type = 'number';
         input.step = '0.01';
         input.value = valueNum || '';
+        input.name = cfPrefix + 'VALUE_NUM';
       } else if (fieldType === 'DATE') {
         input = document.createElement('input');
         input.type = 'date';
         input.value = valueDate || '';
+        input.name = cfPrefix + 'VALUE_DATE';
       } else {
         input = document.createElement('input');
         input.type = 'text';
         input.value = valueStr || '';
+        input.name = cfPrefix + 'VALUE_STR';
       }
-      
-      input.name = 'fld_' + fieldId;
-      
-      // Add console log to debug non-breaking space issue
+
+      // Clean non-breaking spaces
       if (input.value && input.value.charCodeAt(0) === 160) {
-        console.warn('Field ' + fieldId + ' has non-breaking space at start');
-        input.value = input.value.trim().replace(/\u00A0/g, ' '); // Remove non-breaking spaces
+        input.value = input.value.trim().replace(/\u00A0/g, ' ');
       }
-      
+
       wrapper.appendChild(input);
     });
-  </script>
-
-  <div class="kwe_ud_row">
-    <button class="kwe_ud_btn" type="submit">Save</button>
-  </div>
-
-</form>
-
+    </script>
 
 </body>
 </html>

@@ -22,34 +22,17 @@
 <h1>User Data Values Management</h1>
 
 <p class="kwe_ud_hint">
-  Select a Record ID to view and edit its values using PowerSchool tlist_child.
+  Standalone list of U_UD_VALUE records (relationship to U_UD_RECORD is maintained in code via RECORD_ID).
 </p>
 
-<form method="GET" action="u_ud_value-list.html">
-  <div class="kwe_ud_row">
-    <label>Record ID *</label>
-    <input type="text" name="recid" value="~(gpv.recid)">
-    <button type="submit">Load Values</button>
+<form action="/admin/changesrecorded.white.html" method="POST">
+  <div class="box-round">
+    ~[tlist_standalone:U_UD_UserData.U_UD_VALUE;displaycols:ID,RECORD_ID,FIELDDEF_ID,VALUE_STR,VALUE_NUM,VALUE_DATE,VALUE_BOOL,VALUE_TEXT,CREATED_ON,CREATED_BY,UPDATED_ON,UPDATED_BY;fieldNames:ID,Record ID,FieldDef ID,Value (Str),Value (Num),Value (Date),Value (Bool),Value (Text),Created On,Created By,Updated On,Updated By;type:html]
+    <div class="kwe_ud_row">
+      <input type="hidden" name="ac" value="prim">~[submitbutton]
+    </div>
   </div>
 </form>
-
-~[if#hasrec.~(gpv.recid)=""]
-  <p class="kwe_ud_hint">Enter a Record ID above to load values.</p>
-[else#hasrec]
-
-  <!-- Bind the child table to the selected parent record -->
-  ~[DirectTable.Select:U_UD_RECORD;ID:~(gpv.recid)]
-
-  <form action="/admin/changesrecorded.white.html" method="POST">
-    <div class="box-round">
-      ~[tlist_child:U_UD_RECORD.U_UD_UserData.U_UD_VALUE;displaycols:ID,RECORD_ID,FIELDDEF_ID,VALUE_STR,VALUE_NUM,VALUE_DATE,VALUE_BOOL,VALUE_TEXT,CREATED_ON,CREATED_BY,UPDATED_ON,UPDATED_BY;fieldNames:ID,Record ID,FieldDef ID,Value (Str),Value (Num),Value (Date),Value (Bool),Value (Text),Created On,Created By,Updated On,Updated By;type:html]
-      <div class="kwe_ud_row">
-        <input type="hidden" name="ac" value="prim">~[submitbutton]
-      </div>
-    </div>
-  </form>
-
-[/if#hasrec]
 
 </body>
 </html>

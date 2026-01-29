@@ -24,11 +24,39 @@
     <a href="/" target="_top">Start Page</a> &gt; File Service Tools
     ~[wc:admin_navigation_css]
 
+~[if#createrecord.~(gpv.action)=create]
+  ~[tlist_sql;
+    SELECT r.USERSDCID newusersdcid,
+           r.CATEGORY_ID newcatid,
+           r.ID newrecid
+    FROM U_UD_RECORD r
+    WHERE r.CLIENT_GUID = '~(gpv.client_guid)'
+  ]
+    <script>
+      window.location.href = 'userdata-edit.html?usersdcid=~(newusersdcid)&catid=~(newcatid)&recid=~(newrecid)&page=1&q=';
+    </script>
+  [/tlist_sql]
+[/if#createrecord]
+
 <h1>User Data Records</h1>
 
 <div class="kwe_ud_row">
   <a class="kwe_ud_btn" href="userdata-home.html">← Change User/Category</a>
-  <a class="kwe_ud_btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=-1">+ Add Record</a>
+  <form method="POST" style="display:inline">
+    ~[DirectTable.Select:U_UD_RECORD;ID:-1]
+    <input type="hidden" name="[U_UD_RECORD]USERSDCID" value="~(gpv.usersdcid)">
+    <input type="hidden" name="[U_UD_RECORD]CATEGORY_ID" value="~(gpv.catid)">
+    <input type="hidden" id="clientGuidField" name="[U_UD_RECORD]CLIENT_GUID" value="">
+    <input type="hidden" name="[U_UD_RECORD]CREATED_BY" value="~(curUser)">
+    <input type="hidden" name="ac" value="prim">
+    <input type="hidden" name="usersdcid" value="~(gpv.usersdcid)">
+    <input type="hidden" name="catid" value="~(gpv.catid)">
+    <input type="hidden" name="page" value="~(gpv.page)">
+    <input type="hidden" name="q" value="~(gpv.q)">
+    <input type="hidden" id="clientGuid" name="client_guid" value="">
+    <input type="hidden" name="action" value="create">
+    <button type="submit" class="kwe_ud_btn">+ Add Record</button>
+  </form>
 </div>
 
 <form method="GET" action="userdata-list.html" onsubmit="return prepSearch();">
@@ -43,6 +71,26 @@
 </form>
 
 <script>
+function generateGuid(){
+  var s4 = function(){
+    return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+  };
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+}
+
+function ensureClientGuid(){
+  var guidInput = document.getElementById('clientGuid');
+  var guidField = document.getElementById('clientGuidField');
+  if (!guidInput || !guidField) return;
+  if (!guidInput.value) {
+    var guid = generateGuid();
+    guidInput.value = guid;
+    guidField.value = guid;
+  } else if (!guidField.value) {
+    guidField.value = guidInput.value;
+  }
+}
+
 function prepSearch(){
   var human = document.getElementById('qHuman').value || '%';
   var sql = human.replace(/\*/g, '%');
@@ -50,6 +98,16 @@ function prepSearch(){
   document.getElementById('qSql').value = sql;
   return true;
 }
+
+document.addEventListener('DOMContentLoaded', function(){
+  ensureClientGuid();
+  var addForm = document.querySelector('.kwe_ud_row form[method="POST"]');
+  if (addForm) {
+    addForm.addEventListener('submit', function(){
+      ensureClientGuid();
+    });
+  }
+});
 </script>
 
 <hr>

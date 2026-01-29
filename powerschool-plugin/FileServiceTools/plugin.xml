@@ -21,6 +21,38 @@
                 <ui_context id="admin.left_nav" />
             </ui_contexts>
         </link>
+        <link display-text="User Data - Categories" 
+              title="User Data Categories (U_UD_CATEGORY)" 
+              path="/admin/ud/u_ud_category-list.html"
+              >
+            <ui_contexts>
+                <ui_context id="admin.left_nav" />
+            </ui_contexts>
+        </link>
+        <link display-text="User Data - Field Definitions" 
+              title="User Data Field Definitions (U_UD_FIELDDEF)" 
+              path="/admin/ud/u_ud_fielddef-list.html"
+              >
+            <ui_contexts>
+                <ui_context id="admin.left_nav" />
+            </ui_contexts>
+        </link>
+        <link display-text="User Data - Records" 
+              title="User Data Records (U_UD_RECORD)" 
+              path="/admin/ud/u_ud_record-list.html"
+              >
+            <ui_contexts>
+                <ui_context id="admin.left_nav" />
+            </ui_contexts>
+        </link>
+        <link display-text="User Data - Values" 
+              title="User Data Values (U_UD_VALUE)" 
+              path="/admin/ud/u_ud_value-list.html"
+              >
+            <ui_contexts>
+                <ui_context id="admin.left_nav" />
+            </ui_contexts>
+        </link>
     </links>
     </openid>
     <oauth/>    

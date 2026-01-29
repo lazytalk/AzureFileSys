@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Data Field Definitions Management</title>
+    ~[wc:commonscripts]
+    <link href="/images/css/screen.css" rel="stylesheet" media="screen">
+    <link href="/images/css/print.css" rel="stylesheet" media="print">
+    <style>
+      .kwe_ud_row{margin:10px 0}
+      .kwe_ud_hint{color:#666;font-size:12px}
+      .box-round{padding:12px;border:1px solid #ddd;background:#fafafa;margin:10px 0}
+    </style>
+</head>
+<body>
+    ~[wc:admin_header_css]
+    <a href="/" target="_top">Start Page</a> &gt; File Service Tools
+    ~[wc:admin_navigation_css]
+
+<h1>User Data Field Definitions Management</h1>
+
+<p class="kwe_ud_hint">
+  Editable list for the standalone table U_UD_FIELDDEF using PowerSchool tlist_standalone.
+</p>
+
+<form action="/admin/changesrecorded.white.html" method="POST">
+  <div class="box-round">
+    ~[tlist_standalone:U_UD_UserData.U_UD_FIELDDEF;displaycols:ID,CATEGORY_ID,FIELD_KEY,FIELD_LABEL,VALUE_TYPE,REQUIRED,SORT_ORDER,HELP_TEXT,CREATED_ON,CREATED_BY,UPDATED_ON,UPDATED_BY;fieldNames:ID,Category ID,Field Key,Field Label,Value Type,Required,Sort Order,Help Text,Created On,Created By,Updated On,Updated By;type:html]
+    <div class="kwe_ud_row">
+      <input type="hidden" name="ac" value="prim">~[submitbutton]
+    </div>
+  </div>
+</form>
+
+</body>
+</html>

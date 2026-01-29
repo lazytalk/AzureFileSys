@@ -3346,7 +3346,7 @@ Subs
 Returns the posted value from the URL or the previous page submit and returns the html encoded result.  
 URL Request: /admin/home.html?my\_gpv=it's >< alive  
 GPV Tag: ~(gpv.my\_gpv;encodehtml)  
-Result: it's &gt;&lt; alive  
+Result: it's >< alive  
 Where to use: When the gpv returned is displayed in a webpage.
 
 ~(gpv.{posted\_value\_name};num)
@@ -3470,7 +3470,7 @@ Output: 9:34 AM -- 10:34 AM
 URL escapes text to be used as part of a link  
 Example  
 Tag: ~\[tlist\_sql;select 'hello world' myLink from dual\]<a href="/admin/test.html?mygpv=~(myLink;url)">My Link</a>\[/tlist\_sql\]  
-Output: &lt;a href="/admin/test.html?mygpv=hello+world">My Link&lt;/a>
+Output: <a href="/admin/test.html?mygpv=hello+world">My Link</a>
 
 ;Js
 
@@ -3492,21 +3492,21 @@ Output: Every \\"High\\" 'School'
 Html will escape specific characters so that the returned value in the TList\_SQL can be rendered to the page while preventing html injection.  
 Example:  
 Tag: ~\[tlist\_sql;select '< >' gtLt from dual\]~(gtLt;html)\[/tlist\_sql\]  
-Output: &lt; &gt;
+Output: < >
 
 ;Xml10 (9.0+)
 
 Xml10 will escape specific characters so that the returned value in the TList\_SQL can be injected into a XML v1.0 object.  
 Example:  
 Tag: ~\[tlist\_sql;select '< > ''' gtLt from dual\]~(gtLt;xml10)\[/tlist\_sql\]  
-Output: &lt; &gt; &apos;
+Output: < > &apos;
 
 ;Xml11 (9.0+)
 
 Xml11 will escape specific characters so that the returned value in the TList\_SQL can be injected into a XML v1.1 object.  
 Example:  
 Tag: ~\[tlist\_sql;select '< > ''' gtLt from dual\]~(gtLt;xml10)\[/tlist\_sql\]  
-Output: &lt; &gt; &apos;
+Output: < > &apos;
 
 ;ReplaceCRLFWithBR (20.11.0.1+)
 
@@ -3762,65 +3762,65 @@ The examples below show a variety of ways to reference a one-to-one extension to
 
 **Sample Code: Various Form Elements Using One-To-One Extensions**
 
-&lt;!-- Entry Field --&gt;  
-&lt;tr&gt;  
-&lt;td class="bold"&gt;Model Number&lt;/td&gt;  
-&lt;td&gt;  
-&lt;input type="text" name="\[Students.U\_Laptop]Model\_Number" value="" size="15"&gt; &lt;/td&gt;  
-&lt;/tr&gt;
+<!-- Entry Field -->  
+<tr>  
+<td class="bold">Model Number</td>  
+<td>  
+<input type="text" name="\[Students.U\_Laptop]Model\_Number" value="" size="15"> </td>  
+</tr>
 
-&lt;!-- Static[pdfRest Free Demo]splay --&gt;  
-&lt;tr&gt;  
-&lt;td class="bold"&gt;Barcode # (Read Only)&lt;/td&gt;  
-&lt;td&gt;  
+<!-- Static[pdfRest Free Demo]splay -->  
+<tr>  
+<td class="bold">Barcode # (Read Only)</td>  
+<td>  
 ~(\[Students.U\_Laptop]Barcode)  
-&lt;/td&gt;  
-&lt;/tr&gt;
+</td>  
+</tr>
 
-&lt;!-- Static/Read Only Field Inside Input Box --&gt; &lt;tr&gt;  
-&lt;td class="bold"&gt;Barcode # (Read Only)&lt;/td&gt;  
-&lt;td&gt;  
-&lt;input type="text" name="\[Students.U\_Laptop]Barcode" value="" readonly="readonly"&gt;  
-&lt;/td&gt;  
-&lt;/tr&gt;
+<!-- Static/Read Only Field Inside Input Box --> <tr>  
+<td class="bold">Barcode # (Read Only)</td>  
+<td>  
+<input type="text" name="\[Students.U\_Laptop]Barcode" value="" readonly="readonly">  
+</td>  
+</tr>
 
-&lt;!-- Radio Button --&gt;  
-&lt;tr&gt;  
-&lt;td class="bold"&gt;Operating System&lt;/td&gt;  
-&lt;td&gt;  
-&lt;input type="radio" name="\[Students.U\_Laptop]OS" value="Windows"&gt;Windows &lt;input type="radio" name="\[Students.U\_Laptop]OS" value="Mac"&gt;Mac &lt;/td&gt;  
-&lt;/tr&gt;
+<!-- Radio Button -->  
+<tr>  
+<td class="bold">Operating System</td>  
+<td>  
+<input type="radio" name="\[Students.U\_Laptop]OS" value="Windows">Windows <input type="radio" name="\[Students.U\_Laptop]OS" value="Mac">Mac </td>  
+</tr>
 
-&lt;!-- Check Box --&gt;  
-&lt;tr&gt;  
-&lt;td class="bold"&gt;Laptop Lost?&lt;/td&gt;  
-&lt;td&gt;
+<!-- Check Box -->  
+<tr>  
+<td class="bold">Laptop Lost?</td>  
+<td>
 
-&lt;input[pdfRest Free Demo]me="\[Students.U\_Laptop]IsLost" value="1"&gt; &lt;/td&gt;  
-&lt;/tr&gt;
+<input[pdfRest Free Demo]me="\[Students.U\_Laptop]IsLost" value="1"> </td>  
+</tr>
 
-&lt;!-- Drop Down/Popup Menu --&gt;  
-&lt;tr&gt;  
-&lt;td class="bold"&gt;Manufacturer&lt;/td&gt;  
-&lt;td&gt;  
-&lt;select name="\[Students.U\_Laptop]Manufacturer"&gt; &lt;option value=""&gt;Select a Company&lt;/option&gt;
+<!-- Drop Down/Popup Menu -->  
+<tr>  
+<td class="bold">Manufacturer</td>  
+<td>  
+<select name="\[Students.U\_Laptop]Manufacturer"> <option value="">Select a Company</option>
 
-&lt;option  
-&lt;option  
-&lt;option  
-&lt;option  
-&lt;option  
-&lt;option  
-&lt;/select&gt; &lt;/td&gt;  
-&lt;/tr&gt; value="Acer"&gt;Acer&lt;/option&gt; value="Alienware"&gt;Alienware&lt;/option&gt; value="Apple"&gt;Apple&lt;/option&gt; value="Asus"&gt;Asus&lt;/option&gt; value="Compaq"&gt;Compaq&lt;/option&gt; value="Dell"&gt;Dell&lt;/option&gt;
+<option  
+<option  
+<option  
+<option  
+<option  
+<option  
+</select> </td>  
+</tr> value="Acer">Acer</option> value="Alienware">Alienware</option> value="Apple">Apple</option> value="Asus">Asus</option> value="Compaq">Compaq</option> value="Dell">Dell</option>
 
-&lt;!-- Text Area --&gt;  
-&lt;tr&gt;  
-&lt;td class="bold"&gt;Damages Comments&lt;/td&gt;  
-&lt;td&gt;  
-&lt;textarea name="\[Students.U\_Laptop]Damages\_Comment[pdfRest Free Demo]5"&gt; &lt;/textarea&gt;  
-&lt;/td&gt;  
-&lt;/tr&gt;
+<!-- Text Area -->  
+<tr>  
+<td class="bold">Damages Comments</td>  
+<td>  
+<textarea name="\[Students.U\_Laptop]Damages\_Comment[pdfRest Free Demo]5"> </textarea>  
+</td>  
+</tr>
 
 **One-To-M[pdfRest Free Demo]s**
 
@@ -3830,12 +3830,12 @@ A one-to-many table extension creates a child table to th[pdfRest Free Demo] tab
 
 [pdfRest Free Demo]e format for the tlist\_child HTML tag.
 
-~\[tlist\_child:&lt;CoreTableName&gt;.&lt;ExtensionGroup&gt;.&lt;ExtensionTable&gt;;displaycols:&lt; List of Fields&gt;;fieldNames:&lt;List of Column Headers&gt;;type:&lt;FormatName&gt;]
+~\[tlist\_child:<CoreTableName>.<ExtensionGroup>.<ExtensionTable>;displaycols:< List of Fields>;fieldNames:<List of Column Headers>;type:<FormatName>]
 
 The following prov[pdfRest Free Demo]ormation on this tag:
 
-- The **&lt;CoreTableName&gt;.&lt;ExtensionGroup&gt;.&lt;ExtensionTable&gt;** narrows the query down[pdfRest Free Demo]table. For example, a child table to track college applicati[pdfRest Free Demo]TS.U\_COLLEGEAPP.U\_APPLICATIONS
-- The **displaycols** are a comma-separated list of fields from the one-to-many table, an[pdfRest Free Demo]r all of the defined fields in that table. Two special ID fi[pdfRest Free Demo]ferenced: ID and &lt;CoreTableName&gt;DCID. In the college e[pdfRest Free Demo]ould be STUDENTSDCID.
+- The **<CoreTableName>.<ExtensionGroup>.<ExtensionTable>** narrows the query down[pdfRest Free Demo]table. For example, a child table to track college applicati[pdfRest Free Demo]TS.U\_COLLEGEAPP.U\_APPLICATIONS
+- The **displaycols** are a comma-separated list of fields from the one-to-many table, an[pdfRest Free Demo]r all of the defined fields in that table. Two special ID fi[pdfRest Free Demo]ferenced: ID and <CoreTableName>DCID. In the college e[pdfRest Free Demo]ould be STUDENTSDCID.
 - The **fieldNames** are a comma-separa[pdfRest Free Demo]els that should appear in the auto-generated HTML table head[pdfRest Free Demo]ay contain spaces.
 
 <!--THE END-->
@@ -3862,11 +3862,11 @@ An independent table extension creates a tabl[pdfRest Free Demo]iated with any e
 
 The f[pdfRest Free Demo]mat for the tlist\_standalone HTML tag.
 
-~\[tlist\_standalone:&lt;ExtensionGroup&gt;.&lt;ExtensionTable&gt;;displaycols:&lt;List of Fields&gt;;fieldNames:&lt;List of Column Headers&gt;;type:&lt;FormatName&gt;]
+~\[tlist\_standalone:<ExtensionGroup>.<ExtensionTable>;displaycols:<List of Fields>;fieldNames:<List of Column Headers>;type:<FormatName>]
 
 The following provides additional in[pdfRest Free Demo]ag:
 
-- The **&lt;ExtensionGroup&gt;.&lt;ExtensionTable&gt;** n[pdfRest Free Demo]wn to a single independent table. For example, an independen[pdfRest Free Demo]maintain a master list of all higher education institutions could be U\_CollegeApp.U\_Institutions.
+- The **<ExtensionGroup>.<ExtensionTable>** n[pdfRest Free Demo]wn to a single independent table. For example, an independen[pdfRest Free Demo]maintain a master list of all higher education institutions could be U\_CollegeApp.U\_Institutions.
 - The **displaycols** are a comma-separated list of fields from the standalone tabl[pdfRest Free Demo]any or all of the defined fields in that table. A database r[pdfRest Free Demo]also be referenced using the field name ID. This field is au[pdfRest Free Demo] when the table is initially defined.
 - The **fieldNames** are a comma-separated list of the labels that should appear in the auto-generated HTML table heading. These labels may contain spaces.
 - The **type** parameter specifies a format. Valid [pdfRest Free Demo]"html" or "json"
@@ -3893,34 +3893,34 @@ Example screenshot of a table auto-generated by tlist\_child with special format
 
 **Drop-Down Menu Example**
 
-- Within the &lt;head&gt; tag, add[pdfRest Free Demo]tion.js JavaScript file by including: &lt;script src="/scrip[pdfRest Free Demo]on.js"&gt;&lt;/script&gt;
-- Within the &lt;form&gt; tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
+- Within the <head> tag, add[pdfRest Free Demo]tion.js JavaScript file by including: <script src="/scrip[pdfRest Free Demo]on.js"></script>
+- Within the <form> tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
 - Directly after the tlist tag, use a script sim[pdfRest Free Demo]ng example for field(s) you want to change from input text to a drop-down menu. The script will define the drop-down menu[pdfRest Free Demo]d be displayed to users and stored in the database. It will [pdfRest Free Demo]iable name to be used to identify the list. Any variable nam[pdfRest Free Demo] script could be repeated if more than one field needs to be[pdfRest Free Demo]p-down menu. In this case unique variable names must be used[pdfRest Free Demo]e variable defines the value options, the following command [pdfRest Free Demo]t:
 
 ```
 tlistText2DropDown('<FieldName>',<JavaScript_Variable_Name>);
 ```
 
-&lt;!DOCTYPE html&gt;  
-&lt;html&gt;  
-&lt;!-- start right frame --&gt;  
-&lt;head&gt;  
-&lt;title&gt;College Applications&lt;/title&gt;  
+<!DOCTYPE html>  
+<html>  
+<!-- start right frame -->  
+<head>  
+<title>College Applications</title>  
 ~\[wc:commonscripts]
 
-&lt;script src="/scr[pdfRest Free Demo]tion.js"&gt;&lt;/script&gt; &lt;link href="/images/css/scree[pdfRest Free Demo]eet" media="screen"&gt; &lt;link href="/images/css/print.css[pdfRest Free Demo]media="print"&gt; &lt;/head&gt;
+<script src="/scr[pdfRest Free Demo]tion.js"></script> <link href="/images/css/scree[pdfRest Free Demo]eet" media="screen"> <link href="/images/css/print.css[pdfRest Free Demo]media="print"> </head>
 
-&lt;body&gt;  
-&lt;form action[pdfRest Free Demo]orded.white.html" method="POST"&gt; ~\[wc:admin\_header\_frame\_css]&lt;!-- breadcrumb start --&gt;&lt;a href="/admin/home.html" target="\_top"&gt;Start Page&lt;/a&gt; &gt; &lt;a href="home.html?selectstudent=nosearch" target="\_top"&gt;Student Selection&lt;/a&gt; &gt; College Applications&lt;!-- breadcrumb end -- &gt;~\[wc:admin\_navigation\_frame\_css]
+<body>  
+<form action[pdfRest Free Demo]orded.white.html" method="POST"> ~\[wc:admin\_header\_frame\_css]<!-- breadcrumb start --><a href="/admin/home.html" target="\_top">Start Page</a> > <a href="home.html?selectstudent=nosearch" target="\_top">Student Selection</a> > College Applications<!-- breadcrumb end -- >~\[wc:admin\_navigation\_frame\_css]
 
 ~\[wc:title\_student\_begin\_css]College Applications~\[wc:title\_student\_end\_css]
 
-&lt;!-- start of content and bounding box --&gt;
+<!-- start of content and bounding box -->
 
-&lt;div class="box-round"&gt;  
+<div class="box-round">  
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,Requ est Date,Request Status,Scholar[pdfRest Free Demo]e,Outcome,Notes;type:html]
 
-&lt;script&gt;  
+<script>  
 var InstValues = {};  
 InstValues\['1']='Option 1';  
 InstValues\['2']='Option 2';  
@@ -3934,21 +3934,21 @@ InstValues\['9']='Option 9';
 InstValues\['10']='Option 10';  
 tlistText2DropDown('Institution',InstValues);
 
-&lt;/script&gt;
+</script>
 
-&lt;br&gt;
+<br>
 
-&lt;div class="button-row"&gt;  
-&lt;input type="hid[pdfRest Free Demo]e="prim"&gt;~\[submitbutton] &lt;/div&gt;  
-&lt;/div&gt;  
-&lt;br&gt;  
-&lt;!-- end of content of bounding box --&gt;  
+<div class="button-row">  
+<input type="hid[pdfRest Free Demo]e="prim">~\[submitbutton] </div>  
+</div>  
+<br>  
+<!-- end of content of bounding box -->  
 ~\[wc:admin\_footer\_frame\_css]
 
-&lt;/form&gt;
+</form>
 
-&lt;/body&gt;  
-&lt;/html&gt;&lt;!-- end right frame --&gt;
+</body>  
+</html><!-- end right frame -->
 
 **Drop-Down Menu Example (Value/Name Pair)**
 
@@ -3956,8 +3956,8 @@ tlistText2DropDown('Institution',InstValues);
 
 This version of the drop-down menu script differs from the original v[pdfRest Free Demo]control over both the value that is displayed in the drop-do[pdfRest Free Demo]tely, the value that is stored in the database.
 
-- Within the &lt;head&gt; tag, add the tlistCustomization.js JavaScript file by including: &lt;script src="/scripts/tlistCustomization.js"&gt;&lt;/script&gt;
-- Within the &lt;form&gt; tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
+- Within the <head> tag, add the tlistCustomization.js JavaScript file by including: <script src="/scripts/tlistCustomization.js"></script>
+- Within the <form> tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
 - Directly after the tlist tag, use a script similar[pdfRest Free Demo]xample for field(s) you want to change from input text to a drop-down menu. The script will define both the drop-down men[pdfRest Free Demo]ld be displayed to users and a chosen value to be stored in [pdfRest Free Demo]ll also define the variable name to be used to identify the [pdfRest Free Demo]name may be used. This script could be repeated if more than[pdfRest Free Demo] be displayed as a drop-down menu. In this case unique varia[pdfRest Free Demo]sed for each.
 
 After the variable defines the value options, t[pdfRest Free Demo]d completes the script:
@@ -3971,19 +3971,19 @@ tlistText2DropDownValNamePair
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,Req[pdfRest Free Demo]Status,Scholarship,Completion Date,Outcome,Notes;type:html]
 
-&lt;script&gt;  
+<script>  
 var InstValues = \[];  
 InstValues.push(\['C','Considering']);  
 InstValues.push(\['W','Waitlist']);  
 InstValues.push(\['A','Accepted']);  
 InstValues.push(\['D','Denied']);  
 InstValues.push(\['5','Option 5']);  
-tlistText2DropDownValNamePair('Outcome',InstValues); &lt;/script&gt;
+tlistText2DropDownValNamePair('Outcome',InstValues); </script>
 
 **Radio Button Example**
 
-- Within the &lt;head&gt; tag, add the tlistCustom[pdfRest Free Demo]pt file by including: &lt;script src="/scripts/tlistCustomization.js"&gt;&lt;/script&gt;
-- Within the &lt;form&gt; tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
+- Within the <head> tag, add the tlistCustom[pdfRest Free Demo]pt file by including: <script src="/scripts/tlistCustomization.js"></script>
+- Within the <form> tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
 - Directly after the tlist tag, use a script s[pdfRest Free Demo]wing example for field(s) you want to change from input text[pdfRest Free Demo]The script will define the radio buttons that should be disp[pdfRest Free Demo]be assigned a variable name. Any variable name may be used. [pdfRest Free Demo]e repeated if more than one field needs to be displayed as a[pdfRest Free Demo]this case unique variable names must be used for each. After[pdfRest Free Demo]es the value options, the following command completes the script:
   
   ```
@@ -3994,11 +3994,11 @@ tlistText2DropDownValNamePair('Outcome',InstValues); &lt;/script&gt;
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,Re[pdfRest Free Demo] Status,Scholarship,Completion Date,Outcome,Notes;type:html]
 
-&lt;script&gt;  
+<script>  
 var rbValues = {};  
 rbValues \['1']='Yes';  
 rbValues \['2']='No';  
-tlistText2RadioButton('Scholarship',rbValues); &lt;/script&gt;
+tlistText2RadioButton('Scholarship',rbValues); </script>
 
 **Radio Button Example (Value/Name Pair)**
 
@@ -4006,8 +4006,8 @@ tlistText2RadioButton('Scholarship',rbValues); &lt;/script&gt;
 
 This version of the radi[pdfRest Free Demo]fers from the original version by allowing control over both[pdfRest Free Demo]displayed for the radio buttons and, separately, the value t[pdfRest Free Demo]e database.
 
-- Within the &lt;head&gt; tag, add the tlistCusto[pdfRest Free Demo]ipt file by including: &lt;script src="/scripts/tlistCustomization.js"&gt;&lt;/script&gt;
-- Within the &lt;form&gt; tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
+- Within the <head> tag, add the tlistCusto[pdfRest Free Demo]ipt file by including: <script src="/scripts/tlistCustomization.js"></script>
+- Within the <form> tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
 - Directly after the tlist tag, use a script [pdfRest Free Demo]owing example for field(s) you want to change from input tex[pdfRest Free Demo] The script will define the radio buttons that should be dis[pdfRest Free Demo] be assigned a variable name. Any variable name may be used.[pdfRest Free Demo]be repeated if more than one field needs to be displayed as [pdfRest Free Demo] this case unique variable names must be used for each. Afte[pdfRest Free Demo]nes the options that should be displayed to users and a chos[pdfRest Free Demo]ed in the database, the following command completes the script:
 
 ```
@@ -4018,16 +4018,16 @@ tlistText2RadioButtonValNamePair('<FieldName>',<JavaScript_Variab le_Name>);
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,[pdfRest Free Demo]st Status,Scholarship,Completion Date,Outcome,Notes;type:html]
 
-&lt;script&gt;  
+<script>  
 var rbValues = \[];  
 rbValues.push(\['Y','Yes']);  
 rbValues.push(\['N','No']);  
-tlistText2RadioButtonValNamePair('Scholarship',rbValues); &lt;/script&gt;
+tlistText2RadioButtonValNamePair('Scholarship',rbValues); </script>
 
 **Text Area Example**
 
-- Within the &lt;head&gt; tag, add the tlistCustomiz[pdfRest Free Demo] file by including: &lt;script src="/scripts/tlistCustomization.js"&gt;&lt;/script&gt;
-- Within the &lt;form&gt; tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
+- Within the <head> tag, add the tlistCustomiz[pdfRest Free Demo] file by including: <script src="/scripts/tlistCustomization.js"></script>
+- Within the <form> tag, use the tlist\_child or tlist\_standalone tag to add the auto-generated table.
 - Directly after the tlist tag, use a script sim[pdfRest Free Demo]ng example for field(s) you want to change from input text t[pdfRest Free Demo]script will define the size of the text area that should be [pdfRest Free Demo]and be assigned a variable name. This script could be repeat[pdfRest Free Demo] field needs to be displayed as a text area.
 
 ```
@@ -4038,14 +4038,14 @@ tlistText2TextArea('<Field_Name>',<rows>,<columns>);
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,[pdfRest Free Demo]st Status,Scholarship,Completion Date,Outcome,Notes;type:html]
 
-&lt;script&gt;  
+<script>  
 tlistText2TextArea('Notes',4,50);  
-&lt;/script&gt;
+</script>
 
 **Static/Read Only Text Example**
 
-- Within the &lt;head&gt; tag, add the tlistCustomization.js JavaScript file by including: &lt;script src="/scripts/tlistCustomization.js"&gt;&lt;/script&gt;
-- Within the &lt;form&gt; tag, use tlist\_child or tlist\_standalone tag to add the tlist auto-generated table.
+- Within the <head> tag, add the tlistCustomization.js JavaScript file by including: <script src="/scripts/tlistCustomization.js"></script>
+- Within the <form> tag, use tlist\_child or tlist\_standalone tag to add the tlist auto-generated table.
 - Directly after the tlist tag, use a script similar to th[pdfRest Free Demo] for field(s) you want to change from input text to read onl[pdfRest Free Demo] could be repeated if more than one field needs to be modified.
 
 ```
@@ -4056,9 +4056,9 @@ tlistText2StaticText('<Field_Name>');
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,Requ est Date,Request Status,Scholarshi[pdfRest Free Demo]utcome,Notes;type:html]
 
-&lt;script&gt;  
+<script>  
 tlistText2StaticText('Institution');  
-&lt;/script&gt;
+</script>
 
 **Static/Read Only After Submit Text Example**
 
@@ -4066,8 +4066,8 @@ tlistText2StaticText('Institution');
 
 This new op[pdfRest Free Demo] to be entered for a new field when it is originally blank, [pdfRest Free Demo] field read only.
 
-- Within the &lt;head&gt; tag, add the tlis[pdfRest Free Demo]avaScript file by including: &lt;script src="/scripts/tlistCustomization.js"&gt;&lt;/script&gt;
-- Within the &lt;form&gt; tag, use tlist\_child or tlist\_standalone tag to add the tlist auto-generated table.
+- Within the <head> tag, add the tlis[pdfRest Free Demo]avaScript file by including: <script src="/scripts/tlistCustomization.js"></script>
+- Within the <form> tag, use tlist\_child or tlist\_standalone tag to add the tlist auto-generated table.
 - Directly after the tlist tag, use a[pdfRest Free Demo]the following example for field(s) you want to change from i[pdfRest Free Demo]nly text once they are saved. This script could be repeated [pdfRest Free Demo]eld needs to be modified.
 
 ```
@@ -4078,8 +4078,8 @@ tlistText2StaticTextAllowNew('<Field_Name>');
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_St[pdfRest Free Demo]mpletion\_Date,Outcome,Notes;fieldNames:Institution,Requ est[pdfRest Free Demo]s,Scholarship,Completion Date,Outcome,Notes;type:html]
 
-&lt;script&gt;  
-tlistText2StaticTextAllowNew('Institution'); &lt;/script&gt;
+<script>  
+tlistText2StaticTextAllowNew('Institution'); </script>
 
 **Multiple Special Formatting Tags Example**
 
@@ -4089,7 +4089,7 @@ The foll[pdfRest Free Demo] all of the above examples used together.
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Sta[pdfRest Free Demo]pletion\_Date,Outcome,Notes;fieldNames:Institution,Requ est [pdfRest Free Demo],Scholarship,Completion Date,Outcome,Notes;type:html]
 
-&lt;script&gt;  
+<script>  
 var InstValues = {};  
 InstValues\['1']='PowerSchool University';  
 InstValues\['2']='College of Standards';  
@@ -4101,25 +4101,25 @@ rbValues \['2']='No';
 tlistText2RadioButton('Scholarship',rbValues); tlistText2TextArea('Notes',4,50);  
 tlistText2StaticText('Outcome');
 
-&lt;/script&gt;
+</script>
 
 **Using CSS Styles to Resize Input Fields**
 
 As previously noted, the default width of all fields in a tlist\_child or tlist\_standalone table, except Bool[pdfRest Free Demo]e shown as a checkbox, is 20 characters wide (about 180px). [pdfRest Free Demo]of individual columns in the auto-generated HTML table use C[pdfRest Free Demo]ts (CSS).
 
-Each column in the auto-generated HTML table will be part of a &lt;colgroup&gt; with each column in the table gi[pdfRest Free Demo]te equal to "col-" plus the field name. In our college application tlist\_child example, the Institution &lt;col&gt; tag [pdfRest Free Demo]="col-Institution". Set this value to approximately 20px hig[pdfRest Free Demo]tag.
+Each column in the auto-generated HTML table will be part of a <colgroup> with each column in the table gi[pdfRest Free Demo]te equal to "col-" plus the field name. In our college application tlist\_child example, the Institution <col> tag [pdfRest Free Demo]="col-Institution". Set this value to approximately 20px hig[pdfRest Free Demo]tag.
 
-Each &lt;input&gt; tag in the table will be tagged with [pdfRest Free Demo]qual to the field name. In our college application tlist\_ch[pdfRest Free Demo]stitution input tag would include class="Institution". Defin[pdfRest Free Demo]ese classes to control the width of the column.
+Each <input> tag in the table will be tagged with [pdfRest Free Demo]qual to the field name. In our college application tlist\_ch[pdfRest Free Demo]stitution input tag would include class="Institution". Defin[pdfRest Free Demo]ese classes to control the width of the column.
 
 The following[pdfRest Free Demo]definition of CSS styles for several columns in our tlist\_child table.
 
 **Note**: Only the HTML code necessary to demonstr[pdfRest Free Demo]s been included.
 
-&lt;html&gt;  
-&lt;head&gt;  
+<html>  
+<head>  
 :  
 :  
-&lt;style&gt;
+<style>
 
 .col-Institution {width:235px;}
 
@@ -4137,9 +4137,9 @@ The following[pdfRest Free Demo]definition of CSS styles for several columns in 
 
 .Scholarship {width:50px;}
 
-&lt;/style&gt;  
-&lt;/head&gt;  
-&lt;body&gt;  
+</style>  
+</head>  
+<body>  
 :  
 :  
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Dat e,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,Requ est Date,Reque[pdfRest Free Demo]ip,Completion Date,Outcome,Notes;type:html]
@@ -4150,7 +4150,7 @@ In order to allow Teachers to access multip[pdfRest Free Demo]single account wit
 
 [pdfRest Free Demo]new table structure for staff will be important when creatin[pdfRest Free Demo]staff that use the tlist\_child tag. When creating a link to[pdfRest Free Demo]e the proper FRN must be part of the link. Historically this[pdfRest Free Demo]dding "?frn=~(frn)" to the end of the link. For example:
 
-&lt;[pdfRest Free Demo]rix.html?frn=~(frn)"&gt;
+<[pdfRest Free Demo]rix.html?frn=~(frn)">
 
 - **schedulematrix.html** is the pag[pdfRest Free Demo].
 - **?frn=** is located immediately after the page address.
@@ -4162,7 +4162,7 @@ In older versions of PowerSchool the ~(frn) tag would always[pdfRest Free Demo]I
 
 Because the records on this page all relat[pdfRest Free Demo]e (table 204), construct your page link using "**204~(\[teachers]USERS\_DCID)**" rather than ~(frn) or the tlist\_child t[pdfRest Free Demo]ion properly. This is what the link might look like:
 
-&lt;a hr[pdfRest Free Demo]l?frn=204~(\[teachers]USERS\_DCID)"&gt;Credentials&lt;/a&gt;
+<a hr[pdfRest Free Demo]l?frn=204~(\[teachers]USERS\_DCID)">Credentials</a>
 
 [pdfRest Free Demo]e records in the tlist\_child table use the DCID field from [pdfRest Free Demo]her than the Teachers table.
 
@@ -4182,15 +4182,15 @@ Use this[pdfRest Free Demo] existing record, add a new record, or delete an exis
 
 The following is the format for[pdfRest Free Demo]lect HTML tag.
 
-~\[ DirectTable.Select:&lt;tableName&gt;;&lt;idColumn&gt;:&lt;idValue&gt;]
+~\[ DirectTable.Select:<tableName>;<idColumn>:<idValue>]
 
 The following provides additional[pdfRest Free Demo]s tag:
 
-- The &lt;tableName&gt; is the name of the database ex[pdfRest Free Demo]the extension group.
-- The &lt;idColumn&gt; is the name of th[pdfRest Free Demo] for the table. For database extension tables created throug[pdfRest Free Demo]nterface, this field name will always be “ID”.
-- The &lt;idValue&gt; is the value of the primary key for the record to be edited.
+- The <tableName> is the name of the database ex[pdfRest Free Demo]the extension group.
+- The <idColumn> is the name of th[pdfRest Free Demo] for the table. For database extension tables created throug[pdfRest Free Demo]nterface, this field name will always be “ID”.
+- The <idValue> is the value of the primary key for the record to be edited.
 
-The following is an example for a one-to-many table to[pdfRest Free Demo]ications. Note that only the actual one-to-many table name n[pdfRest Free Demo]ed, unlike the tlist\_child example earlier in this user gui[pdfRest Free Demo]values were needed: &lt;CoreTableName&gt;.&lt;ExtensionGroup&gt;.&lt;ExtensionTable&gt;.
+The following is an example for a one-to-many table to[pdfRest Free Demo]ications. Note that only the actual one-to-many table name n[pdfRest Free Demo]ed, unlike the tlist\_child example earlier in this user gui[pdfRest Free Demo]values were needed: <CoreTableName>.<ExtensionGroup>.<ExtensionTable>.
 
 This example shows editing a record in the U\_APPLICATIONS table with an ID = 41.
 
@@ -4198,7 +4198,7 @@ This example shows editing a record in the U\_APPLICATIONS table with an ID = 41
 
 **DirectTable.Select and ~(gpv)**
 
-Because it is impractical to enter an actual record ID value (i.e. 41) in the HTML code for the custom web page, the &lt;idValue&gt; can be replaced by PowerSchool’s GPV (Get Post Value) tag to dynamically enter the
+Because it is impractical to enter an actual record ID value (i.e. 41) in the HTML code for the custom web page, the <idValue> can be replaced by PowerSchool’s GPV (Get Post Value) tag to dynamically enter the
 
 ID number for the selected[pdfRest Free Demo] ID from one page to the next it is possible to include info[pdfRest Free Demo] URL that can be referenced by the target web page using the ~(gpv) tag. The proper format for this HTML tag is ~(gpv.passed\_label). Additional HTML tags are documented in knowledge base article [PowerSchool HTML Tags](https://help.powerschoo[pdfRest Free Demo]l-Customizations/PowerSchool-HTML-Tags/ta-p/14322) available[pdfRest Free Demo]munity.
 
@@ -4210,7 +4210,7 @@ GPV Tags: ~(gpv.my\_gpv\_1) and ~(gpv.my\_gpv\_2)
 
 When using this technique with stude[pdfRest Free Demo]se extension tables that are children of the STUDENTS table,[pdfRest Free Demo]st pass both the FRN for the student record as well as the I[pdfRest Free Demo]e record. **Please see *Appendix B* for a complete set of ex[pdfRest Free Demo]source page with the list of existing records and the target[pdfRest Free Demo]ual records are edited.** The following example is taken fro[pdfRest Free Demo]e. The ~(id) information comes from the tlist\_sql results, [pdfRest Free Demo]d from the query has the proper record ID number ready to be[pdfRest Free Demo] page in the URL.
 
-&lt;a href="applications-edit.html?frn=~(studentfrn)&id=~(id)"&gt;
+<a href="applications-edit.html?frn=~(studentfrn)&id=~(id)">
 
 The following is an example of the Dir[pdfRest Free Demo]a GPV with a post value of “id”:
 
@@ -4218,72 +4218,72 @@ The following is an example of the Dir[pdfRest Free Demo]a GPV with a post value
 
 **Where To Place the DirectTable.Select Tag**
 
-As previously stated, the DirectTable.Select tag must [pdfRest Free Demo]e &lt;form&gt; tag. The tag should also be entered before your &lt;input&gt; tags for your fields because it impacts all [pdfRest Free Demo]me after it. Here is a simplified page layout example.
+As previously stated, the DirectTable.Select tag must [pdfRest Free Demo]e <form> tag. The tag should also be entered before your <input> tags for your fields because it impacts all [pdfRest Free Demo]me after it. Here is a simplified page layout example.
 
-&lt;html&gt;  
-&lt;head&gt;&lt;/head&gt;  
-&lt;body&gt;  
-&lt;form&gt;  
-~\[DirectTable.Select:U\_APPLICATIONS;ID:~(gpv.id)] &lt;table&gt;  
-&lt;tr&gt;  
-&lt;td&gt;Field Label&lt;/td&gt;  
-&lt;td&gt;&lt;input type="text"...&gt;&lt;/td&gt;  
-&lt;/tr&gt;  
-&lt;/table&gt;  
-&lt;/form&gt;  
-&lt;/body&gt;  
-&lt;/html&gt;
+<html>  
+<head></head>  
+<body>  
+<form>  
+~\[DirectTable.Select:U\_APPLICATIONS;ID:~(gpv.id)] <table>  
+<tr>  
+<td>Field Label</td>  
+<td><input type="text"...></td>  
+</tr>  
+</table>  
+</form>  
+</body>  
+</html>
 
 **Edit[pdfRest Free Demo]ord**
 
 To edit one or more fields in an existing record in a d[pdfRest Free Demo]able four elements are required.
 
-- The page URL should contai[pdfRest Free Demo] the required &lt;idValue&gt; applications.html?id=24 (if it[pdfRest Free Demo]me other way)
-- The DirectTable tag after the &lt;form&gt; ta[pdfRest Free Demo]elds. ~\[DirectTable.Select:U\_APPLICATIONS;ID:~(gpv.id)]
+- The page URL should contai[pdfRest Free Demo] the required <idValue> applications.html?id=24 (if it[pdfRest Free Demo]me other way)
+- The DirectTable tag after the <form> ta[pdfRest Free Demo]elds. ~\[DirectTable.Select:U\_APPLICATIONS;ID:~(gpv.id)]
 - I[pdfRest Free Demo]age form. The proper way to reference a field when using DirectTable.Select is:  
-  &lt;input name="**\[ExtensionTable]Field\_Name**" value=""&gt;
+  <input name="**\[ExtensionTable]Field\_Name**" value="">
 - The standard hidden input tag must [pdfRest Free Demo]form fields, usually near the Submit button. For the admin portal that tag is:  
-  &lt;input type="hidden" name="ac" value="prim"&gt;
+  <input type="hidden" name="ac" value="prim">
 
 **Adding a New Record**
 
-Adding a new record to an E[pdfRest Free Demo]one by using an &lt;idValue&gt; of -1.
+Adding a new record to an E[pdfRest Free Demo]one by using an <idValue> of -1.
 
-~\[ DirectTable.Select:&lt;tableName&gt;;&lt;idColumn&gt;:-1]
+~\[ DirectTable.Select:<tableName>;<idColumn>:-1]
 
-When the &lt;idValue&gt; -1 in the DirectTable tag is used, all field values entere[pdfRest Free Demo]sed to create the new record and populate it with the entered data. **Please see *Appendix B* for a complete set of examp[pdfRest Free Demo] record page.**
+When the <idValue> -1 in the DirectTable tag is used, all field values entere[pdfRest Free Demo]sed to create the new record and populate it with the entered data. **Please see *Appendix B* for a complete set of examp[pdfRest Free Demo] record page.**
 
 **Adding a New Record to a One-to-one Extensi[pdfRest Free Demo]arent Record**
 
-When the desired record ID in the parent table[pdfRest Free Demo]able is known, that value can be passed in a hidden &lt;input&gt; tag.
+When the desired record ID in the parent table[pdfRest Free Demo]able is known, that value can be passed in a hidden <input> tag.
 
 The format of that tag should be:
 
-&lt;input type="hi[pdfRest Free Demo]_Table.Parent\_Key\_Field" value="recordID"&gt;
+<input type="hi[pdfRest Free Demo]_Table.Parent\_Key\_Field" value="recordID">
 
 The following[pdfRest Free Demo]dding a record to the U\_LAPTOP one-to-one extension of the [pdfRest Free Demo]e the desired STUDENTS.DCID is 1091:
 
-&lt;td&gt;  
-~\[DirectTable.Select:U\_LAPTOP;STUDENTSDCID:-1] Barcode:&lt;input type="text" name="\[U\_LAPTOP]Barcode" value=""&gt; &lt;input type=[pdfRest Free Demo]ENTS.DCID" value="1091"&gt; &lt;/td&gt;
+<td>  
+~\[DirectTable.Select:U\_LAPTOP;STUDENTSDCID:-1] Barcode:<input type="text" name="\[U\_LAPTOP]Barcode" value=""> <input type=[pdfRest Free Demo]ENTS.DCID" value="1091"> </td>
 
 **Adding a New Record to a One-to-One Extension and Fields in the Parent Table**
 
 In[pdfRest Free Demo]ple DirectTable will be used twice. A new record in the Dist[pdfRest Free Demo]will be added first and the new record's primary key value w[pdfRest Free Demo]ts extension table DistrictCalendar\_Ext.
 
-&lt;td&gt; &lt;!-- The parent table --&gt;
+<td> <!-- The parent table -->
 
 ~\[DirectTable.Select:DistrictCalendar;ID:-1]
 
-CalendarName: &lt;input type="text" name="\[DistrictCalendar]CalendarName" value=""&gt; StartDate:
+CalendarName: <input type="text" name="\[DistrictCalendar]CalendarName" value=""> StartDate:
 
-EndDate: &lt;/td&gt;
+EndDate: </td>
 
-&lt;input type="text" name="\[DistrictCalendar]StartDate" value=""&gt; &lt;input type="text" name="\[DistrictCalendar]EndDate" value=""&gt;
+<input type="text" name="\[DistrictCalendar]StartDate" value=""> <input type="text" name="\[DistrictCalendar]EndDate" value="">
 
-&lt;td&gt; &lt;!-- The child table --&gt;  
+<td> <!-- The child table -->  
 ~\[DirectTable.Select:DistrictCalendar\_Ext;DistrictCalendarID:-1]
 
-Grade\_Level:&lt;input type="text" name="\[DistrictCalendar\_Ext]Grade\_Level" value=""&gt; &lt;/td&gt;
+Grade\_Level:<input type="text" name="\[DistrictCalendar\_Ext]Grade\_Level" value=""> </td>
 
 **Adding a New Record to a One-to-Many Extension of a Child Table**
 
@@ -4293,19 +4293,19 @@ U\_APPLICATIONS (which is a child of STUDENTS) now has its own one-to-many child
 
 ~\[DirectTable.Select:U\_APPLICATIONS;ID:-1]
 
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Institution:&lt;/label&gt; &lt;input type="text" name="\[U\_APPLICATIONS]Institution" value=""&gt; &lt;/div&gt;  
+<div>  
+<label style="width: 140px">Institution:</label> <input type="text" name="\[U\_APPLICATIONS]Institution" value=""> </div>  
 :  
 : (Other U\_A[pdfRest Free Demo]here)  
 :  
 ~\[DirectTable.Select:U\_APP\_NOTES;ID:-1]  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Notes:&lt;/label&gt;  
-&lt;textarea name="\[U\_APP\_NOTES]Note" cols="50" rows="5"&gt; &lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Note Author:&lt;/label&gt; &lt;input type="text" name="\[U\_APP\_NOTES]Author" value=""&gt; &lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Note Date:&lt;/label&gt; &lt;input type="text" name="\[U\_APP\_NOTES]Note\_Date" value=""&gt; &lt;/div&gt;
+<div>  
+<label style="width: 140px">Notes:</label>  
+<textarea name="\[U\_APP\_NOTES]Note" cols="50" rows="5"> </div>  
+<div>  
+<label style="width: 140px">Note Author:</label> <input type="text" name="\[U\_APP\_NOTES]Author" value=""> </div>  
+<div>  
+<label style="width: 140px">Note Date:</label> <input type="text" name="\[U\_APP\_NOTES]Note\_Date" value=""> </div>
 
 Note: In this example only the initial fi[pdfRest Free Demo] added to the U\_APP\_NOTES table. Other techniques would be[pdfRest Free Demo]tional records, such as using DirectTable.Select on its own web page.
 
@@ -4315,18 +4315,18 @@ Adding a new record to a one-to-one extension o[pdfRest Free Demo]similar to add
 
 ~\[DirectTable.Select:U\_APPLICATIONS;ID:-1]
 
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Institution:&lt;/label&gt; &lt;input type="text" name="\[U\_APPLICATIONS][pdfRest Free Demo]""&gt; &lt;/div&gt;  
+<div>  
+<label style="width: 140px">Institution:</label> <input type="text" name="\[U\_APPLICATIONS][pdfRest Free Demo]""> </div>  
 :  
 : (Other U\_APPLICATIONS fields here)  
 :  
 ~\[DirectTable.Select: U\_APP\_OPTIONS;ID:-1]  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Student Has Signed:&lt;/label&gt; &lt;input type="checkbox" name="\[U\_APP\_OPTIONS]Student\_Signature" value="1"&gt; &lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt; Guardians Have Signed:&lt;/label&gt; &lt;input type="checkbox" name="\[U\_APP\_OPTIONS]Parent\_Signature" value="1"&gt; &lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;All Attachments Received:&lt;/label&gt; &lt;input type="checkbox" name="\[U\_APP\_OPTIONS]Attachments" value="1"&gt; &lt;/div&gt;
+<div>  
+<label style="width: 140px">Student Has Signed:</label> <input type="checkbox" name="\[U\_APP\_OPTIONS]Student\_Signature" value="1"> </div>  
+<div>  
+<label style="width: 140px"> Guardians Have Signed:</label> <input type="checkbox" name="\[U\_APP\_OPTIONS]Parent\_Signature" value="1"> </div>  
+<div>  
+<label style="width: 140px">All Attachments Received:</label> <input type="checkbox" name="\[U\_APP\_OPTIONS]Attachments" value="1"> </div>
 
 Note: In this exampl[pdfRest Free Demo]first record would be added to the U\_APP\_OPTIONS table. Ot[pdfRest Free Demo]d be needed to add additional records, such as using DirectT[pdfRest Free Demo]own web page.
 
@@ -4334,7 +4334,7 @@ Note: In this exampl[pdfRest Free Demo]first record would be added to the U\_APP
 
 To delete an existing reco[pdfRest Free Demo]tension table three elements are required.
 
-- The page URL sho[pdfRest Free Demo]value with the required &lt;idValue&gt; applications-edit.html?id=24
+- The page URL sho[pdfRest Free Demo]value with the required <idValue> applications-edit.html?id=24
 - A special hidden input tag for the page form. The proper format is:
   
   ```
@@ -4344,13 +4344,13 @@ To delete an existing reco[pdfRest Free Demo]tension table three elements are re
   value="1">
   ```
 - The standar[pdfRest Free Demo]must be included in the form fields, usually near the Submit[pdfRest Free Demo]s:  
-  &lt;input type="hidden" name="ac" value="prim"&gt;
+  <input type="hidden" name="ac" value="prim">
 
-For [pdfRest Free Demo]tion example, the hidden &lt;input&gt; tag would be formatted as:
+For [pdfRest Free Demo]tion example, the hidden <input> tag would be formatted as:
 
-input type="hidden" name="DD-U\_APPLICATIONS.ID:~(gpv.id)" value="1"&gt;
+input type="hidden" name="DD-U\_APPLICATIONS.ID:~(gpv.id)" value="1">
 
-**Note:** For many uses the Delete button wil[pdfRest Free Demo] own separate &lt;form&gt; tag from the main page to keep th[pdfRest Free Demo]arate from the Submit button. Please review the example for *Edit a Record* in Appendix B.
+**Note:** For many uses the Delete button wil[pdfRest Free Demo] own separate <form> tag from the main page to keep th[pdfRest Free Demo]arate from the Submit button. Please review the example for *Edit a Record* in Appendix B.
 
 **Custom Insertion Points and Page Fragments**
 
@@ -4376,11 +4376,11 @@ See *Appendix A* for[pdfRest Free Demo] insertion points.
 
 A page fragment is simpl[pdfRest Free Demo]ent to be added to a target page. It could be something simp[pdfRest Free Demo]ng example:
 
-&lt;p&gt;Hello world!
+<p>Hello world!
 
-I'm an auto-inserted page fragment.&lt;/p&gt;
+I'm an auto-inserted page fragment.</p>
 
-Or, a page fragment could be a complex combi[pdfRest Free Demo] and jQuery scripts. Because page fragments will be inserted[pdfRest Free Demo]erSchool HTML pages they do not require any of the standards HTML &lt;head&gt;, &lt;body&gt;, or other tags. The main pag[pdfRest Free Demo]those tags.
+Or, a page fragment could be a complex combi[pdfRest Free Demo] and jQuery scripts. Because page fragments will be inserted[pdfRest Free Demo]erSchool HTML pages they do not require any of the standards HTML <head>, <body>, or other tags. The main pag[pdfRest Free Demo]those tags.
 
 **Standard Insertion Points**
 
@@ -4395,9 +4395,9 @@ T[pdfRest Free Demo]ion points should be available on every page in PowerSchool:
 
 The following exam[pdfRest Free Demo]rst few lines of code from the admin\_footer\_css wildcard:
 
-&lt;div id="cust-content-footer"&gt;~\[cust.insertion\_point:content.footer]&lt;/div&gt; &lt;div id="legend" style="display:none;"&gt;  
-&lt;h3&gt;~\[text:psx.txt.wildcards.admin\_footer\_css.legend]&lt;/h3&gt; &lt;/div&gt;  
-&lt;/div&gt;&lt;!--end content-main--&gt;
+<div id="cust-content-footer">~\[cust.insertion\_point:content.footer]</div> <div id="legend" style="display:none;">  
+<h3>~\[text:psx.txt.wildcards.admin\_footer\_css.legend]</h3> </div>  
+</div><!--end content-main-->
 
 The very first line defines an insertion [pdfRest Free Demo]f content.footer.
 
@@ -4421,11 +4421,11 @@ The following example add[pdfRest Free Demo]oint named "help.pages":
 
 [pdfRest Free Demo]ion point in an FTL file, you can use a similar construction[pdfRest Free Demo]r syntax:
 
-&lt;@cust.insertion name="POINTNAME"&gt;DEFAULT\_CONTENT&lt;/@cust.insertion&gt;
+<@cust.insertion name="POINTNAME">DEFAULT\_CONTENT</@cust.insertion>
 
 The following example adds a new[pdfRest Free Demo]med "help.pages" to an FTL file in the /admin/ftl/ directory:
 
-&lt;@cust.insertion name="help.pages"&gt;&lt;/@cust.insertion&gt;
+<@cust.insertion name="help.pages"></@cust.insertion>
 
 **Auto-Insertions: How to Use Defined Insertion Points**
 
@@ -4440,7 +4440,7 @@ These operate essentially identically. The o[pdfRest Free Demo]n how the system 
 
 When creatin[pdfRest Free Demo]the name of that file is critical for proper operation. In URL-based auto-insertions, the source page URL is used in cons[pdfRest Free Demo]f the page fragment. For example, the URL of the page to be [pdfRest Free Demo]ollowing:
 
-http://&lt;server\_address&gt;/admin/some\_directory/some\_page.html
+http://<server\_address>/admin/some\_directory/some\_page.html
 
 Note: The file's extension may be any of the[pdfRest Free Demo]erSchool URL extensions, including **.**html, .htm, and .action.
 
@@ -4465,10 +4465,10 @@ District administrators have requested that a [pdfRest Free Demo]y phone numbers
 
 73
 
-&lt;!-- end of search menu --&gt;
+<!-- end of search menu -->
 
-- 74 &lt;/form&gt;
-- 75 &lt;/div&gt;
+- 74 </form>
+- 75 </div>
 - 76 ~\[wc:admin\_startpage\_whats\_new]
 - 77 ~\[wc:admin\_footer\_css]
 
@@ -4482,25 +4482,25 @@ The page fragment file would be placed in the /[pdfRest Free Demo]e that is the 
 
 Example of /admin/home.Emergency\_Numbers.content.foot[pdfRest Free Demo]t:
 
-&lt;div class="box-round"&gt;  
-&lt;h2 class="toggle expanded"&gt;Emergency Numbers&lt;/h2&gt; &lt;ul class="text"&gt;
+<div class="box-round">  
+<h2 class="toggle expanded">Emergency Numbers</h2> <ul class="text">
 
-&lt;li&gt;Police/Fire/Ambulance: 911&lt;/li&gt;
+<li>Police/Fire/Ambulance: 911</li>
 
-&lt;li&gt;Poison Control: 1-800-222-1222&lt;/li&gt;
+<li>Poison Control: 1-800-222-1222</li>
 
-&lt;li&gt;Superintendent's Office: 555-555-1000&lt;/li&gt;
+<li>Superintendent's Office: 555-555-1000</li>
 
-&lt;li&gt;General Hospital: 555-555-0911&lt;/li&gt;
+<li>General Hospital: 555-555-0911</li>
 
-&lt;li&gt;Children's Hospital: 555-555-2300&lt;/li&gt;
+<li>Children's Hospital: 555-555-2300</li>
 
-&lt;li&gt;Gas Leak: 888-555-6000&lt;/li&gt;
+<li>Gas Leak: 888-555-6000</li>
 
-&lt;li&gt;Mechanical Issues: 555-555-1043&lt;/li&gt;
+<li>Mechanical Issues: 555-555-1043</li>
 
-&lt;li&gt;Di[pdfRest Free Demo]tification System: 877-555-9911&lt;/li&gt; &lt;/ul&gt;  
-&lt;/div&gt;
+<li>Di[pdfRest Free Demo]tification System: 877-555-9911</li> </ul>  
+</div>
 
 Example screenshot of results:
 
@@ -4530,7 +4530,7 @@ The name is the same as the page f[pdfRest Free Demo]paired with, except with an
 
 To move your content to a different location on the page, [pdfRest Free Demo] XML file should use the following format:
 
-- 1 &lt;insertionMetadata xmlns="[http://www.powerschool.com](http://www.powerschool.com)"
+- 1 <insertionMetadata xmlns="[http://www.powerschool.com](http://www.powerschool.com)"
   
   2
   
@@ -4538,8 +4538,8 @@ To move your content to a different location on the page, [pdfRest Free Demo] XM
   
   4
   
-  xmlns:xsi="[http://www.w3.org/2001/XMLSchema-instance](http://www.w3.org/2001/XMLSchema-instance)" xsi:schemaLocation="[http://www.powerschool.com](http:[pdfRest Free Demo]om) insertionmetadata.xsd"&gt; &lt;inject location="h1" how="before" /&gt;
-- 5 &lt;/insertionMetadata&gt;
+  xmlns:xsi="[http://www.w3.org/2001/XMLSchema-instance](http://www.w3.org/2001/XMLSchema-instance)" xsi:schemaLocation="[http://www.powerschool.com](http:[pdfRest Free Demo]om) insertionmetadata.xsd"> <inject location="h1" how="before" />
+- 5 </insertionMetadata>
 
 Only the contents[pdfRest Free Demo] change. The attributes of the inject tag on line four have [pdfRest Free Demo]ngs:
 
@@ -4550,7 +4550,7 @@ Only the contents[pdfRest Free Demo] change. The attributes of the inject tag on
 |---|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | » | **before** | Inject the content as a block before the given location                                                                                                                                                       |
 | » | **after**  | Inject the conte[pdfRest Free Demo] the given location                                                                                                                                                        |
-| » | **insert** | Insert the content as a block at the beginning of th[pdfRest Free Demo]nt at the given location. For example, an "insert" for the "[pdfRest Free Demo]t the content at the beginning of an &lt;h1&gt; element |
+| » | **insert** | Insert the content as a block at the beginning of th[pdfRest Free Demo]nt at the given location. For example, an "insert" for the "[pdfRest Free Demo]t the content at the beginning of an <h1> element |
 | » | **append** | Insert the content as a block at the end of t[pdfRest Free Demo]iven location                                                                                                                                 |
 
 **Example**
@@ -4563,10 +4563,10 @@ Our file name would be:
 
 The content[pdfRest Free Demo]ould look like this example:
 
-&lt;insertionMetadata xmlns="[http://www.powerschool.com](http://www.powerschool.com)" xmlns:xsi="[http://www.w3.org/2001/XMLSchema-instance](http://www.w[pdfRest Free Demo]a-instance)" xsi:schemaLocation="[http://www.powerschool.com](http://www.powerschool.com) insertionmetadata.xsd"&gt; &lt;[pdfRest Free Demo]" how="append" /&gt;  
-&lt;/insertionMetadata&gt;
+<insertionMetadata xmlns="[http://www.powerschool.com](http://www.powerschool.com)" xmlns:xsi="[http://www.w3.org/2001/XMLSchema-instance](http://www.w[pdfRest Free Demo]a-instance)" xsi:schemaLocation="[http://www.powerschool.com](http://www.powerschool.com) insertionmetadata.xsd"> <[pdfRest Free Demo]" how="append" />  
+</insertionMetadata>
 
-Note the **location** attribute is "h1" because "Start Page" is wrapped in an &lt;h1&gt; tag. The **how** attribute is set to "append"[pdfRest Free Demo]r content after "Start Page" but before the closing &lt;h1&gt; tag.
+Note the **location** attribute is "h1" because "Start Page" is wrapped in an <h1> tag. The **how** attribute is set to "append"[pdfRest Free Demo]r content after "Start Page" but before the closing <h1> tag.
 
 Example screenshot of results:
 
@@ -4576,25 +4576,25 @@ A second method to move your page fragment[pdfRest Free Demo]fied location on th
 
 The [pdfRest Free Demo]isplays sample code using jQuery rather than an XML file for[pdfRest Free Demo]ers example:
 
-&lt;script&gt;  
+<script>  
 $j("h1").append('\\  
-&lt;span style="align:right;position:relative;z-index:10;"&gt;\\ &lt;a c[pdfRest Free Demo]itle="Emergency Numbers" href="#hiddenDivDialog"&gt;\\ &lt;i[pdfRest Free Demo]rgency\_number.png"&gt;\\  
-&lt;/a&gt;\\  
-&lt;/span&gt;')
+<span style="align:right;position:relative;z-index:10;">\\ <a c[pdfRest Free Demo]itle="Emergency Numbers" href="#hiddenDivDialog">\\ <i[pdfRest Free Demo]rgency\_number.png">\\  
+</a>\\  
+</span>')
 
-&lt;/script&gt;
+</script>
 
-&lt;div id="hiddenDivDialog" class="hide"&gt;  
-&lt;ul class="text"&gt;  
-&lt;li&gt;Police/Fire/Ambulance: 911&lt;/li&gt;  
-&lt;li&gt;Poison Control: 1-800-222-1222&lt;/li&gt;  
-&lt;li&gt;Superintendent's Office: 555-555-1000&lt;/li&gt; &lt;li&gt;General Hospital: 555-555-0911&lt;/li&gt;  
-&lt;li&gt;Children's Hospital: 555-555-2300&lt;/li&gt;  
-&lt;li&gt;Gas Leak: 888-555-6000&lt;/li&gt;  
-&lt;li&gt;Mechanical Issues: 555-555-1043&lt;/li&gt;  
-&lt;li&gt;District Emergency Notification System: 877-555-9911&lt;/li&gt; &lt;/ul&gt;
+<div id="hiddenDivDialog" class="hide">  
+<ul class="text">  
+<li>Police/Fire/Ambulance: 911</li>  
+<li>Poison Control: 1-800-222-1222</li>  
+<li>Superintendent's Office: 555-555-1000</li> <li>General Hospital: 555-555-0911</li>  
+<li>Children's Hospital: 555-555-2300</li>  
+<li>Gas Leak: 888-555-6000</li>  
+<li>Mechanical Issues: 555-555-1043</li>  
+<li>District Emergency Notification System: 877-555-9911</li> </ul>
 
-&lt;/div&gt;
+</div>
 
 [pdfRest Free Demo]of results after clicking on the telephone icon:
 
@@ -4644,7 +4644,7 @@ It is possible to unzi[pdfRest Free Demo]you download from the Internet, examine
 To create a plugi[pdfRest Free Demo]to the Create Plugin Package page, select which assets shoul[pdfRest Free Demo] click the **Create Plugin Zip File** button.
 
 1. Sign in at t[pdfRest Free Demo]
-2. Navigate to https://&lt;server&gt;/admin/customization/Cr[pdfRest Free Demo]ion The Create Plugin Package page appears.
+2. Navigate to https://<server>/admin/customization/Cr[pdfRest Free Demo]ion The Create Plugin Package page appears.
 3. Use the follow[pdfRest Free Demo]information in the fields: Note: Asterisks indicate required fields.
 
 |                             |                                                                                                                                                                                                                                                                                                                                           |
@@ -4666,7 +4666,7 @@ Click **Create Plugin Zip File**. The system creates the r[pdfRest Free Demo]fil
 
 **Note**: If your browser preference is set to[pdfRest Free Demo]ter downloading, disable this preference before creating the[pdfRest Free Demo]se, you will have to re-zip the package files before you imp[pdfRest Free Demo]the Plugin Install page.
 
-**Note**: When a plugin containing a one-to-one database extension of the STUDENTS table is insta[pdfRest Free Demo]he ReportWorks service needs to be restarted before the new [pdfRest Free Demo]sed within ReportWorks. To restart the service, open the Pow[pdfRest Free Demo] On the Start page, click **Restart ReportWorks Services**. [pdfRest Free Demo]ne from within PowerSchool by navigating to System Setup &gt; System Settings &gt; Reset Server. Check only the box for "[pdfRest Free Demo]mcat service (includes ReportWorks)".
+**Note**: When a plugin containing a one-to-one database extension of the STUDENTS table is insta[pdfRest Free Demo]he ReportWorks service needs to be restarted before the new [pdfRest Free Demo]sed within ReportWorks. To restart the service, open the Pow[pdfRest Free Demo] On the Start page, click **Restart ReportWorks Services**. [pdfRest Free Demo]ne from within PowerSchool by navigating to System Setup > System Settings > Reset Server. Check only the box for "[pdfRest Free Demo]mcat service (includes ReportWorks)".
 
 **Installing a Plugin Package**
 
@@ -4692,7 +4692,7 @@ The plugin package can include one or more of the followin[pdfRest Free Demo]e .
 Use the following procedur[pdfRest Free Demo]tall a plugin package.
 
 1. Sign in to PowerSchool.
-2. Navigate to System &gt; System Settings &gt; Plugin Management Configu[pdfRest Free Demo]Management Dashboard page appears.
+2. Navigate to System > System Settings > Plugin Management Configu[pdfRest Free Demo]Management Dashboard page appears.
 3. Click Install.
 4. Click [pdfRest Free Demo]or the " Plugin Installation File" and locate the .zip file [pdfRest Free Demo]lugin package, then click Install.
 
@@ -4769,35 +4769,35 @@ The following example shows the creation of [pdfRest Free Demo]o track college a
 
 **Main Page: /admin/students/applications.html**
 
-&lt;!DOCTYPE html&gt;  
-&lt;html&gt;  
-&lt;!-- start right frame --&gt;  
-&lt;head&gt;  
-&lt;title&gt;College Applications&lt;/title&gt;  
+<!DOCTYPE html>  
+<html>  
+<!-- start right frame -->  
+<head>  
+<title>College Applications</title>  
 ~\[wc:commonscripts]
 
-&lt;link href="/images/css/screen.css" rel[pdfRest Free Demo]="screen"&gt; &lt;link href="/images/css/print.css" rel="sty[pdfRest Free Demo]nt"&gt; &lt;/head&gt;  
-&lt;body&gt;  
-~\[wc:admin\_header\_frame\_css]&lt;!-- breadcrumb start --&gt;&lt;a href="/admin/home.html" target="\_top"&gt;Start Page&lt;/a&gt; &gt; &lt;a href="home.html?selectstudent=nosearch" target="\_top"&gt;Student Selection&lt;/a&gt; &gt; College Applications&lt;!-- breadcrumb end -- &gt;~\[wc:admin\_navigation\_frame\_css]
+<link href="/images/css/screen.css" rel[pdfRest Free Demo]="screen"> <link href="/images/css/print.css" rel="sty[pdfRest Free Demo]nt"> </head>  
+<body>  
+~\[wc:admin\_header\_frame\_css]<!-- breadcrumb start --><a href="/admin/home.html" target="\_top">Start Page</a> > <a href="home.html?selectstudent=nosearch" target="\_top">Student Selection</a> > College Applications<!-- breadcrumb end -- >~\[wc:admin\_navigation\_frame\_css]
 
 ~\[wc:title\_student\_begin\_css]College Applications~\[wc:title\_student\_end\_css]
 
-&lt;!-- start of content and bounding box --&gt;  
-&lt;div class="box-round"&gt;  
-&lt;p style="text-align: center"&gt;  
-&lt;a href="applications-new.html?frn=~(studentfrn)" id="btnNew" name="btnNew" class="button"&gt;New&lt;/a&gt;  
-&lt;/p&gt;
+<!-- start of content and bounding box -->  
+<div class="box-round">  
+<p style="text-align: center">  
+<a href="applications-new.html?frn=~(studentfrn)" id="btnNew" name="btnNew" class="button">New</a>  
+</p>
 
-&lt;table class="grid" id="applications"&gt;  
-&lt;thead&gt;  
-&lt;tr style="border:1px solid grey;"&gt;  
-&lt;th[pdfRest Free Demo]="width:20px;text-align: center"&gt;Edit&lt;/th&gt; &lt;th c[pdfRest Free Demo]width:200px"&gt;Institution&lt;/th&gt; &lt;th class="bold" style="width:65px"&gt;Request Date&lt;/th&gt;
+<table class="grid" id="applications">  
+<thead>  
+<tr style="border:1px solid grey;">  
+<th[pdfRest Free Demo]="width:20px;text-align: center">Edit</th> <th c[pdfRest Free Demo]width:200px">Institution</th> <th class="bold" style="width:65px">Request Date</th>
 
-&lt;th class="bold" style="width:75px"&gt;Status&lt;/th&gt; &lt;th class="bold" style="width:50px"&gt;Scholarship?&lt;/th&gt; &lt;th class=[pdfRest Free Demo]:65px"&gt;Completion Date&lt;/th&gt; &lt;th class="bold" style="width:75px"&gt;Outcome&lt;/th&gt; &lt;th class="bold" style="width:200px"&gt;Notes&lt;/th&gt;
+<th class="bold" style="width:75px">Status</th> <th class="bold" style="width:50px">Scholarship?</th> <th class=[pdfRest Free Demo]:65px">Completion Date</th> <th class="bold" style="width:75px">Outcome</th> <th class="bold" style="width:200px">Notes</th>
 
-&lt;/tr&gt;  
-&lt;/thead&gt;  
-&lt;tbody&gt;  
+</tr>  
+</thead>  
+<tbody>  
 ~[tlist\_sql;  
 select  
 studentsdcid,  
@@ -4847,168 +4847,168 @@ FROM U\_APPLICATIONS a
 WHERE StudentsDCID = ~(rn)  
 ORDER BY ID]
 
-&lt;tr&gt;  
-&lt;td align="center"&gt;  
-&lt;a href="applications-edit.html?frn=001~(dcid)&id=~(id)"&gt; &lt;img src="/images/btn\_edit.gif" width="16" height="16" border="0"&gt; &lt;/a&gt;  
-&lt;/td&gt;  
-&lt;td&gt;~(Institution)&lt;/td&gt;  
-&lt;td&gt;~(Request\_Date;d)&lt;/td&gt;  
-&lt;td&gt;~(Request\_Status)&lt;/td&gt;  
-&lt;td&gt;~(Scholarship)&lt;/td&gt;  
-&lt;td&gt;~(Completion\_Date;d)&lt;/td&gt;  
-&lt;td&gt;~(Outcome)&lt;/td&gt;  
-&lt;td&gt;~(Notes)&lt;/td&gt;
+<tr>  
+<td align="center">  
+<a href="applications-edit.html?frn=001~(dcid)&id=~(id)"> <img src="/images/btn\_edit.gif" width="16" height="16" border="0"> </a>  
+</td>  
+<td>~(Institution)</td>  
+<td>~(Request\_Date;d)</td>  
+<td>~(Request\_Status)</td>  
+<td>~(Scholarship)</td>  
+<td>~(Completion\_Date;d)</td>  
+<td>~(Outcome)</td>  
+<td>~(Notes)</td>
 
-&lt;/tr&gt;
+</tr>
 
 \[/tlist\_sql]
 
-&lt;/tbody&gt;  
-&lt;/table&gt;  
-&lt;/div&gt;  
-&lt;br&gt;  
-&lt;!-- end of content of bounding box --&gt;  
+</tbody>  
+</table>  
+</div>  
+<br>  
+<!-- end of content of bounding box -->  
 ~\[wc:admin\_footer\_frame\_css]
 
-&lt;/body&gt;
+</body>
 
-&lt;/html&gt;&lt;!-- end right frame --&gt;
+</html><!-- end right frame -->
 
 **Edit a Record: /admin/students/applications-edit.html**
 
-&lt;!DOCTYPE html&gt;  
-&lt;html&gt;  
-&lt;!-- start right frame --&gt;  
-&lt;head&gt;  
-&lt;title&gt;Edit College Application&lt;/title&gt;  
+<!DOCTYPE html>  
+<html>  
+<!-- start right frame -->  
+<head>  
+<title>Edit College Application</title>  
 ~\[wc:UI\_js\_includes]  
 ~\[wc:commonscripts]
 
-&lt;link href="/images/css/screen.css" rel="stylesheet" media="screen"&gt; &lt;link href="/images/css/print.css" rel="[pdfRest Free Demo]print"&gt; &lt;/head&gt;  
-&lt;body&gt;  
-&lt;form id="edit\_a[pdfRest Free Demo]"applications.html?frn=~(frn)" method="POST"&gt; ~\[wc:admin\_header\_frame\_css]&lt;!-- breadcrumb start --&gt;&lt;a hre[pdfRest Free Demo]" target="\_top"&gt;Start Page&lt;/a&gt; &gt; &lt;a href="home.html?selectstudent=nosearch" target="\_top"&gt;Student Selection&lt;/a&gt; &gt; Edit College Application&lt;!-- breadcrumb end --&gt;~\[wc:admin\_navigation\_frame\_css]
+<link href="/images/css/screen.css" rel="stylesheet" media="screen"> <link href="/images/css/print.css" rel="[pdfRest Free Demo]print"> </head>  
+<body>  
+<form id="edit\_a[pdfRest Free Demo]"applications.html?frn=~(frn)" method="POST"> ~\[wc:admin\_header\_frame\_css]<!-- breadcrumb start --><a hre[pdfRest Free Demo]" target="\_top">Start Page</a> > <a href="home.html?selectstudent=nosearch" target="\_top">Student Selection</a> > Edit College Application<!-- breadcrumb end -->~\[wc:admin\_navigation\_frame\_css]
 
 ~\[wc:title\_student\_begin\_css]Edit College Application~\[wc:title\_student\_end\_css]
 
-&lt;!-- start of content and bounding box --&gt;  
-&lt;div class="box-round"&gt;  
-~\[DirectTable.Select:U\_APPLICATIONS;ID:~(gpv.id)] &lt;fieldset id="application"&gt;  
-&lt;legend&gt;Application Details&lt;/legend&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Institution:&lt;/label&gt; &lt;input type="text" name="\[U\_APPLICATIONS]Institution"[pdfRest Free Demo]tution" size="50" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Request Date:&lt;/label&gt;
+<!-- start of content and bounding box -->  
+<div class="box-round">  
+~\[DirectTable.Select:U\_APPLICATIONS;ID:~(gpv.id)] <fieldset id="application">  
+<legend>Application Details</legend>  
+<div>  
+<label style="width: 140px">Institution:</label> <input type="text" name="\[U\_APPLICATIONS]Institution"[pdfRest Free Demo]tution" size="50" />  
+</div>  
+<div>  
+<label style="width: 140px">Request Date:</label>
 
-&lt;inpu[pdfRest Free Demo]"\[U\_APPLICATIONS]Request\_Date" value="" id="Request\_Date" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Request Status:&lt;/label&gt; &lt;select name="\[U\_APPLICATIONS]Request\_Status" id="Request\_Status"&gt; &lt;option value=""&gt;Select a Status&lt;/option&gt;  
-&lt;option value="N"&gt;New&lt;/option&gt;  
-&lt;option value="U"&gt;Under Development&lt;/option&gt; &lt;option value="C"&gt;Complete (Not Submitted)&lt;/option&gt; &lt;option value="S"&gt;Submitted&lt;/option&gt;  
-&lt;/select&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Scholarship:&lt;/label&gt; &lt;input type="checkbox" name="\[U\_APPLICATIONS]Scholars[pdfRest Free Demo]Scholarship" /&gt;&nbsp;(Yes)
+<inpu[pdfRest Free Demo]"\[U\_APPLICATIONS]Request\_Date" value="" id="Request\_Date" />  
+</div>  
+<div>  
+<label style="width: 140px">Request Status:</label> <select name="\[U\_APPLICATIONS]Request\_Status" id="Request\_Status"> <option value="">Select a Status</option>  
+<option value="N">New</option>  
+<option value="U">Under Development</option> <option value="C">Complete (Not Submitted)</option> <option value="S">Submitted</option>  
+</select>  
+</div>  
+<div>  
+<label style="width: 140px">Scholarship:</label> <input type="checkbox" name="\[U\_APPLICATIONS]Scholars[pdfRest Free Demo]Scholarship" />&nbsp;(Yes)
 
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Scholarship Amount:&lt;/label&gt; $&lt;input type="text" name="\[U\_APPLICATIONS]Scholarship\_Amount" value="" id="Scholarship\_Amount" size="8" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Completion Date:&lt;/label&gt; &lt;input type="text" name="\[U\_APPLICATIONS]Completion\_Date" value="" id="Completion\_Date" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Outcome:&lt;/label&gt; &lt;select name="\[U\_APPLICATIONS]Outcome" id="Outcome"&gt; &lt;option value=""&gt;Select an Outcome&lt;/option&gt;  
-&lt;option value="C"&gt;Considering&lt;/option&gt;  
-&lt;option value="W"&gt;Waitlist&lt;/option&gt;  
-&lt;option value="A"&gt;Accepted&lt;/option&gt;  
-&lt;option value="D"&gt;Denied&lt;/option&gt;  
-&lt;option value="O"&gt;Other&lt;/option&gt;  
-&lt;/select&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Notes:&lt;/label&gt;  
-&lt;textarea name="\[U\_APPLICATIONS]Notes" cols="50" r[pdfRest Free Demo]/&gt; &lt;/div&gt;  
-&lt;/fieldset&gt;
+</div>  
+<div>  
+<label style="width: 140px">Scholarship Amount:</label> $<input type="text" name="\[U\_APPLICATIONS]Scholarship\_Amount" value="" id="Scholarship\_Amount" size="8" />  
+</div>  
+<div>  
+<label style="width: 140px">Completion Date:</label> <input type="text" name="\[U\_APPLICATIONS]Completion\_Date" value="" id="Completion\_Date" />  
+</div>  
+<div>  
+<label style="width: 140px">Outcome:</label> <select name="\[U\_APPLICATIONS]Outcome" id="Outcome"> <option value="">Select an Outcome</option>  
+<option value="C">Considering</option>  
+<option value="W">Waitlist</option>  
+<option value="A">Accepted</option>  
+<option value="D">Denied</option>  
+<option value="O">Other</option>  
+</select>  
+</div>  
+<div>  
+<label style="width: 140px">Notes:</label>  
+<textarea name="\[U\_APPLICATIONS]Notes" cols="50" r[pdfRest Free Demo]/> </div>  
+</fieldset>
 
-&lt;div class="button-row" id="row1"&gt;  
-&lt;input type="hidden" name="ac" value="prim"&gt; &lt;button name="btnSubmit" id="btnSubmit" type="submit"&gt;Submit&lt;/button&gt; &lt;/div&gt;  
-&lt;/form&gt;
+<div class="button-row" id="row1">  
+<input type="hidden" name="ac" value="prim"> <button name="btnSubmit" id="btnSubmit" type="submit">Submit</button> </div>  
+</form>
 
-&lt;div class="button-row" id="row2"&gt;  
-&lt;form id="delete\_bu[pdfRest Free Demo]cations.html?frn=~(studentfrn)" method="post"&gt;  
-&lt;input[pdfRest Free Demo]="ac" value="prim" /&gt; &lt;input type="hidden" name="DD-U\_APPLICATIONS.ID:~(gpv.id)" value="1" /&gt; &lt;button class=[pdfRest Free Demo]d="btnDelete"&gt;Delete&lt;/button&gt; &lt;/form&gt;  
-&lt;/div&gt;  
-&lt;/div&gt;  
+<div class="button-row" id="row2">  
+<form id="delete\_bu[pdfRest Free Demo]cations.html?frn=~(studentfrn)" method="post">  
+<input[pdfRest Free Demo]="ac" value="prim" /> <input type="hidden" name="DD-U\_APPLICATIONS.ID:~(gpv.id)" value="1" /> <button class=[pdfRest Free Demo]d="btnDelete">Delete</button> </form>  
+</div>  
+</div>  
 ~\[wc:admin\_footer\_frame\_css]  
-&lt;/body&gt;  
-&lt;/html&gt;&lt;!-- end right frame --&gt;
+</body>  
+</html><!-- end right frame -->
 
 **Add a New Record: /admin/students/applications-new.html**
 
-&lt;!DOCTYPE html&gt;  
-&lt;html&gt;  
-&lt;!-- start right frame --&gt;  
-&lt;head&gt;  
-&lt;title&gt;New College Application&lt;/title&gt;  
+<!DOCTYPE html>  
+<html>  
+<!-- start right frame -->  
+<head>  
+<title>New College Application</title>  
 ~\[wc:UI\_js\_includes]  
 ~\[wc:commonscripts]
 
-&lt;link hr[pdfRest Free Demo]een.css" rel="stylesheet" media="screen"&gt; &lt;link href="[pdfRest Free Demo]ss" rel="stylesheet" media="print"&gt; &lt;/head&gt;  
-&lt;body&gt;  
-&lt;form id="new\_application" action="applications.html?frn=~(frn)" method="POST"&gt; ~\[wc:admin\_header\_frame\_css]&lt;!-- breadcrumb start --&gt;&lt;a href="/admin/home.html" target="\_top"&gt;Start Page&lt;/a&gt; &gt; &lt;a href="home.html?selectstudent=nosearch" target="\_top"&gt;Student Selection&lt;/a&gt; &gt; New College Application&lt;!-- breadcrumb end - -&gt;~\[wc:admin\_navigation\_frame\_css]
+<link hr[pdfRest Free Demo]een.css" rel="stylesheet" media="screen"> <link href="[pdfRest Free Demo]ss" rel="stylesheet" media="print"> </head>  
+<body>  
+<form id="new\_application" action="applications.html?frn=~(frn)" method="POST"> ~\[wc:admin\_header\_frame\_css]<!-- breadcrumb start --><a href="/admin/home.html" target="\_top">Start Page</a> > <a href="home.html?selectstudent=nosearch" target="\_top">Student Selection</a> > New College Application<!-- breadcrumb end - ->~\[wc:admin\_navigation\_frame\_css]
 
 ~\[wc:title\_student\_begin\_css]New College Application~\[wc:title\_student\_end\_css]
 
-&lt;!-- start of content and bounding box --&gt;  
-&lt;div class="box-round"&gt;  
-~\[DirectTable.Select:U\_APPLICATIONS;ID:-1] &lt;!-- Using hard-coded -1 because this is a new record --&gt;  
-&lt;fieldset id="application"&gt;  
-&lt;legend&gt;Application Details&lt;/legend&gt;  
-&lt;div&gt;
+<!-- start of content and bounding box -->  
+<div class="box-round">  
+~\[DirectTable.Select:U\_APPLICATIONS;ID:-1] <!-- Using hard-coded -1 because this is a new record -->  
+<fieldset id="application">  
+<legend>Application Details</legend>  
+<div>
 
-&lt;label style="width: 140px"&gt;Institution:&lt;/label&gt; &lt;input type="text" name="\[U\_APPLICATIONS]Institution" val[pdfRest Free Demo]on" size="50" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Request Date:&lt;/label&gt; &lt;input type="text" name="\[U\_APPLICATIONS]Request\_Date" value="" id="Request\_Date" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Request Status:&lt;/label&gt; &lt;select name="\[U\_APPLICATIONS]Request\_Status" id="Request\_Status"&gt; &lt;option value=""&gt;Select a Status&lt;/option&gt;  
-&lt;option value="N"&gt;New&lt;/option&gt;  
-&lt;option value="U"&gt;Under Development&lt;/option&gt; &lt;option value="C"&gt;Complete (Not Submitted)&lt;/option&gt; &lt;option value="S"&gt;Submitted&lt;/option&gt;  
-&lt;/select&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Scholarship:&lt;/label&gt; &lt;input type="checkbox" name="\[U\_APPLICATIONS]Scholarship" value="1" id="Scholarship" /&gt;&nbsp;(Yes)
+<label style="width: 140px">Institution:</label> <input type="text" name="\[U\_APPLICATIONS]Institution" val[pdfRest Free Demo]on" size="50" />  
+</div>  
+<div>  
+<label style="width: 140px">Request Date:</label> <input type="text" name="\[U\_APPLICATIONS]Request\_Date" value="" id="Request\_Date" />  
+</div>  
+<div>  
+<label style="width: 140px">Request Status:</label> <select name="\[U\_APPLICATIONS]Request\_Status" id="Request\_Status"> <option value="">Select a Status</option>  
+<option value="N">New</option>  
+<option value="U">Under Development</option> <option value="C">Complete (Not Submitted)</option> <option value="S">Submitted</option>  
+</select>  
+</div>  
+<div>  
+<label style="width: 140px">Scholarship:</label> <input type="checkbox" name="\[U\_APPLICATIONS]Scholarship" value="1" id="Scholarship" />&nbsp;(Yes)
 
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Scholarship Amount:&lt;/label&gt; $&lt;input type="text" name="\[U\_APPLICATIONS]Scholarship\_Amount" value="" id="Scholarship\_Amount" size="8" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Completion Date:&lt;/label&gt; &lt;input type="text" name="\[U\_APPLICATIONS]Completion\_D[pdfRest Free Demo]ompletion\_Date" /&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Outcome:&lt;/label&gt; &lt;select name="\[U\_APPLICATIONS]Outcome" id="Outcome"&gt; &lt;option value=""&gt;Select an Outcome&lt;/option&gt;  
-&lt;option value="C"&gt;Considering&lt;/option&gt;  
-&lt;option value="W"&gt;Waitlist&lt;/option&gt;  
-&lt;option value="A"&gt;Accepted&lt;/option&gt;  
-&lt;option value="D"&gt;Denied&lt;/option&gt;  
-&lt;option value="O"&gt;Other&lt;/option&gt;  
-&lt;/select&gt;  
-&lt;/div&gt;  
-&lt;div&gt;  
-&lt;label style="width: 140px"&gt;Notes:&lt;/label&gt;  
-&lt;textarea name="\[U\_APPLICATIONS]Not[pdfRest Free Demo]"5" id="Notes" /&gt; &lt;/div&gt;
+</div>  
+<div>  
+<label style="width: 140px">Scholarship Amount:</label> $<input type="text" name="\[U\_APPLICATIONS]Scholarship\_Amount" value="" id="Scholarship\_Amount" size="8" />  
+</div>  
+<div>  
+<label style="width: 140px">Completion Date:</label> <input type="text" name="\[U\_APPLICATIONS]Completion\_D[pdfRest Free Demo]ompletion\_Date" />  
+</div>  
+<div>  
+<label style="width: 140px">Outcome:</label> <select name="\[U\_APPLICATIONS]Outcome" id="Outcome"> <option value="">Select an Outcome</option>  
+<option value="C">Considering</option>  
+<option value="W">Waitlist</option>  
+<option value="A">Accepted</option>  
+<option value="D">Denied</option>  
+<option value="O">Other</option>  
+</select>  
+</div>  
+<div>  
+<label style="width: 140px">Notes:</label>  
+<textarea name="\[U\_APPLICATIONS]Not[pdfRest Free Demo]"5" id="Notes" /> </div>
 
-&lt;div class="button-row"&gt;  
-&lt;input type="hidden" name="ac" value="prim"&gt; &lt;b[pdfRest Free Demo]it" id="btnSubmit" type="submit"&gt;Submit&lt;/button&gt; &lt;/div&gt;
+<div class="button-row">  
+<input type="hidden" name="ac" value="prim"> <b[pdfRest Free Demo]it" id="btnSubmit" type="submit">Submit</button> </div>
 
-&lt;/fieldset&gt;  
-&lt;/div&gt;  
+</fieldset>  
+</div>  
 ~\[wc:admin\_footer\_frame\_css]  
-&lt;/form&gt;
+</form>
 
-&lt;/body&gt;  
-&lt;/html&gt;&lt;!-- end right frame --&gt;
+</body>  
+</html><!-- end right frame -->

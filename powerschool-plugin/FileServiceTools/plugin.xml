@@ -9,18 +9,24 @@
         <contact email="support@non-support.com" />
     </publisher>
     
-    <!-- Web links for PowerSchool UI integration -->
+    <oauth/>
+    
+    <!-- External SSO link to File Service Tools (requires authentication) -->
     <openid host="filesvc-stg-app.kaiweneducation.com" port="443">
-
+        <links>
+            <link display-text="File Service Tools" 
+                  title="File Service Tools" 
+                  path="/authenticate"
+                  >
+                <ui_contexts>
+                    <ui_context id="admin.left_nav" />
+                </ui_contexts>
+            </link>
+        </links>
+    </openid>
+    
+    <!-- Internal PowerSchool admin pages for User Data tables -->
     <links>
-        <link display-text="File Service Tools" 
-              title="File Service Tools" 
-              path="/authenticate"
-              >
-            <ui_contexts>
-                <ui_context id="admin.left_nav" />
-            </ui_contexts>
-        </link>
         <link display-text="User Data - Categories" 
               title="User Data Categories (U_UD_CATEGORY)" 
               path="/admin/ud/u_ud_category-list.html"
@@ -54,6 +60,5 @@
             </ui_contexts>
         </link>
     </links>
-    </openid>
-    <oauth/>    
+    
 </plugin>

@@ -55,7 +55,7 @@
           ~(gpv.recid) record_id,
           CASE f.VALUE_TYPE
             WHEN 'TEXT' THEN
-              TO_CLOB('<textarea')
+              TO_CLOB('<textarea data-name="')
             WHEN 'BOOL' THEN
               TO_CLOB('<input type="checkbox" name="')
             WHEN 'INT' THEN
@@ -113,12 +113,6 @@
           <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]CREATED_BY" value="">
           <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]UPDATED_ON$format=date" value="">
           <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]UPDATED_BY" value="">
-
-          <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]VALUE_NUM$format=numeric" value="">
-          <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]VALUE_DATE$format=date" value="">
-          <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]VALUE_BOOL" value="0">
-          <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]VALUE_TEXT" value="">
-          <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]VALUE_STR" value="">
 
           <!-- Visible input rendered from SQL CASE statement -->
           ~(controltype)CF-[:0.U_UD_UserData.U_UD_VALUE:~(fielddef_id_hidden)]~(fieldvaluewithend)

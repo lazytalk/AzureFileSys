@@ -62,17 +62,53 @@
           '<input type="hidden" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'UPDATED_BY" value="">' updated_by_hidden,
           CASE f.VALUE_TYPE
             WHEN 'TEXT' THEN
-              '<textarea name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_TEXT">' || NVL(v.VALUE_TEXT, '') || '</textarea>'
+              TO_CLOB('<textarea name="') ||
+              CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]'
+                  ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']'
+              END ||
+              TO_CLOB('VALUE_TEXT">') ||
+              NVL(v.VALUE_TEXT, TO_CLOB('')) ||
+              TO_CLOB('</textarea>')
             WHEN 'BOOL' THEN
-              '<input type="checkbox" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_BOOL" value="1"' || CASE WHEN NVL(v.VALUE_BOOL, 0) = 1 THEN ' checked' ELSE '' END || '>'
+              TO_CLOB('<input type="checkbox" name="') ||
+              CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]'
+                  ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']'
+              END ||
+              TO_CLOB('VALUE_BOOL" value="1') ||
+              CASE WHEN NVL(v.VALUE_BOOL, 0) = 1 THEN ' checked' ELSE '' END ||
+              TO_CLOB('">')
             WHEN 'INT' THEN
-              '<input type="number" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_NUM$format=numeric" step="1" value="' || NVL(TO_CHAR(v.VALUE_NUM), '') || '">'
+              TO_CLOB('<input type="number" name="') ||
+              CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]'
+                  ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']'
+              END ||
+              TO_CLOB('VALUE_NUM$format=numeric" step="1" value="') ||
+              TO_CLOB(NVL(TO_CHAR(v.VALUE_NUM), '')) ||
+              TO_CLOB('">')
             WHEN 'DECIMAL' THEN
-              '<input type="number" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_NUM$format=numeric" step="0.01" value="' || NVL(TO_CHAR(v.VALUE_NUM), '') || '">'
+              TO_CLOB('<input type="number" name="') ||
+              CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]'
+                  ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']'
+              END ||
+              TO_CLOB('VALUE_NUM$format=numeric" step="0.01" value="') ||
+              TO_CLOB(NVL(TO_CHAR(v.VALUE_NUM), '')) ||
+              TO_CLOB('">')
             WHEN 'DATE' THEN
-              '<input type="date" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_DATE$format=date" value="' || NVL(TO_CHAR(v.VALUE_DATE, 'YYYY-MM-DD'), '') || '">'
+              TO_CLOB('<input type="date" name="') ||
+              CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]'
+                  ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']'
+              END ||
+              TO_CLOB('VALUE_DATE$format=date" value="') ||
+              TO_CLOB(NVL(TO_CHAR(v.VALUE_DATE, 'YYYY-MM-DD'), '')) ||
+              TO_CLOB('">')
             ELSE
-              '<input type="text" name="' || CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]' ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']' END || 'VALUE_STR" value="' || NVL(v.VALUE_STR, '') || '">'
+              TO_CLOB('<input type="text" name="') ||
+              CASE WHEN NVL(v.ID, -1) = -1 THEN 'CF-[:0.U_UD_UserData.U_UD_VALUE:-1]'
+                  ELSE 'CF-[:0.U_UD_UserData.U_UD_VALUE:' || v.ID || ']'
+              END ||
+              TO_CLOB('VALUE_STR" value="') ||
+              TO_CLOB(NVL(v.VALUE_STR, '')) ||
+              TO_CLOB('">')
           END input_html,
           f.HELP_TEXT fhelp
         FROM U_UD_FIELDDEF f

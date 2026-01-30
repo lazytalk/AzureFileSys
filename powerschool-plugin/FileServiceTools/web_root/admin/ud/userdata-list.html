@@ -8,8 +8,10 @@
     <link href="/images/css/screen.css" rel="stylesheet" media="screen">
     <link href="/images/css/print.css" rel="stylesheet" media="print">
     <style>
-      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
-      .kwe_ud_btn_danger{border-color:#c00}
+      .kwe_ud_btn{padding:6px 10px;border:1px solid #aaa;background:#f7f7f7;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;margin:2px}
+      .kwe_ud_btn:hover{background:#e7e7e7}
+      .kwe_ud_btn_danger{border-color:#c00;color:#c00}
+      .kwe_ud_btn_danger:hover{background:#ffe0e0}
       .kwe_ud_row{margin:10px 0}
       table{border-collapse:collapse;width:100%}
       th,td{border:1px solid #ddd;padding:8px;vertical-align:top}
@@ -123,67 +125,61 @@ document.addEventListener('DOMContentLoaded', function(){
       <tr>
         <th style="width:32px"><input type="checkbox" onclick="toggleAll(this)"></th>
         <th style="width:90px">Record ID</th>
-        <th style="width:180px">Created</th>
-        <th>Summary (searchable)</th>
-        <th style="width:110px" class="kwe_ud_right">Actions</th>
+        <th style="width:140px">Created</th>
+        
+        <!-- Dynamic field headers - Query once -->
+        ~[tlist_sql;
+          SELECT f.ID fieldid,
+              f.VALUE_TYPE vtype,
+              NVL(f.FIELD_LABEL, f.FIELD_KEY) field_label
+          FROM U_UD_FIELDDEF f
+          WHERE f.CATEGORY_ID = ~(gpv.catid)
+          ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL)
+        ]
+          <th data-fieldid="~(fieldid)" data-vtype="~(vtype)">~(field_label)</th>
+        [/tlist_sql]
+        
+        <th style="width:140px" class="kwe_ud_right">Actions</th>
       </tr>
     </thead>
     <tbody>
-      <!-- Paging: 10 rows per page using ROW_NUMBER -->
       ~[tlist_sql;
-        SELECT * FROM (
-          SELECT
-            r.ID recid,
-            r.CREATED_ON created_on,
-            -- Summary: concatenate values as a single searchable string
-            (
-              SELECT LISTAGG(
-                       NVL(v.VALUE_STR,
-                           NVL(TO_CHAR(v.VALUE_NUM),
-                               NVL(TO_CHAR(v.VALUE_DATE,'YYYY-MM-DD'),
-                                   NVL(TO_CHAR(v.VALUE_BOOL),
-                                       NVL(v.VALUE_TEXT,'')
-                                   )
-                               )
-                           )
-                       ),
-                       ' | '
-                     ) WITHIN GROUP (ORDER BY v.FIELDDEF_ID)
-              FROM U_UD_VALUE v
-              WHERE v.RECORD_ID = r.ID
-            ) summary,
-            ROW_NUMBER() OVER (ORDER BY r.CREATED_ON DESC, r.ID DESC) rn
-          FROM U_UD_RECORD r
-          WHERE r.USERSDCID = ~(gpv.usersdcid)
-            AND r.CATEGORY_ID = ~(gpv.catid)
-            AND (
-              ~(gpv.q) IS NULL
-              OR ~(gpv.q) = ''
-              OR EXISTS (
-                SELECT 1
-                FROM U_UD_VALUE v2
-                WHERE v2.RECORD_ID = r.ID
-                  AND (
-                    NVL(v2.VALUE_STR,'') LIKE '~(gpv.q)'
-                    OR NVL(v2.VALUE_TEXT,'') LIKE '~(gpv.q)'
-                    OR TO_CHAR(v2.VALUE_NUM) LIKE '~(gpv.q)'
-                    OR TO_CHAR(v2.VALUE_DATE,'YYYY-MM-DD') LIKE '~(gpv.q)'
-                  )
-              )
-            )
-        )
-        WHERE rn BETWEEN ((NVL(~(gpv.page),1)-1)*10 + 1) AND (NVL(~(gpv.page),1)*10)
-        ORDER BY rn
+        SELECT LISTAGG(
+          r.ID || '|' || r.CREATED_ON || '|' || r.USERSDCID || '|' || r.CATEGORY_ID || '|' ||
+          (
+            SELECT LISTAGG(
+              REPLACE(
+                REPLACE(
+                  REPLACE(
+                    REPLACE(
+                      CASE f.VALUE_TYPE
+                        WHEN 'TEXT' THEN NVL(DBMS_LOB.SUBSTR(v.VALUE_TEXT, 4000, 1), '')
+                        WHEN 'BOOL' THEN NVL(TO_CHAR(v.VALUE_BOOL), '')
+                        WHEN 'INT' THEN NVL(TO_CHAR(v.VALUE_NUM), '')
+                        WHEN 'DECIMAL' THEN NVL(TO_CHAR(v.VALUE_NUM), '')
+                        WHEN 'DATE' THEN NVL(TO_CHAR(v.VALUE_DATE, 'YYYY-MM-DD'), '')
+                        ELSE NVL(v.VALUE_STR, '')
+                      END,
+                      '&', '&amp;'
+                    ),
+                    '"', '&quot;'
+                  ),
+                  '<', '&lt;'
+                ),
+                '~DELIM~', '~_DELIM_~'
+              ), '~DELIM~'
+            ) WITHIN GROUP (ORDER BY NVL(f.SORT_ORDER, 9999), UPPER(f.FIELD_LABEL))
+            FROM U_UD_FIELDDEF f
+            LEFT JOIN U_UD_VALUE v ON v.FIELDDEF_ID = f.ID AND v.RECORD_ID = r.ID
+            WHERE f.CATEGORY_ID = r.CATEGORY_ID
+          ),
+          '|||'
+        ) WITHIN GROUP (ORDER BY r.CREATED_ON DESC, r.ID DESC) all_records
+        FROM U_UD_RECORD r
+        WHERE r.USERSDCID = ~(gpv.usersdcid)
+          AND r.CATEGORY_ID = ~(gpv.catid)
       ]
-      <tr>
-        <td><input type="checkbox" name="del_recid" value="~(recid)"></td>
-        <td>~(recid)</td>
-        <td>~(created_on)</td>
-        <td>~(summary)</td>
-        <td class="kwe_ud_right">
-          <a class="kwe_ud_btn" href="userdata-edit.html?usersdcid=~(gpv.usersdcid)&catid=~(gpv.catid)&recid=~(recid)">Edit</a>
-        </td>
-      </tr>
+      <tr style="display:none;" id="recordsData" data-records="~(all_records)"></tr>
       [/tlist_sql]
     </tbody>
   </table>
@@ -210,10 +206,63 @@ document.addEventListener('DOMContentLoaded', function(){
 [/tlist_sql]
 
 <script>
+function renderRecordsFromData(){
+  var recordsEl = document.getElementById('recordsData');
+  if(!recordsEl) return;
+  var allRecordsStr = recordsEl.getAttribute('data-records') || '';
+  if(!allRecordsStr) return;
+  
+  var records = allRecordsStr.split('|||');
+  var tbody = recordsEl.parentNode;
+  
+  for(var i = 0; i < records.length; i++){
+    var parts = records[i].split('|');
+    if(parts.length < 5) continue;
+    var recid = parts[0], created = parts[1], usersdcid = parts[2], catid = parts[3];
+    var valuesConcat = parts.slice(4).join('|');
+    
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-values', valuesConcat);
+    tr.innerHTML = 
+      '<td><input type="checkbox" name="del_recid" value="' + recid + '"></td>' +
+      '<td>' + recid + '</td>' +
+      '<td>' + created + '</td>' +
+      '<td class="kwe_ud_values" data-values="' + valuesConcat + '"></td>' +
+      '<td class="kwe_ud_right">' +
+        '<a class="kwe_ud_btn" href="userdata-edit.html?usersdcid=' + usersdcid + '&catid=' + catid + '&recid=' + recid + '&page=~(gpv.page)&q=~(gpv.q)">Edit</a> ' +
+        '<a class="kwe_ud_btn kwe_ud_btn_danger" onclick="return confirm(\'Delete this record?\');" href="userdata-delete.html?usersdcid=' + usersdcid + '&catid=' + catid + '&recid=' + recid + '&page=~(gpv.page)&q=~(gpv.q)">Delete</a>' +
+      '</td>';
+    tbody.appendChild(tr);
+  }
+}
+
 function toggleAll(master){
   var cbs = document.querySelectorAll('input[name="del_recid"]');
   for(var i=0;i<cbs.length;i++) cbs[i].checked = master.checked;
 }
+
+function renderValueCells(){
+  var headerCount = document.querySelectorAll('#recordsTable thead th[data-fieldid]').length;
+  var rows = document.querySelectorAll('#recordsTable tbody tr');
+  for (var i = 0; i < rows.length; i++) {
+    var marker = rows[i].querySelector('td.kwe_ud_values');
+    if (!marker) continue;
+    var raw = marker.getAttribute('data-values') || '';
+    var values = raw ? raw.split('~DELIM~') : [];
+    while (values.length < headerCount) values.push('');
+    for (var v = 0; v < headerCount; v++) {
+      var td = document.createElement('td');
+      td.textContent = values[v] || '';
+      rows[i].insertBefore(td, marker);
+    }
+    marker.parentNode.removeChild(marker);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  renderRecordsFromData();
+  renderValueCells();
+});
 </script>
 
 

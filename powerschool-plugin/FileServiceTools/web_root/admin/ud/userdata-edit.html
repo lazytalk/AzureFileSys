@@ -55,7 +55,7 @@
           ~(gpv.recid) record_id,
           CASE f.VALUE_TYPE
             WHEN 'TEXT' THEN
-              TO_CLOB('<textarea data-name="')
+              TO_CLOB('<textarea name="')
             WHEN 'BOOL' THEN
               TO_CLOB('<input type="checkbox" name="')
             WHEN 'INT' THEN

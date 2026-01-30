@@ -27,6 +27,22 @@
     
     <!-- Internal PowerSchool admin pages for User Data tables -->
     <links>
+        <link display-text="User Data Home" 
+              title="User Data Home" 
+              path="/admin/ud/userdata-home.html"
+              >
+            <ui_contexts>
+                <ui_context id="admin.left_nav" />
+            </ui_contexts>
+        </link>
+        <link display-text="Categories" 
+              title="Categories" 
+              path="/admin/ud/categories.html"
+              >
+            <ui_contexts>
+                <ui_context id="admin.left_nav" />
+            </ui_contexts>
+        </link>
         <link display-text="User Data - Categories" 
               title="User Data Categories (U_UD_CATEGORY)" 
               path="/admin/ud/u_ud_category-list.html"

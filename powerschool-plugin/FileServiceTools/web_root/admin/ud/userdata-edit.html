@@ -49,9 +49,9 @@
           ~(gpv.recid) record_id,
           CASE f.VALUE_TYPE
             WHEN 'TEXT' THEN
-              TO_CLOB('<textarea name="')
+              TO_CLOB('<textarea name="') 
             WHEN 'BOOL' THEN
-              TO_CLOB('<input type="checkbox" name="')
+              TO_CLOB('<input type="hidden" name="') || 'CF-' || chr(91) || chr(58) || '0.U_UD_UserData.U_UD_VALUE'|| chr(58) || CASE WHEN v.ID IS NULL THEN -1 ELSE v.ID END || chr(93) || TO_CLOB('VALUE_BOOL" value=""><input type="checkbox" name="') 
             WHEN 'INT' THEN
               TO_CLOB('<input type="number" name="') 
             WHEN 'DECIMAL' THEN
@@ -60,7 +60,8 @@
               TO_CLOB('<input type="date" name="') 
             ELSE
               TO_CLOB('<input type="text" name="') 
-          END controltype,
+          END || 'CF-' || chr(91) || chr(58) || '0.U_UD_UserData.U_UD_VALUE'|| chr(58) || CASE WHEN v.ID IS NULL THEN -1 ELSE v.ID END || chr(93) controltype,
+
           CASE f.VALUE_TYPE
             WHEN 'TEXT' THEN
               TO_CLOB('VALUE_TEXT">') ||
@@ -68,7 +69,7 @@
               TO_CLOB('</textarea>')
             WHEN 'BOOL' THEN
               TO_CLOB('VALUE_BOOL" value="1') ||
-              CASE WHEN NVL(v.VALUE_BOOL, 0) = 1 THEN ' checked' ELSE '' END ||
+              CASE WHEN NVL(v.VALUE_BOOL, 0) = 1 THEN '" checked="checked' ELSE '' END ||
               TO_CLOB('">')
             WHEN 'INT' THEN
               TO_CLOB('VALUE_NUM$format=numeric" step="1" value="') ||
@@ -103,7 +104,7 @@
             <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(value_id)]CREATED_BY" value="">
             <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(value_id)]UPDATED_ON$format=date" value="">
             <input type="hidden" name="CF-[:0.U_UD_UserData.U_UD_VALUE:~(value_id)]UPDATED_BY" value="">
-            ~(controltype)CF-[:0.U_UD_UserData.U_UD_VALUE:~(value_id)]~(fieldvaluewithend)
+            ~(controltype)~(fieldvaluewithend)
             ~[if#help.~(fhelp)!=]<div class="kwe_ud_hint">~(fhelp)</div>[/if#help]
           </div>
         </form>

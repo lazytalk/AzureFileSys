@@ -100,7 +100,12 @@ The following is an example for a one-to-many table to track  college applicati
 
 ~\[tlist\_child:STUDENTS.U\_COLLEGEAPP.U\_APPLICATIONS;displaycols:Institution,Request\_Date,Request\_Status,Scholarship,Completion\_Date,Outcome,Notes;fieldNames:Institution,Request Date,Status,Scholarship?,Completion Date,Outcome,Notes; type:html\]
 
-  
+Here is an example of the XML code to create the one-to-many table extension in database.extension xml with cascading delete from the parent Students table:
+
+<extendedTable coreTable="Students" dbTableName="U_FSH_STUDENTFAMILY" childName="U_FSH_STUDENTFAMILY" comment="Relates students to families">
+<field name="FAMILYID" type="Integer"/>
+  <foreignKey name="U_FSH_FAMILY_FK" fieldName="FAMILYID" parentTableName="U_FSH_FAMILY" parentFieldName="ID" onDeleteCascade="true" />
+</extendedTable>  
 
 ![undefined](/webservices/developer/media/file/30)
 
